@@ -57,7 +57,7 @@ export const Navbar = () => {
   return (
     <nav 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-3 px-4",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-2 px-3 md:py-3 md:px-4",
         scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]"
       )}
     >
@@ -65,14 +65,14 @@ export const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-7" />
+            <img src={logoUrl} alt={siteName} className="h-6 md:h-7" />
           ) : (
-            <span className="text-lg font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span>
+            <span className="text-base md:text-lg font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span>
           )}
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-3">
           <NavLink to="/" icon={<HomeIcon className="h-3.5 w-3.5" />} label="Home" />
           <NavLink to="/portfolio" icon={<Briefcase className="h-3.5 w-3.5" />} label="Portfolio" />
           <NavLink to="/services" icon={<Settings className="h-3.5 w-3.5" />} label="Services" />

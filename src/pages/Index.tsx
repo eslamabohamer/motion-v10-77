@@ -30,10 +30,12 @@ const Index = () => {
     <div className="min-h-screen bg-[#1A1F2C] text-white w-full">
       <Navbar />
       <Hero />
-      <PortfolioPreview />
-      <ServicesSection />
-      <Testimonials />
-      <ContactCta />
+      <div className="max-w-7xl mx-auto px-4">
+        <PortfolioPreview />
+        <ServicesSection />
+        <Testimonials />
+        <ContactCta />
+      </div>
       <Footer />
     </div>
   );
