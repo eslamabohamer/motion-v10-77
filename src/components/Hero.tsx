@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,13 @@ export const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [enableParallax, setEnableParallax] = useState(true);
 
+  // Use useMemo to avoid recalculating on every render
+  const backgroundElements = useMemo(() => [
+    { top: '1/4', right: '1/4', width: 72, height: 72, color: 'primary', delay: 0 },
+    { bottom: '1/4', left: '1/3', width: 96, height: 96, color: 'secondary', delay: 0.1 },
+    { top: '1/3', left: '1/4', width: 64, height: 64, color: 'accent', delay: 0.2 },
+  ], []);
+
   useEffect(() => {
     // Detect if device is mobile or has reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,23 +27,26 @@ export const Hero = () => {
     if (prefersReducedMotion || isMobile) {
       setEnableParallax(false);
     }
+
+    // Clean up any event listeners
+    return () => {
+      // No event listeners to clean up in this optimized version
+    };
   }, []);
 
+  // Throttle mouse move event
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!enableParallax) return;
     
-    // Throttle mouse move calculations to improve performance
-    // Only update position every 50ms
-    if (!window.requestAnimationFrame) return;
-    
+    // Throttle using requestAnimationFrame for better performance
     window.requestAnimationFrame(() => {
       const { clientX, clientY } = e;
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       
       // Reduce movement factor for better performance
-      const moveX = (clientX - centerX) / 35;
-      const moveY = (clientY - centerY) / 35;
+      const moveX = (clientX - centerX) / 50;
+      const moveY = (clientY - centerY) / 50;
       
       setMousePosition({ x: moveX, y: moveY });
     });
@@ -49,40 +59,31 @@ export const Hero = () => {
   return (
     <section 
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16"
-      onMouseMove={handleMouseMove}
+      onMouseMove={enableParallax ? handleMouseMove : undefined}
     >
-      {/* Simplified background elements with reduced blur effects */}
+      {/* Simplified background elements that are pre-generated */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-background/90">
-        <div 
-          className="absolute inset-0"
-          style={{
-            transform: enableParallax ? `translateX(${mousePosition.x * -1}px) translateY(${mousePosition.y * -1}px)` : 'none'
-          }}
-        >
+        {enableParallax && backgroundElements.map((el, index) => (
           <motion.div 
+            key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full bg-primary/15 blur-2xl"
+            transition={{ duration: 0.5, delay: el.delay }}
+            className={`absolute w-${el.width} h-${el.height} rounded-full bg-${el.color}/15 blur-2xl`}
+            style={{
+              top: el.top,
+              right: el.right,
+              bottom: el.bottom,
+              left: el.left,
+              transform: `translateX(${mousePosition.x * -1}px) translateY(${mousePosition.y * -1}px)`
+            }}
           />
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="absolute bottom-1/4 left-1/3 w-96 h-96 rounded-full bg-secondary/15 blur-2xl"
-          />
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-accent/15 blur-2xl"
-          />
-        </div>
+        ))}
       </div>
 
-      {/* Content with simplified animation */}
+      {/* Content with optimized animation */}
       <div 
-        className="container mx-auto px-4 z-10 flex flex-col items-center text-center"
+        className="container mx-auto px-4 z-10 flex flex-col items-center text-center will-change-transform"
         style={{
           transform: enableParallax ? `translateX(${mousePosition.x * 0.5}px) translateY(${mousePosition.y * 0.5}px)` : 'none'
         }}
@@ -91,7 +92,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-gradient"
+          className="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-gradient will-change-transform"
         >
           Motion Graphics Artist
         </motion.h1>
@@ -127,7 +128,7 @@ export const Hero = () => {
         </motion.div>
       </div>
 
-      {/* Optimized Video Modal */}
+      {/* Optimized Video Modal - Only rendered when needed */}
       {isPlaying && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -143,6 +144,7 @@ export const Hero = () => {
               title="Showreel"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              loading="lazy"
             ></iframe>
           </div>
         </div>

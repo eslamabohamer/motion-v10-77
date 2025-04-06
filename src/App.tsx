@@ -15,8 +15,17 @@ import AdminProjects from "./pages/AdminProjects";
 import AdminMessage from "./pages/AdminMessage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./components/AdminLayout";
+import AdminCategories from "./pages/AdminCategories";
+import AdminSettings from "./pages/AdminSettings";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,6 +50,8 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="projects" element={<AdminProjects />} />
             <Route path="messages" element={<AdminMessage />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
           
           {/* Not Found Route */}
