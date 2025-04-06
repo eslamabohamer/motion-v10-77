@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -9,21 +8,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, RefreshCcw } from 'lucide-react';
+import { Save, RefreshCcw, Upload } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   
-  // Mock settings for demo - in a real app these would be stored in the database
+  // Mock settings for demo
   const [settings, setSettings] = useState({
     general: {
       siteName: "Motion Graphics Artist",
       siteDescription: "Creating captivating visual experiences through the art of motion",
       contactEmail: "contact@example.com",
       showreelUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      logoUrl: "",
     },
     performance: {
       enableAnimations: true,
@@ -55,6 +56,14 @@ const AdminSettings = () => {
       youtubeUrl: "https://youtube.com",
       linkedinUrl: "https://linkedin.com",
       twitterUrl: "https://twitter.com",
+    },
+    about: {
+      ownerName: "Muhammad Ali",
+      ownerTitle: "Motion Graphics Artist & 3D Animator",
+      ownerBio: "I'm a passionate motion graphics artist with over 8 years of experience creating stunning visual animations for brands worldwide. My work focuses on bringing ideas to life through creative storytelling and cutting-edge animation techniques.",
+      ownerPhotoUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=400&auto=format&fit=crop",
+      ownerSkills: "Motion Graphics, 3D Animation, Visual Effects, After Effects, Cinema 4D, Blender",
+      ownerLocation: "Cairo, Egypt",
     }
   });
 
@@ -102,6 +111,10 @@ const AdminSettings = () => {
             animation: {
               ...prev.animation,
               ...(parsed.animation || {})
+            },
+            about: {
+              ...prev.about,
+              ...(parsed.about || {})
             }
           };
         });
@@ -133,6 +146,7 @@ const AdminSettings = () => {
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="social">Social Media</TabsTrigger>
+          <TabsTrigger value="about">About Me</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general">
@@ -154,6 +168,19 @@ const AdminSettings = () => {
                     value={settings.general.siteName}
                     onChange={(e) => handleSettingChange('general', 'siteName', e.target.value)}
                   />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="logoUrl">Logo URL</Label>
+                  <Input 
+                    id="logoUrl" 
+                    value={settings.general.logoUrl}
+                    onChange={(e) => handleSettingChange('general', 'logoUrl', e.target.value)}
+                    placeholder="https://example.com/logo.png"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter a URL for your site logo (leave empty to use text logo)
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
@@ -190,6 +217,119 @@ const AdminSettings = () => {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={() => handleResetSettings('general')}>
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Reset to Defaults
+                </Button>
+                <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </motion.div>
+        </TabsContent>
+        
+        <TabsContent value="about">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>About Me Settings</CardTitle>
+                <CardDescription>Configure your personal information for the About page</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  <div className="w-full md:w-2/3 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerName">Your Name</Label>
+                      <Input 
+                        id="ownerName" 
+                        value={settings.about.ownerName}
+                        onChange={(e) => handleSettingChange('about', 'ownerName', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerTitle">Your Title/Position</Label>
+                      <Input 
+                        id="ownerTitle" 
+                        value={settings.about.ownerTitle}
+                        onChange={(e) => handleSettingChange('about', 'ownerTitle', e.target.value)}
+                        placeholder="Motion Graphics Artist & 3D Animator"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerLocation">Your Location</Label>
+                      <Input 
+                        id="ownerLocation" 
+                        value={settings.about.ownerLocation}
+                        onChange={(e) => handleSettingChange('about', 'ownerLocation', e.target.value)}
+                        placeholder="City, Country"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerSkills">Your Skills</Label>
+                      <Input 
+                        id="ownerSkills" 
+                        value={settings.about.ownerSkills}
+                        onChange={(e) => handleSettingChange('about', 'ownerSkills', e.target.value)}
+                        placeholder="Motion Graphics, 3D Animation, Visual Effects"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Comma-separated list of your key skills
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full md:w-1/3 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ownerPhotoUrl">Your Photo URL</Label>
+                      <div className="flex flex-col items-center space-y-4">
+                        <Avatar className="w-32 h-32">
+                          <AvatarImage src={settings.about.ownerPhotoUrl} alt="Profile" />
+                          <AvatarFallback>MA</AvatarFallback>
+                        </Avatar>
+                        <Input 
+                          id="ownerPhotoUrl" 
+                          value={settings.about.ownerPhotoUrl}
+                          onChange={(e) => handleSettingChange('about', 'ownerPhotoUrl', e.target.value)}
+                          placeholder="https://example.com/your-photo.jpg"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Enter a URL for your profile photo
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="ownerBio">Your Bio</Label>
+                  <Textarea 
+                    id="ownerBio" 
+                    value={settings.about.ownerBio}
+                    onChange={(e) => handleSettingChange('about', 'ownerBio', e.target.value)}
+                    rows={5}
+                    placeholder="Write a short biography about yourself, your experience, and your approach to motion graphics..."
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => handleResetSettings('about')}>
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Reset to Defaults
                 </Button>

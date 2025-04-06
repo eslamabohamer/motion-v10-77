@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [siteName, setSiteName] = useState("MUHAMMAD ALI");
+  const [logoUrl, setLogoUrl] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,6 +23,22 @@ export const Navbar = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Load site name and logo from localStorage
+    const savedSettings = localStorage.getItem('siteSettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (settings.general) {
+          setSiteName(settings.general.siteName || "MUHAMMAD ALI");
+          setLogoUrl(settings.general.logoUrl || "");
+        }
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
   }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -46,7 +64,11 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">MUHAMMAD ALI</span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={siteName} className="h-8" />
+          ) : (
+            <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span>
+          )}
         </Link>
 
         {/* Desktop Navigation */}
