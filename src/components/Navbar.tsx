@@ -39,18 +39,18 @@ export const Navbar = () => {
   return (
     <nav 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-6 px-6 lg:px-12",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-6 lg:px-12",
         scrolled ? "bg-background/80 backdrop-blur-md shadow-md" : "bg-transparent"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <span className="text-2xl font-heading font-bold bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">MUHAMMAD ALI</span>
+          <span className="text-xl font-heading font-bold text-gradient">MUHAMMAD ALI</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden md:flex items-center space-x-6">
           <NavLink to="/" icon={<HomeIcon className="h-4 w-4" />} label="Home" />
           <NavLink to="/portfolio" icon={<Briefcase className="h-4 w-4" />} label="Portfolio" />
           <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
@@ -58,14 +58,14 @@ export const Navbar = () => {
           <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
           <Button 
             variant="ghost"
-            className="flex items-center space-x-1 text-gray-300 hover:text-white"
+            className="flex items-center space-x-1"
             onClick={handleAdminArea}
           >
             <ShieldIcon className="h-4 w-4 mr-1" />
             <span>Admin</span>
           </Button>
           <Button 
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            className="bg-primary hover:bg-primary/90"
             onClick={handleGetInTouch}
           >
             Get in Touch
@@ -74,7 +74,7 @@ export const Navbar = () => {
 
         {/* Mobile menu button */}
         <div className="md:hidden">
-          <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu" className="text-white">
+          <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu">
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
@@ -101,7 +101,7 @@ export const Navbar = () => {
             <ShieldIcon className="h-4 w-4 mr-2" /> Admin Area
           </Button>
           <Button 
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white"
+            className="mt-4 bg-primary hover:bg-primary/90"
             onClick={handleGetInTouch}
           >
             Get in Touch
@@ -122,11 +122,11 @@ const NavLink = ({ to, icon, label }: NavLinkProps) => {
   return (
     <Link 
       to={to} 
-      className="group flex items-center space-x-1 text-gray-300 hover:text-white transition-colors"
+      className="group flex items-center space-x-1 text-foreground/80 hover:text-foreground transition-colors"
     >
       {icon}
       <span>{label}</span>
-      <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-blue-500"></span>
+      <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-primary"></span>
     </Link>
   );
 };
@@ -142,7 +142,7 @@ const MobileNavLink = ({ to, label, onClick }: MobileNavLinkProps) => {
     <Link
       to={to}
       onClick={onClick}
-      className="text-2xl font-semibold hover:text-blue-500 transition-colors"
+      className="text-2xl font-semibold hover:text-primary transition-colors"
     >
       {label}
     </Link>
