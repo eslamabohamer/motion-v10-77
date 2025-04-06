@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Inbox, Check, Eye, EyeOff } from 'lucide-react';
+import { Inbox, Check, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Message {
@@ -29,14 +29,17 @@ interface Message {
 const AdminMessage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchCount, setFetchCount] = useState(0);
 
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [fetchCount]);
 
   const fetchMessages = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching messages...');
+      
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -48,13 +51,18 @@ const AdminMessage = () => {
         return;
       }
       
+      console.log('Messages fetched:', data);
       setMessages(data || []);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('Exception fetching messages:', error);
       toast.error('Failed to load messages');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const refreshMessages = () => {
+    setFetchCount(prev => prev + 1);
   };
 
   const toggleReadStatus = async (id: string, currentReadStatus: boolean) => {
@@ -100,8 +108,8 @@ const AdminMessage = () => {
                 Manage and respond to all contact form submissions
               </p>
             </div>
-            <Button onClick={fetchMessages} className="mt-4 md:mt-0">
-              <Check className="mr-2 h-4 w-4" /> Refresh Messages
+            <Button onClick={refreshMessages} className="mt-4 md:mt-0">
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh Messages
             </Button>
           </motion.div>
 
@@ -109,10 +117,10 @@ const AdminMessage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-card rounded-lg shadow-xl border overflow-hidden"
+            className="bg-card rounded-lg shadow-xl border overflow-hidden relative"
             style={{ 
-              transformStyle: 'preserve-3d',
-              perspective: '1000px'
+              position: 'relative',
+              zIndex: 10
             }}
           >
             {isLoading ? (
@@ -142,7 +150,7 @@ const AdminMessage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {messages.map((message, index) => (
+                  {messages.map((message) => (
                     <TableRow 
                       key={message.id}
                       className={!message.read ? "bg-primary/5 font-medium" : ""}
