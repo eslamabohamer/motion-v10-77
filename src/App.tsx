@@ -11,6 +11,8 @@ import Services from "./pages/Services";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import AdminProjects from "./pages/AdminProjects";
+import AdminMessage from "./pages/AdminMessage";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,8 @@ const App = () => (
           <Route path="/services" element={<Services />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/admin/projects" element={<AdminProjects />} />
+          <Route path="/admin/messages" element={<AdminMessage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
