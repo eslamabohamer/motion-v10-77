@@ -62,6 +62,7 @@ const AdminMessage = () => {
   };
 
   const refreshMessages = () => {
+    toast.info('Refreshing messages...');
     setFetchCount(prev => prev + 1);
   };
 

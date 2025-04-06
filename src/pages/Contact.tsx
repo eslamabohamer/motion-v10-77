@@ -43,7 +43,7 @@ const Contact = () => {
       console.log('Submitting message:', data);
       
       // Insert directly into the messages table
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('messages')
         .insert([
           {
@@ -53,14 +53,15 @@ const Contact = () => {
             message: data.message,
             read: false
           }
-        ]);
+        ])
+        .select();
       
       if (error) {
         console.error('Supabase error:', error);
         throw error;
       }
       
-      console.log('Message sent successfully');
+      console.log('Message sent successfully:', insertData);
       setIsSuccess(true);
       form.reset();
       
