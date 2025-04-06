@@ -57,38 +57,38 @@ export const Navbar = () => {
   return (
     <nav 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-16",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20", // Increased height from h-16 to h-20
         scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]"
       )}
     >
-      <div className="h-full max-w-7xl mx-auto flex items-center justify-between px-3">
+      <div className="h-full max-w-7xl mx-auto flex items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-6" />
+            <img src={logoUrl} alt={siteName} className="h-8" /> // Increased logo height from h-6 to h-8
           ) : (
-            <span className="text-base font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span>
+            <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span> // Increased text size from text-base to text-xl
           )}
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-2">
-          <NavLink to="/" icon={<HomeIcon className="h-3.5 w-3.5" />} label="Home" />
-          <NavLink to="/portfolio" icon={<Briefcase className="h-3.5 w-3.5" />} label="Portfolio" />
-          <NavLink to="/services" icon={<Settings className="h-3.5 w-3.5" />} label="Services" />
-          <NavLink to="/about" icon={<User className="h-3.5 w-3.5" />} label="About" />
-          <NavLink to="/contact" icon={<Mail className="h-3.5 w-3.5" />} label="Contact" />
+        <div className="hidden md:flex items-center space-x-4"> {/* Increased space-x-2 to space-x-4 */}
+          <NavLink to="/" icon={<HomeIcon className="h-4 w-4" />} label="Home" /> {/* Increased icon size */}
+          <NavLink to="/portfolio" icon={<Briefcase className="h-4 w-4" />} label="Portfolio" />
+          <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
+          <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" />
+          <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
           <Button 
             variant="ghost"
-            size="sm"
+            size="default" // Changed from sm to default
             className="flex items-center text-white hover:text-white/80"
             onClick={handleAdminArea}
           >
-            <ShieldIcon className="h-3.5 w-3.5 mr-1" />
-            <span>Admin</span>
+            <ShieldIcon className="h-4 w-4 mr-1.5" /> {/* Increased icon size and margin */}
+            <span className="text-sm">Admin</span> {/* Increased text size */}
           </Button>
           <Button 
-            size="sm"
+            size="default" // Changed from sm to default
             className="bg-[#4a6cf7] hover:bg-[#3a5ce7]"
             onClick={handleGetInTouch}
           >
@@ -98,8 +98,8 @@ export const Navbar = () => {
 
         {/* Mobile menu button */}
         <div className="md:hidden">
-          <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu" className="text-white h-8 w-8">
-            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu" className="text-white h-10 w-10"> {/* Increased button size */}
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />} {/* Increased icon size */}
           </Button>
         </div>
       </div>
@@ -111,7 +111,7 @@ export const Navbar = () => {
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="flex flex-col items-center space-y-5 text-center">
+        <div className="flex flex-col items-center space-y-6 text-center"> {/* Increased space-y-5 to space-y-6 */}
           <MobileNavLink to="/" label="Home" onClick={closeMenu} />
           <MobileNavLink to="/portfolio" label="Portfolio" onClick={closeMenu} />
           <MobileNavLink to="/services" label="Services" onClick={closeMenu} />
@@ -119,15 +119,15 @@ export const Navbar = () => {
           <MobileNavLink to="/contact" label="Contact" onClick={closeMenu} />
           <Button 
             variant="outline"
-            size="sm"
-            className="mt-2 border-white/20 text-white"
+            size="default" // Changed from sm to default
+            className="mt-3 border-white/20 text-white"
             onClick={handleAdminArea}
           >
-            <ShieldIcon className="h-3.5 w-3.5 mr-2" /> Admin
+            <ShieldIcon className="h-4 w-4 mr-2" /> Admin
           </Button>
           <Button 
-            size="sm"
-            className="mt-3 bg-[#4a6cf7] hover:bg-[#3a5ce7]"
+            size="default" // Changed from sm to default
+            className="mt-4 bg-[#4a6cf7] hover:bg-[#3a5ce7]"
             onClick={handleGetInTouch}
           >
             Get in Touch
@@ -148,7 +148,7 @@ const NavLink = ({ to, icon, label }: NavLinkProps) => {
   return (
     <Link 
       to={to} 
-      className="group flex items-center space-x-1 text-white/80 hover:text-white transition-colors text-xs"
+      className="group flex items-center space-x-1.5 text-white/80 hover:text-white transition-colors text-sm py-1.5" // Increased text size from xs to sm, added vertical padding
     >
       {icon}
       <span>{label}</span>
@@ -168,7 +168,7 @@ const MobileNavLink = ({ to, label, onClick }: MobileNavLinkProps) => {
     <Link
       to={to}
       onClick={onClick}
-      className="text-xl font-semibold text-white hover:text-[#4a6cf7] transition-colors"
+      className="text-2xl font-semibold text-white hover:text-[#4a6cf7] transition-colors" // Increased text size from text-xl to text-2xl
     >
       {label}
     </Link>
