@@ -112,6 +112,12 @@ export const defaultSettings: SiteSettings = {
   }
 };
 
+interface SiteSettingsRecord {
+  id: string;
+  created_at: string;
+  settings: SiteSettings;
+}
+
 export const getSettings = async (): Promise<SiteSettings> => {
   try {
     // Fetch settings from the database
@@ -119,7 +125,7 @@ export const getSettings = async (): Promise<SiteSettings> => {
       .from('site_settings')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1);
+      .limit(1) as { data: SiteSettingsRecord[] | null, error: any };
     
     if (error) throw error;
     

@@ -137,6 +137,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          created_at: string
+          id: string
+          settings: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          settings: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          settings?: Json
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           author: string
