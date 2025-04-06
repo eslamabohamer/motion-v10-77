@@ -27,15 +27,17 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#1A1F2C] text-white w-full">
+    <div className="flex flex-col min-h-screen bg-[#1A1F2C] text-white">
       <Navbar />
-      <Hero />
-      <div className="max-w-7xl mx-auto px-4">
-        <PortfolioPreview />
-        <ServicesSection />
-        <Testimonials />
-        <ContactCta />
-      </div>
+      <main className="flex-grow">
+        <Hero />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+          <PortfolioPreview />
+          <ServicesSection />
+          <Testimonials />
+          <ContactCta />
+        </div>
+      </main>
       <Footer />
     </div>
   );

@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowRight } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -11,16 +11,7 @@ export const Hero = () => {
   const isMobile = useIsMobile();
   const [showreelUrl, setShowreelUrl] = useState("https://www.youtube.com/embed/dQw4w9WgXcQ");
   const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
-  const heroRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"]
-  });
   
-  const titleY = useTransform(scrollYProgress, [0, 1], [0, -50]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
-
   useEffect(() => {
     // Load settings from localStorage
     const savedSettings = localStorage.getItem('siteSettings');
@@ -61,22 +52,18 @@ export const Hero = () => {
   };
 
   return (
-    <section 
-      ref={heroRef} 
-      className="relative pt-20 pb-12 md:pt-24 md:pb-20 flex flex-col items-center justify-center overflow-hidden"
-    >
+    <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-16 overflow-hidden">
       {/* Background with gradient overlay */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[#1A1F2C] to-[#262b38]" />
         
-        {/* 3D animated background elements - reduced size and simplified */}
+        {/* Simplified animated background elements */}
         {animations3DEnabled && (
           <>
             <motion.div 
-              className="absolute -bottom-16 -left-16 w-48 h-48 md:w-64 md:h-64 bg-[#4a6cf7]/10 rounded-full blur-3xl"
+              className="absolute -bottom-16 -left-16 w-32 h-32 bg-[#4a6cf7]/10 rounded-full blur-3xl"
               animate={{ 
                 scale: [1, 1.1, 1],
-                rotate: [0, 10, 0],
                 opacity: [0.3, 0.4, 0.3]
               }}
               transition={{ 
@@ -87,10 +74,9 @@ export const Hero = () => {
             />
             
             <motion.div 
-              className="absolute top-1/4 -right-16 w-32 h-32 md:w-48 md:h-48 bg-[#9b87f5]/10 rounded-full blur-3xl"
+              className="absolute top-1/4 -right-16 w-24 h-24 bg-[#9b87f5]/10 rounded-full blur-3xl"
               animate={{ 
                 scale: [1, 1.15, 1],
-                rotate: [0, -15, 0],
                 opacity: [0.2, 0.3, 0.2]
               }}
               transition={{ 
@@ -110,10 +96,9 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          style={animations3DEnabled ? { y: titleY } : {}}
           className="mb-3"
         >
-          <div className="inline-block rounded-full px-3 py-1 md:px-4 md:py-1.5 bg-[#4a6cf7]/10 text-[#4a6cf7] text-xs md:text-sm font-medium mb-3 md:mb-4">
+          <div className="inline-block rounded-full px-3 py-1 bg-[#4a6cf7]/10 text-[#4a6cf7] text-xs md:text-sm font-medium mb-3">
             Motion Graphics Artist
           </div>
         </motion.div>
@@ -122,8 +107,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          style={animations3DEnabled ? { y: titleY, scale, opacity } : {}}
-          className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-3 md:mb-4 text-white max-w-4xl leading-tight"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-3 md:mb-4 text-white max-w-3xl leading-tight"
         >
           Bringing <span className="bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">ideas</span> to life through <span className="bg-gradient-to-r from-[#9b87f5] to-[#4a6cf7] bg-clip-text text-transparent">motion</span>
         </motion.h1>
@@ -132,15 +116,14 @@ export const Hero = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="w-full max-w-[40px] md:max-w-[50px] h-[2px] bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] mx-auto mb-4 md:mb-6"
+          className="w-full max-w-[40px] h-[2px] bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] mx-auto mb-4"
         />
         
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          style={animations3DEnabled ? { y: titleY, opacity } : {}}
-          className="text-sm md:text-base lg:text-lg text-white/80 max-w-2xl mb-6 md:mb-8 px-4 leading-relaxed"
+          className="text-sm md:text-base text-white/80 max-w-2xl mb-6 md:mb-8 px-4 leading-relaxed"
         >
           With 7 years of experience in motion design, I've mastered the art of creating compelling visual stories through dynamic branding and captivating animations.
         </motion.p>
@@ -149,64 +132,27 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          style={animations3DEnabled ? { y: titleY, opacity } : {}}
           className="flex flex-col sm:flex-row gap-3 items-center w-full justify-center"
         >
           <Button 
-            className="bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] hover:opacity-90 text-white px-4 md:px-6 py-1.5 md:py-2 h-auto text-sm md:text-base w-full sm:w-auto rounded-full shadow-md"
+            className="bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] hover:opacity-90 text-white px-4 py-1.5 h-auto text-sm w-full sm:w-auto rounded-full shadow-md"
             asChild
           >
             <Link to="/portfolio" className="flex items-center justify-center">
               View Portfolio
-              <ArrowRight className="ml-2 h-3.5 w-3.5 md:h-4 md:w-4" />
+              <ArrowRight className="ml-2 h-3.5 w-3.5" />
             </Link>
           </Button>
           <Button 
             variant="outline" 
             onClick={toggleShowreel}
-            className="border-[#9b87f5] text-white hover:bg-[#9b87f5]/10 px-4 md:px-6 py-1.5 md:py-2 h-auto text-sm md:text-base w-full sm:w-auto rounded-full"
+            className="border-[#9b87f5] text-white hover:bg-[#9b87f5]/10 px-4 py-1.5 h-auto text-sm w-full sm:w-auto rounded-full"
           >
-            <Play className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4 text-[#9b87f5]" />
+            <Play className="mr-2 h-3.5 w-3.5 text-[#9b87f5]" />
             Watch Showreel
           </Button>
         </motion.div>
       </div>
-
-      {/* 3D floating elements - reduced and simplified */}
-      {animations3DEnabled && !isMobile && (
-        <>
-          <motion.div 
-            className="absolute top-1/3 right-[10%] hidden md:block"
-            animate={{ 
-              y: [0, -10, 0],
-              rotate: [0, 5, 0]
-            }}
-            transition={{ 
-              duration: 6, 
-              repeat: Infinity,
-              ease: "easeInOut" 
-            }}
-          >
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#4a6cf7] to-[#9b87f5] opacity-20 backdrop-blur-sm shadow-lg" />
-          </motion.div>
-          
-          <motion.div 
-            className="absolute bottom-1/3 left-[10%] hidden md:block"
-            animate={{ 
-              y: [0, 10, 0],
-              rotate: [0, -5, 0]
-            }}
-            transition={{ 
-              duration: 8, 
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1 
-            }}
-          >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#9b87f5] to-[#4a6cf7] opacity-15 backdrop-blur-sm shadow-lg" />
-          </motion.div>
-        </>
-      )}
 
       {/* Video Modal */}
       {isPlaying && (
