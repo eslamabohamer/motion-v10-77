@@ -39,14 +39,14 @@ export const Navbar = () => {
   return (
     <nav 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-6 lg:px-12",
-        scrolled ? "bg-background/80 backdrop-blur-md shadow-md" : "bg-transparent"
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-4 md:px-6 lg:px-12",
+        scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <span className="text-xl font-heading font-bold text-gradient">MUHAMMAD ALI</span>
+          <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">MUHAMMAD ALI</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -58,14 +58,14 @@ export const Navbar = () => {
           <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
           <Button 
             variant="ghost"
-            className="flex items-center space-x-1"
+            className="flex items-center space-x-1 text-white hover:text-white/80"
             onClick={handleAdminArea}
           >
             <ShieldIcon className="h-4 w-4 mr-1" />
             <span>Admin</span>
           </Button>
           <Button 
-            className="bg-primary hover:bg-primary/90"
+            className="bg-[#4a6cf7] hover:bg-[#3a5ce7]"
             onClick={handleGetInTouch}
           >
             Get in Touch
@@ -74,7 +74,7 @@ export const Navbar = () => {
 
         {/* Mobile menu button */}
         <div className="md:hidden">
-          <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu">
+          <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu" className="text-white">
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
@@ -83,7 +83,7 @@ export const Navbar = () => {
       {/* Mobile Navigation */}
       <div 
         className={cn(
-          "fixed inset-0 bg-background/95 backdrop-blur-md z-40 flex flex-col items-center justify-center transform transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-0 bg-[#1A1F2C]/95 backdrop-blur-md z-40 flex flex-col items-center justify-center transform transition-transform duration-300 ease-in-out md:hidden",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -95,13 +95,13 @@ export const Navbar = () => {
           <MobileNavLink to="/contact" label="Contact" onClick={closeMenu} />
           <Button 
             variant="outline"
-            className="mt-2"
+            className="mt-2 border-white/20 text-white"
             onClick={handleAdminArea}
           >
             <ShieldIcon className="h-4 w-4 mr-2" /> Admin Area
           </Button>
           <Button 
-            className="mt-4 bg-primary hover:bg-primary/90"
+            className="mt-4 bg-[#4a6cf7] hover:bg-[#3a5ce7]"
             onClick={handleGetInTouch}
           >
             Get in Touch
@@ -122,11 +122,11 @@ const NavLink = ({ to, icon, label }: NavLinkProps) => {
   return (
     <Link 
       to={to} 
-      className="group flex items-center space-x-1 text-foreground/80 hover:text-foreground transition-colors"
+      className="group flex items-center space-x-1 text-white/80 hover:text-white transition-colors"
     >
       {icon}
       <span>{label}</span>
-      <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-primary"></span>
+      <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-[#4a6cf7]"></span>
     </Link>
   );
 };
@@ -142,7 +142,7 @@ const MobileNavLink = ({ to, label, onClick }: MobileNavLinkProps) => {
     <Link
       to={to}
       onClick={onClick}
-      className="text-2xl font-semibold hover:text-primary transition-colors"
+      className="text-2xl font-semibold text-white hover:text-[#4a6cf7] transition-colors"
     >
       {label}
     </Link>

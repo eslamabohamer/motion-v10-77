@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Mail, User, MessageSquare, Send, CheckCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
@@ -25,7 +25,6 @@ type FormValues = z.infer<typeof formSchema>;
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -41,12 +40,18 @@ const Contact = () => {
     setIsSubmitting(true);
     
     try {
-      const { data: result, error } = await supabase.rpc('add_message', {
-        p_name: data.name,
-        p_email: data.email,
-        p_subject: data.subject,
-        p_message: data.message
-      });
+      // Insert directly into the messages table
+      const { error } = await supabase
+        .from('messages')
+        .insert([
+          {
+            name: data.name,
+            email: data.email,
+            subject: data.subject,
+            message: data.message,
+            read: false
+          }
+        ]);
       
       if (error) {
         throw error;
@@ -55,16 +60,13 @@ const Contact = () => {
       setIsSuccess(true);
       form.reset();
       
-      toast({
-        title: "Message sent!",
-        description: "Thank you for reaching out. I'll get back to you soon.",
+      toast.success("Message sent!", {
+        description: "Thank you for reaching out. I'll get back to you soon."
       });
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast({
-        title: "Something went wrong",
-        description: "Your message couldn't be sent. Please try again later.",
-        variant: "destructive",
+      toast.error("Something went wrong", {
+        description: "Your message couldn't be sent. Please try again later."
       });
     } finally {
       setIsSubmitting(false);
@@ -72,25 +74,27 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#1A1F2C] text-white">
       <Navbar />
-      <main className="pt-24 pb-16">
+      <main className="pt-28 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <h1 className="text-4xl font-bold mb-4">Get in Touch</h1>
-            <p className="text-muted-foreground mb-8">
+            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">Get in Touch</h1>
+            <p className="text-white/70 mb-8">
               Have a project in mind? Fill out the form below, and I'll get back to you as soon as possible to discuss how we can work together.
             </p>
             
-            <div className="border rounded-lg p-6 bg-card shadow-sm">
+            <div className="border border-white/10 rounded-lg p-6 bg-white/5 backdrop-blur-sm shadow-lg">
               {isSuccess ? (
                 <div className="text-center py-8">
-                  <CheckCircle className="h-16 w-16 text-primary mx-auto mb-4" />
+                  <CheckCircle className="h-16 w-16 text-[#4a6cf7] mx-auto mb-4" />
                   <h2 className="text-2xl font-bold mb-2">Message Sent!</h2>
-                  <p className="mb-6 text-muted-foreground">
+                  <p className="mb-6 text-white/70">
                     Thank you for reaching out. I'll get back to you as soon as possible.
                   </p>
-                  <Button onClick={() => setIsSuccess(false)}>Send Another Message</Button>
+                  <Button onClick={() => setIsSuccess(false)} className="bg-[#4a6cf7] hover:bg-[#3a5ce7]">
+                    Send Another Message
+                  </Button>
                 </div>
               ) : (
                 <Form {...form}>
@@ -101,11 +105,11 @@ const Contact = () => {
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Name</FormLabel>
+                            <FormLabel className="text-white">Name</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder="Your name" className="pl-10" {...field} />
+                                <User className="absolute left-3 top-3 h-4 w-4 text-white/50" />
+                                <Input placeholder="Your name" className="pl-10 bg-white/5 border-white/10 text-white" {...field} />
                               </div>
                             </FormControl>
                             <FormMessage />
@@ -118,11 +122,11 @@ const Contact = () => {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel className="text-white">Email</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Input type="email" placeholder="Your email" className="pl-10" {...field} />
+                                <Mail className="absolute left-3 top-3 h-4 w-4 text-white/50" />
+                                <Input type="email" placeholder="Your email" className="pl-10 bg-white/5 border-white/10 text-white" {...field} />
                               </div>
                             </FormControl>
                             <FormMessage />
@@ -136,11 +140,11 @@ const Contact = () => {
                       name="subject"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Subject</FormLabel>
+                          <FormLabel className="text-white">Subject</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="What's this about?" className="pl-10" {...field} />
+                              <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-white/50" />
+                              <Input placeholder="What's this about?" className="pl-10 bg-white/5 border-white/10 text-white" {...field} />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -153,11 +157,11 @@ const Contact = () => {
                       name="message"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Message</FormLabel>
+                          <FormLabel className="text-white">Message</FormLabel>
                           <FormControl>
                             <Textarea 
                               placeholder="Tell me about your project..."
-                              className="min-h-[150px]"
+                              className="min-h-[150px] bg-white/5 border-white/10 text-white resize-none"
                               {...field}
                             />
                           </FormControl>
@@ -166,7 +170,11 @@ const Contact = () => {
                       )}
                     />
                     
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-[#4a6cf7] hover:bg-[#3a5ce7] py-6 h-auto text-base" 
+                      disabled={isSubmitting}
+                    >
                       {isSubmitting ? (
                         <span className="flex items-center">
                           <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -176,7 +184,7 @@ const Contact = () => {
                           Sending...
                         </span>
                       ) : (
-                        <span className="flex items-center">
+                        <span className="flex items-center justify-center">
                           <Send className="mr-2 h-4 w-4" /> Send Message
                         </span>
                       )}

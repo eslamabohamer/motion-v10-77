@@ -1,91 +1,40 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const Hero = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [enableParallax, setEnableParallax] = useState(true);
-
-  // Use useMemo to avoid recalculating on every render
-  const backgroundElements = useMemo(() => [
-    { top: '1/4', right: '1/4', width: 72, height: 72, color: 'primary', delay: 0 },
-    { bottom: '1/4', left: '1/3', width: 96, height: 96, color: 'secondary', delay: 0.1 },
-    { top: '1/3', left: '1/4', width: 64, height: 64, color: 'accent', delay: 0.2 },
-  ], []);
-
-  useEffect(() => {
-    // Detect if device is mobile or has reduced motion preference
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    // Disable parallax on mobile or if user prefers reduced motion
-    if (prefersReducedMotion || isMobile) {
-      setEnableParallax(false);
-    }
-
-    // Clean up any event listeners
-    return () => {
-      // No event listeners to clean up in this optimized version
-    };
-  }, []);
-
-  // Throttle mouse move event
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!enableParallax) return;
-    
-    // Throttle using requestAnimationFrame for better performance
-    window.requestAnimationFrame(() => {
-      const { clientX, clientY } = e;
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
-      
-      // Reduce movement factor for better performance
-      const moveX = (clientX - centerX) / 50;
-      const moveY = (clientY - centerY) / 50;
-      
-      setMousePosition({ x: moveX, y: moveY });
-    });
-  };
+  const isMobile = useIsMobile();
 
   const toggleShowreel = () => {
     setIsPlaying(!isPlaying);
   };
 
   return (
-    <section 
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16"
-      onMouseMove={enableParallax ? handleMouseMove : undefined}
-    >
-      {/* Background image */}
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16">
+      {/* Background image with dark overlay */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[#1A1F2C]/95" />
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
           style={{
-            backgroundImage: `url('/lovable-uploads/b6b10c11-daca-40d3-814f-996a2f82ea00.png')`, 
-            filter: "brightness(0.9)",
-            transform: enableParallax ? `translateX(${mousePosition.x * 0.05}px) translateY(${mousePosition.y * 0.05}px)` : 'none'
+            backgroundImage: `url('/lovable-uploads/ccccdb7a-516f-4cd4-b0d3-849242f1923e.png')`,
           }}
         />
-        <div className="absolute inset-0 bg-background/30 backdrop-blur-[2px]" />
       </div>
 
-      {/* Content with optimized animation */}
-      <div 
-        className="container mx-auto px-4 z-10 flex flex-col items-center text-center will-change-transform"
-        style={{
-          transform: enableParallax ? `translateX(${mousePosition.x * 0.5}px) translateY(${mousePosition.y * 0.5}px)` : 'none'
-        }}
-      >
+      {/* Content */}
+      <div className="container mx-auto px-4 z-10 flex flex-col items-center text-center">
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-gradient will-change-transform"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent"
         >
           Motion Graphics Artist
         </motion.h1>
@@ -93,7 +42,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-lg md:text-xl text-foreground max-w-2xl mb-10 bg-background/30 backdrop-blur-sm p-4 rounded-lg"
+          className="text-lg md:text-xl text-white/90 max-w-2xl mb-10 px-4"
         >
           Creating captivating visual experiences through the art of motion
         </motion.p>
@@ -101,19 +50,21 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-4 items-center"
+          className="flex flex-col sm:flex-row gap-4 items-center w-full justify-center"
         >
-          <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" size="lg" asChild>
-            <Link to="/portfolio">
+          <Button 
+            className="bg-[#4a6cf7] hover:bg-[#3a5ce7] text-white px-8 py-6 h-auto text-base sm:text-lg w-full sm:w-auto" 
+            asChild
+          >
+            <Link to="/portfolio" className="flex items-center justify-center">
               View Portfolio
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
           <Button 
             variant="outline" 
-            size="lg" 
             onClick={toggleShowreel}
-            className="backdrop-blur-sm bg-background/50 border-primary/20 shadow-lg"
+            className="border-[#4a6cf7] text-white hover:bg-[#4a6cf7]/10 px-8 py-6 h-auto text-base sm:text-lg w-full sm:w-auto"
           >
             <Play className="mr-2 h-4 w-4" />
             Watch Showreel
@@ -121,10 +72,10 @@ export const Hero = () => {
         </motion.div>
       </div>
 
-      {/* Optimized Video Modal - Only rendered when needed */}
+      {/* Video Modal */}
       {isPlaying && (
         <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={toggleShowreel}
         >
           <div 
