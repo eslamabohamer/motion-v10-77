@@ -66,7 +66,7 @@ export const Hero = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: "url('/lovable-uploads/b6b10c11-daca-40d3-814f-996a2f82ea00.png')", 
+            backgroundImage: `url('/lovable-uploads/b6b10c11-daca-40d3-814f-996a2f82ea00.png')`, 
             filter: "brightness(0.9)",
             transform: enableParallax ? `translateX(${mousePosition.x * 0.05}px) translateY(${mousePosition.y * 0.05}px)` : 'none'
           }}
