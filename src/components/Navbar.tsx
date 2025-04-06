@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, HomeIcon, Briefcase, Settings, User, Mail, ShieldIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +25,16 @@ export const Navbar = () => {
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
+  
+  const handleAdminArea = () => {
+    navigate('/admin/login');
+    closeMenu();
+  };
+
+  const handleGetInTouch = () => {
+    navigate('/contact');
+    closeMenu();
+  };
 
   return (
     <nav 
@@ -45,8 +56,20 @@ export const Navbar = () => {
           <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
           <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" />
           <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
-          <NavLink to="/admin/login" icon={<ShieldIcon className="h-4 w-4" />} label="Admin" />
-          <Button className="bg-primary hover:bg-primary/90">Get in Touch</Button>
+          <Button 
+            variant="ghost"
+            className="flex items-center space-x-1"
+            onClick={handleAdminArea}
+          >
+            <ShieldIcon className="h-4 w-4 mr-1" />
+            <span>Admin</span>
+          </Button>
+          <Button 
+            className="bg-primary hover:bg-primary/90"
+            onClick={handleGetInTouch}
+          >
+            Get in Touch
+          </Button>
         </div>
 
         {/* Mobile menu button */}
@@ -70,8 +93,19 @@ export const Navbar = () => {
           <MobileNavLink to="/services" label="Services" onClick={closeMenu} />
           <MobileNavLink to="/about" label="About" onClick={closeMenu} />
           <MobileNavLink to="/contact" label="Contact" onClick={closeMenu} />
-          <MobileNavLink to="/admin/login" label="Admin" onClick={closeMenu} />
-          <Button className="mt-4 bg-primary hover:bg-primary/90">Get in Touch</Button>
+          <Button 
+            variant="outline"
+            className="mt-2"
+            onClick={handleAdminArea}
+          >
+            <ShieldIcon className="h-4 w-4 mr-2" /> Admin Area
+          </Button>
+          <Button 
+            className="mt-4 bg-primary hover:bg-primary/90"
+            onClick={handleGetInTouch}
+          >
+            Get in Touch
+          </Button>
         </div>
       </div>
     </nav>

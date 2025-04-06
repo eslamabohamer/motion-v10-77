@@ -36,6 +36,8 @@ const App = () => (
           {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/projects" replace />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* Protected Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route path="projects" element={<AdminProjects />} />
             <Route path="messages" element={<AdminMessage />} />

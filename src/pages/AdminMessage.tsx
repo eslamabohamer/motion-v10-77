@@ -1,7 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,8 +84,7 @@ const AdminMessage = () => {
 
   return (
     <div className="min-h-screen">
-      <Navbar />
-      <main className="pt-24 pb-16">
+      <main className="pt-8 pb-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -188,7 +185,6 @@ const AdminMessage = () => {
           </motion.div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };
