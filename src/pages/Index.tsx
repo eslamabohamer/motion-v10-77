@@ -7,6 +7,7 @@ import { ServicesSection } from '@/components/Services';
 import { Testimonials } from '@/components/Testimonials';
 import { ContactCta } from '@/components/ContactCta';
 import { Footer } from '@/components/Footer';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
@@ -19,6 +20,17 @@ const Index = () => {
         const settings = JSON.parse(savedSettings);
         if (settings.animation && settings.animation.enable3DEffects !== undefined) {
           setAnimations3DEnabled(settings.animation.enable3DEffects);
+          
+          // Show toast notification about 3D effects status
+          if (!settings.animation.enable3DEffects) {
+            toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
+              duration: 5000,
+              action: {
+                label: 'Settings',
+                onClick: () => window.location.href = '/admin/settings'
+              }
+            });
+          }
         }
       } catch (error) {
         console.error('Error parsing saved settings:', error);
