@@ -8,26 +8,38 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 
-const AdminLogin = () => {
+const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      toast.error('Please enter both email and password');
+    if (!email || !password || !confirmPassword || !displayName) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
     
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          data: {
+            display_name: displayName,
+          },
+        },
       });
       
       if (error) {
@@ -35,11 +47,11 @@ const AdminLogin = () => {
         return;
       }
       
-      toast.success('Logged in successfully');
-      navigate('/admin/projects');
+      toast.success('Registration successful! Please check your email to confirm your account.');
+      navigate('/admin/login');
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Failed to login');
+      console.error('Registration error:', error);
+      toast.error('Failed to register');
     } finally {
       setIsLoading(false);
     }
@@ -55,13 +67,24 @@ const AdminLogin = () => {
       >
         <Card className="border shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Register</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access the admin area
+              Create an account to access the site
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="displayName" className="text-sm font-medium">Display Name</label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Your Name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">Email</label>
                 <Input
@@ -84,39 +107,45 @@ const AdminLogin = () => {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
             </form>
           </CardContent>
-          <CardFooter className="flex-col space-y-4">
+          <CardFooter className="flex-col space-y-2">
             <Button 
               className="w-full" 
-              onClick={handleLogin}
+              onClick={handleRegister}
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
                   <span className="animate-spin mr-2">⊚</span>
-                  Logging in...
+                  Registering...
                 </>
-              ) : 'Login'}
+              ) : 'Register'}
             </Button>
             <div className="text-center w-full">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-primary hover:underline">
-                  Register here
+              <p className="text-sm text-muted-foreground mt-2">
+                Already have an account?{' '}
+                <Link to="/admin/login" className="text-primary hover:underline">
+                  Login here
                 </Link>
               </p>
             </div>
           </CardFooter>
-          <div className="p-4 pt-0 text-center">
-            <a href="/" className="text-sm text-primary hover:underline">
-              Return to public site
-            </a>
-          </div>
         </Card>
       </motion.div>
     </div>
   );
 };
 
-export default AdminLogin;
+export default Register;

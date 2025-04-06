@@ -1,14 +1,12 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Grid3X3, PanelLeft, Settings, Tag, MessageSquare } from "lucide-react";
+import { ChevronLeft, Grid3X3, PanelLeft, Settings, Tag, MessageSquare, Users } from "lucide-react";
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { useSidebar, SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 
 interface DashboardProps {
   children?: React.ReactNode;
@@ -22,6 +20,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
     if (path.includes('/admin/messages')) return 'messages';
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/settings')) return 'settings';
+    if (path.includes('/admin/users')) return 'users';
     return 'projects';
   });
 
@@ -97,6 +96,16 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     <Link to="/admin/messages" onClick={() => setActiveTab('messages')}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       Messages
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'users' ? "secondary" : "ghost"} 
+                    className="justify-start" 
+                    asChild
+                  >
+                    <Link to="/admin/users" onClick={() => setActiveTab('users')}>
+                      <Users className="mr-2 h-4 w-4" />
+                      Users
                     </Link>
                   </Button>
                   <Button 

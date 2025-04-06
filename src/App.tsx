@@ -17,6 +17,8 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./components/AdminLayout";
 import AdminCategories from "./pages/AdminCategories";
 import AdminSettings from "./pages/AdminSettings";
+import AdminUsers from "./pages/AdminUsers";
+import Register from "./pages/Register";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +43,7 @@ const App = () => (
           <Route path="/services" element={<Services />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/projects" replace />} />
@@ -52,6 +55,7 @@ const App = () => (
             <Route path="messages" element={<AdminMessage />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="users" element={<AdminUsers />} />
           </Route>
           
           {/* Not Found Route */}
