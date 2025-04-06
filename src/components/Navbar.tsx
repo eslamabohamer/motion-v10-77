@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, HomeIcon, Briefcase, Settings, User, Mail } from 'lucide-react';
+import { Menu, X, HomeIcon, Briefcase, Settings, User, Mail, ShieldIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -45,6 +45,7 @@ export const Navbar = () => {
           <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
           <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" />
           <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
+          <NavLink to="/admin/login" icon={<ShieldIcon className="h-4 w-4" />} label="Admin" />
           <Button className="bg-primary hover:bg-primary/90">Get in Touch</Button>
         </div>
 
@@ -69,6 +70,7 @@ export const Navbar = () => {
           <MobileNavLink to="/services" label="Services" onClick={closeMenu} />
           <MobileNavLink to="/about" label="About" onClick={closeMenu} />
           <MobileNavLink to="/contact" label="Contact" onClick={closeMenu} />
+          <MobileNavLink to="/admin/login" label="Admin" onClick={closeMenu} />
           <Button className="mt-4 bg-primary hover:bg-primary/90">Get in Touch</Button>
         </div>
       </div>

@@ -1,7 +1,4 @@
-
 import { useState, useEffect } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,6 +48,15 @@ const AdminProjects = () => {
 
   useEffect(() => {
     fetchProjects();
+    
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        toast.error('Please log in to manage projects');
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   const fetchProjects = async () => {
@@ -69,7 +75,6 @@ const AdminProjects = () => {
       
       setProjects(data || []);
       
-      // Extract unique categories
       const uniqueCategories = [...new Set(data?.map((project: Project) => project.category) || [])];
       setCategories(uniqueCategories);
     } catch (error) {
@@ -127,8 +132,13 @@ const AdminProjects = () => {
     }
 
     try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        toast.error('You must be logged in to perform this action');
+        return;
+      }
+      
       if (editingProjectId) {
-        // Update existing project
         const { error } = await supabase
           .from('projects')
           .update(newProject)
@@ -136,16 +146,14 @@ const AdminProjects = () => {
           
         if (error) {
           console.error('Error updating project:', error);
-          toast.error('Failed to update project');
+          toast.error(`Failed to update project: ${error.message}`);
           return;
         }
         
         toast.success('Project updated successfully');
       } else {
-        // Create new project - Make sure all fields are properly set
         const projectData = {
           ...newProject,
-          // Ensure video_url is null if empty string
           video_url: newProject.video_url?.trim() || null
         };
         
@@ -173,6 +181,12 @@ const AdminProjects = () => {
 
   const deleteProject = async (id: string) => {
     try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        toast.error('You must be logged in to perform this action');
+        return;
+      }
+      
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -180,7 +194,7 @@ const AdminProjects = () => {
         
       if (error) {
         console.error('Error deleting project:', error);
-        toast.error('Failed to delete project');
+        toast.error(`Failed to delete project: ${error.message}`);
         return;
       }
       
@@ -199,15 +213,12 @@ const AdminProjects = () => {
   };
 
   const previewVideoUrl = (url: string) => {
-    // Handle YouTube URLs
     if (url.includes('youtube.com/watch?v=')) {
       return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
     }
-    // Handle YouTube short URLs
     if (url.includes('youtu.be/')) {
       return url.replace('youtu.be/', 'youtube.com/embed/');
     }
-    // Handle Vimeo URLs
     if (url.includes('vimeo.com/')) {
       return url.replace('vimeo.com/', 'player.vimeo.com/video/');
     }
@@ -216,7 +227,6 @@ const AdminProjects = () => {
 
   return (
     <div className="min-h-screen">
-      <Navbar />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
           <motion.div
@@ -281,7 +291,6 @@ const AdminProjects = () => {
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                             <SelectContent>
-                              {/* Fix duplicated keys by filtering categories */}
                               {categories.map(category => (
                                 <SelectItem key={`category-${category}`} value={category}>
                                   {category}
@@ -500,7 +509,6 @@ const AdminProjects = () => {
           </motion.div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

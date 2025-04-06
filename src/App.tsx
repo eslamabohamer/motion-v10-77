@@ -13,6 +13,8 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import AdminProjects from "./pages/AdminProjects";
 import AdminMessage from "./pages/AdminMessage";
+import AdminLogin from "./pages/AdminLogin";
+import AdminLayout from "./components/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -23,15 +25,23 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/portfolio/:id" element={<PortfolioDetail />} />
           <Route path="/services" element={<Services />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          
+          {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/projects" replace />} />
-          <Route path="/admin/projects" element={<AdminProjects />} />
-          <Route path="/admin/messages" element={<AdminMessage />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="projects" element={<AdminProjects />} />
+            <Route path="messages" element={<AdminMessage />} />
+          </Route>
+          
+          {/* Not Found Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
