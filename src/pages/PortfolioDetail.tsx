@@ -67,6 +67,26 @@ const PortfolioDetail = () => {
     fetchProject();
   }, [id]);
 
+  const formatVideoUrl = (url: string | null) => {
+    if (!url) return null;
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+    }
+    // Handle YouTube short URLs
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    // Handle Vimeo URLs
+    if (url.includes('vimeo.com/')) {
+      const vimeoId = url.split('vimeo.com/')[1];
+      return `https://player.vimeo.com/video/${vimeoId}`;
+    }
+    
+    return url;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen">
@@ -141,7 +161,7 @@ const PortfolioDetail = () => {
               {project.video_url ? (
                 <div className="aspect-video">
                   <iframe
-                    src={project.video_url}
+                    src={formatVideoUrl(project.video_url)}
                     className="w-full h-full"
                     title={project.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

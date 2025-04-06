@@ -7,9 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { PlusCircle, Image, Film, Save, Trash2 } from 'lucide-react';
+import { PlusCircle, Image, Film, Save, Trash2, Edit, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Project {
@@ -35,6 +46,8 @@ const AdminProjects = () => {
     featured: false
   });
   const [formOpen, setFormOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -80,6 +93,31 @@ const AdminProjects = () => {
     setNewProject(prev => ({ ...prev, featured: e.target.checked }));
   };
 
+  const resetForm = () => {
+    setNewProject({
+      title: '',
+      description: '',
+      category: '',
+      image_url: '',
+      video_url: '',
+      featured: false
+    });
+    setEditingProjectId(null);
+  };
+
+  const openEditForm = (project: Project) => {
+    setNewProject({
+      title: project.title,
+      description: project.description,
+      category: project.category,
+      image_url: project.image_url,
+      video_url: project.video_url || '',
+      featured: project.featured
+    });
+    setEditingProjectId(project.id);
+    setFormOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,39 +125,47 @@ const AdminProjects = () => {
       toast.error('Please fill in all required fields');
       return;
     }
-    
+
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([newProject])
-        .select();
+      if (editingProjectId) {
+        // Update existing project
+        const { error } = await supabase
+          .from('projects')
+          .update(newProject)
+          .eq('id', editingProjectId);
+          
+        if (error) {
+          console.error('Error updating project:', error);
+          toast.error('Failed to update project');
+          return;
+        }
         
-      if (error) {
-        console.error('Error adding project:', error);
-        toast.error('Failed to add project');
-        return;
+        toast.success('Project updated successfully');
+      } else {
+        // Create new project
+        const { error } = await supabase
+          .from('projects')
+          .insert([newProject]);
+          
+        if (error) {
+          console.error('Error adding project:', error);
+          toast.error('Failed to add project');
+          return;
+        }
+        
+        toast.success('Project added successfully');
       }
       
-      toast.success('Project added successfully');
       fetchProjects();
-      setNewProject({
-        title: '',
-        description: '',
-        category: '',
-        image_url: '',
-        video_url: '',
-        featured: false
-      });
+      resetForm();
       setFormOpen(false);
     } catch (error) {
-      console.error('Error adding project:', error);
-      toast.error('Failed to add project');
+      console.error('Error saving project:', error);
+      toast.error('Failed to save project');
     }
   };
 
   const deleteProject = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    
     try {
       const { error } = await supabase
         .from('projects')
@@ -134,10 +180,32 @@ const AdminProjects = () => {
       
       toast.success('Project deleted successfully');
       setProjects(projects.filter(project => project.id !== id));
+      setProjectToDelete(null);
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error('Failed to delete project');
     }
+  };
+
+  const cancelForm = () => {
+    resetForm();
+    setFormOpen(false);
+  };
+
+  const previewVideoUrl = (url: string) => {
+    // Handle YouTube URLs
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+    }
+    // Handle YouTube short URLs
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    // Handle Vimeo URLs
+    if (url.includes('vimeo.com/')) {
+      return url.replace('vimeo.com/', 'player.vimeo.com/video/');
+    }
+    return url;
   };
 
   return (
@@ -157,7 +225,10 @@ const AdminProjects = () => {
                 Manage your portfolio projects
               </p>
             </div>
-            <Button onClick={() => setFormOpen(!formOpen)} className="mt-4 md:mt-0">
+            <Button onClick={() => {
+              resetForm();
+              setFormOpen(!formOpen);
+            }} className="mt-4 md:mt-0">
               {formOpen ? "Cancel" : <><PlusCircle className="mr-2 h-4 w-4" /> Add New Project</>}
             </Button>
           </motion.div>
@@ -171,9 +242,11 @@ const AdminProjects = () => {
             >
               <Card className="shadow-xl border bg-card">
                 <CardHeader>
-                  <CardTitle>Add New Project</CardTitle>
+                  <CardTitle>{editingProjectId ? 'Edit Project' : 'Add New Project'}</CardTitle>
                   <CardDescription>
-                    Create a new portfolio project to showcase your work
+                    {editingProjectId 
+                      ? 'Update your existing portfolio project' 
+                      : 'Create a new portfolio project to showcase your work'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -255,8 +328,13 @@ const AdminProjects = () => {
                           name="video_url"
                           value={newProject.video_url}
                           onChange={handleInputChange}
-                          placeholder="https://youtube.com/embed/xyz"
+                          placeholder="https://youtube.com/watch?v=xyz or https://vimeo.com/123456789"
                         />
+                        {newProject.video_url && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Supported formats: YouTube and Vimeo URLs
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -273,9 +351,14 @@ const AdminProjects = () => {
                       </label>
                     </div>
                     
-                    <Button type="submit" className="w-full md:w-auto">
-                      <Save className="mr-2 h-4 w-4" /> Save Project
-                    </Button>
+                    <div className="flex space-x-2 pt-2">
+                      <Button type="submit" className="w-full md:w-auto">
+                        <Save className="mr-2 h-4 w-4" /> {editingProjectId ? 'Update Project' : 'Save Project'}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={cancelForm} className="w-full md:w-auto">
+                        Cancel
+                      </Button>
+                    </div>
                   </form>
                 </CardContent>
               </Card>
@@ -299,7 +382,10 @@ const AdminProjects = () => {
                 <p className="text-muted-foreground mb-4">
                   Add your first project to get started with your portfolio.
                 </p>
-                <Button onClick={() => setFormOpen(true)}>
+                <Button onClick={() => {
+                  resetForm();
+                  setFormOpen(true);
+                }}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add First Project
                 </Button>
               </div>
@@ -321,8 +407,13 @@ const AdminProjects = () => {
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
                         />
                         {project.featured && (
-                          <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 text-xs rounded">
+                          <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 text-xs rounded">
                             Featured
+                          </div>
+                        )}
+                        {project.video_url && (
+                          <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 text-xs rounded-full backdrop-blur-sm">
+                            <Film className="h-3 w-3" />
                           </div>
                         )}
                       </div>
@@ -339,15 +430,50 @@ const AdminProjects = () => {
                           {project.description}
                         </p>
                       </CardContent>
-                      <CardFooter className="pt-2">
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => deleteProject(project.id)}
-                          className="ml-auto"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <CardFooter className="pt-2 flex justify-between">
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => openEditForm(project)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" /> Edit
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            asChild
+                          >
+                            <a href={`/portfolio/${project.id}`} target="_blank" rel="noopener noreferrer">
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </a>
+                          </Button>
+                        </div>
+                        <AlertDialog open={projectToDelete === project.id} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => setProjectToDelete(project.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the project "{project.title}" from your portfolio.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteProject(project.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardFooter>
                     </Card>
                   </motion.div>
