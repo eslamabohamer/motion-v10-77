@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -17,62 +18,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from '@/integrations/supabase/client';
+import { getSettings, saveSettings, defaultSettings, SiteSettings } from '@/services/settingsService';
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [currentEmail, setCurrentEmail] = useState("");
+  const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   
-  // Mock settings for demo
-  const [settings, setSettings] = useState({
-    general: {
-      siteName: "Motion Graphics Artist",
-      siteDescription: "Creating captivating visual experiences through the art of motion",
-      contactEmail: "contact@example.com",
-      showreelUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      logoUrl: "",
-    },
-    performance: {
-      enableAnimations: true,
-      enableParallax: true,
-      lazyLoadImages: true,
-      enableImageOptimization: true,
-      cachingEnabled: true,
-    },
-    animation: {
-      enable3DEffects: true,
-      animationIntensity: 75,
-      scrollAnimations: true,
-      hoverAnimations: true,
-      loadingAnimations: true,
-      particleEffects: false,
-      backgroundColor: "#1A1F2C",
-      accentColor: "#4a6cf7",
-      secondaryAccentColor: "#9b87f5",
-      animationSpeed: "normal", // "slow", "normal", "fast"
-    },
-    seo: {
-      metaTitle: "Motion Graphics Artist Portfolio",
-      metaDescription: "Professional motion graphics and animation portfolio showcasing creative visual storytelling",
-      ogImageUrl: "https://example.com/og-image.jpg",
-      keywords: "motion graphics, animation, visual effects, 3D animation, explainer videos",
-    },
-    social: {
-      instagramUrl: "https://instagram.com",
-      youtubeUrl: "https://youtube.com",
-      linkedinUrl: "https://linkedin.com",
-      twitterUrl: "https://twitter.com",
-    },
-    about: {
-      ownerName: "Muhammad Ali",
-      ownerTitle: "Motion Graphics Artist & 3D Animator",
-      ownerBio: "I'm a passionate motion graphics artist with over 8 years of experience creating stunning visual animations for brands worldwide. My work focuses on bringing ideas to life through creative storytelling and cutting-edge animation techniques.",
-      ownerPhotoUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=400&auto=format&fit=crop",
-      ownerSkills: "Motion Graphics, 3D Animation, Visual Effects, After Effects, Cinema 4D, Blender",
-      ownerLocation: "Cairo, Egypt",
-    }
-  });
-
   // Email form schema
   const emailFormSchema = z.object({
     email: z
@@ -117,6 +70,35 @@ const AdminSettings = () => {
     },
   });
 
+  // Load settings from the database on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setIsLoading(true);
+        const loadedSettings = await getSettings();
+        setSettings(loadedSettings);
+        
+        // Also load from localStorage as a fallback if database fetch fails
+        const savedSettings = localStorage.getItem('siteSettings');
+        if (!loadedSettings && savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            setSettings(parsed);
+          } catch (error) {
+            console.error('Error parsing saved settings:', error);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading settings:", error);
+        toast.error("Failed to load settings");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSettings();
+  }, []);
+
   useEffect(() => {
     // Fetch current user email
     const getCurrentUser = async () => {
@@ -145,21 +127,33 @@ const AdminSettings = () => {
     }));
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     setIsLoading(true);
     
-    // Simulate saving to database
-    setTimeout(() => {
-      setIsLoading(false);
-      // Store settings in localStorage for demo purposes
-      localStorage.setItem('siteSettings', JSON.stringify(settings));
+    try {
+      const { success, error } = await saveSettings(settings);
+      
+      if (!success) {
+        throw new Error(error || 'Failed to save settings');
+      }
+      
       toast.success("Settings saved successfully");
-    }, 800);
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      toast.error(error.message || "Failed to save settings");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResetSettings = (section: keyof typeof settings) => {
+  const handleResetSettings = async (section: keyof typeof settings) => {
     if (window.confirm("Are you sure you want to reset these settings to their defaults?")) {
-      // This would reset to default values in a real application
+      // Reset the specific section to defaults
+      setSettings(prev => ({
+        ...prev,
+        [section]: { ...defaultSettings[section] }
+      }));
+      
       toast.info(`${section.charAt(0).toUpperCase() + section.slice(1)} settings reset to defaults`);
     }
   };
@@ -197,34 +191,6 @@ const AdminSettings = () => {
       setIsLoading(false);
     }
   };
-
-  // Load settings from localStorage on component mount
-  useEffect(() => {
-    const savedSettings = localStorage.getItem('siteSettings');
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(prev => {
-          // Merge the saved settings with the default settings
-          // This ensures new settings properties are still present with default values
-          return {
-            ...prev,
-            ...parsed,
-            animation: {
-              ...prev.animation,
-              ...(parsed.animation || {})
-            },
-            about: {
-              ...prev.about,
-              ...(parsed.about || {})
-            }
-          };
-        });
-      } catch (error) {
-        console.error('Error parsing saved settings:', error);
-      }
-    }
-  }, []);
 
   return (
     <div className="space-y-6">
