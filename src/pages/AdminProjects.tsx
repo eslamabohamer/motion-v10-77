@@ -142,14 +142,20 @@ const AdminProjects = () => {
         
         toast.success('Project updated successfully');
       } else {
-        // Create new project
+        // Create new project - Make sure all fields are properly set
+        const projectData = {
+          ...newProject,
+          // Ensure video_url is null if empty string
+          video_url: newProject.video_url?.trim() || null
+        };
+        
         const { error } = await supabase
           .from('projects')
-          .insert([newProject]);
+          .insert([projectData]);
           
         if (error) {
           console.error('Error adding project:', error);
-          toast.error('Failed to add project');
+          toast.error(`Failed to add project: ${error.message}`);
           return;
         }
         
@@ -275,16 +281,27 @@ const AdminProjects = () => {
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
                             <SelectContent>
+                              {/* Fix duplicated keys by filtering categories */}
                               {categories.map(category => (
-                                <SelectItem key={category} value={category}>
+                                <SelectItem key={`category-${category}`} value={category}>
                                   {category}
                                 </SelectItem>
                               ))}
-                              <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
-                              <SelectItem value="3D Animation">3D Animation</SelectItem>
-                              <SelectItem value="Typography">Typography</SelectItem>
-                              <SelectItem value="Corporate">Corporate</SelectItem>
-                              <SelectItem value="Explainer">Explainer</SelectItem>
+                              {!categories.includes('Motion Graphics') && (
+                                <SelectItem key="Motion Graphics" value="Motion Graphics">Motion Graphics</SelectItem>
+                              )}
+                              {!categories.includes('3D Animation') && (
+                                <SelectItem key="3D Animation" value="3D Animation">3D Animation</SelectItem>
+                              )}
+                              {!categories.includes('Typography') && (
+                                <SelectItem key="Typography" value="Typography">Typography</SelectItem>
+                              )}
+                              {!categories.includes('Corporate') && (
+                                <SelectItem key="Corporate" value="Corporate">Corporate</SelectItem>
+                              )}
+                              {!categories.includes('Explainer') && (
+                                <SelectItem key="Explainer" value="Explainer">Explainer</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
