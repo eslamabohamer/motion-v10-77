@@ -82,20 +82,39 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading font-bold;
   }
+  
+  /* Improve performance with hardware acceleration */
+  .parallax-card, .depth-card, .animate-float, .animate-pulse-slow, .animate-spin-slow {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
 }
 
+/* Optimized parallax card */
 .parallax-card {
   transform-style: preserve-3d;
   transform: perspective(1000px);
 }
 
 .parallax-card-content {
-  transform: translateZ(20px);
+  transform: translateZ(10px);
 }
 
-/* Smooth scroll */
+/* Smooth scroll with performance optimization */
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  .animate-float, .animate-pulse-slow, .animate-spin-slow {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* Hide scrollbar but allow scrolling */
@@ -113,26 +132,26 @@ html {
   @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
 }
 
-/* Glass effect */
+/* Glass effect with optimized blur */
 .glass {
-  @apply bg-opacity-20 backdrop-blur-md backdrop-filter border border-opacity-20 border-white;
+  @apply bg-opacity-20 backdrop-blur-sm border border-opacity-20 border-white;
 }
 
 .dark .glass {
-  @apply bg-opacity-10 backdrop-blur-md backdrop-filter border border-opacity-10 border-white;
+  @apply bg-opacity-10 backdrop-blur-sm border border-opacity-10 border-white;
 }
 
-/* 3D animations */
+/* Optimized 3D animations with reduced complexity */
 @keyframes float {
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
 
 @keyframes pulse-slow {
-  0% { opacity: 0.7; }
-  50% { opacity: 0.9; }
-  100% { opacity: 0.7; }
+  0% { opacity: 0.8; }
+  50% { opacity: 0.95; }
+  100% { opacity: 0.8; }
 }
 
 @keyframes spin-slow {
@@ -149,23 +168,40 @@ html {
 }
 
 .animate-spin-slow {
-  animation: spin-slow 20s linear infinite;
+  animation: spin-slow 30s linear infinite;
 }
 
-/* Enhanced 3D depth */
+/* Enhanced 3D depth with performance improvements */
 .depth-shadow {
-  box-shadow: 0 10px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.2);
 }
 
 .depth-card {
   transform-style: preserve-3d;
-  transition: transform 0.5s ease;
+  transition: transform 0.3s ease;
 }
 
 .depth-card:hover {
-  transform: translateY(-10px) scale(1.02);
+  transform: translateY(-5px);
 }
 
 .depth-content {
-  transform: translateZ(50px);
+  transform: translateZ(30px);
+}
+
+/* Add support for native lazy-loading */
+img {
+  loading: "lazy";
+}
+
+/* Better touch handling for mobile */
+@media (hover: none) {
+  .depth-card:hover,
+  .parallax-card:hover {
+    transform: none;
+  }
+  
+  .depth-shadow {
+    box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+  }
 }

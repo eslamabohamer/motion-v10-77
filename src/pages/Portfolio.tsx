@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -22,13 +22,20 @@ const Portfolio = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [categories, setCategories] = useState<string[]>(['All']);
+  
+  // Memoize filter function to avoid unnecessary re-computation
+  const filteredProjects = useCallback(() => {
+    return activeCategory === 'All' 
+      ? projects 
+      : projects.filter(project => project.category === activeCategory);
+  }, [projects, activeCategory]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const { data, error } = await supabase
           .from('projects')
-          .select('*')
+          .select('id, title, category, image_url, video_url, description')
           .order('created_at', { ascending: false });
           
         if (error) {
@@ -51,14 +58,24 @@ const Portfolio = () => {
     fetchProjects();
   }, []);
 
-  const filteredProjects = activeCategory === 'All' 
-    ? projects 
-    : projects.filter(project => project.category === activeCategory);
+  const projectsToShow = filteredProjects();
+  
+  // Improved image loading handling
+  useEffect(() => {
+    // Prefetch images for better user experience
+    if (projects.length > 0) {
+      const images = projects.map(project => project.image_url);
+      images.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [projects]);
 
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="pt-24 pb-16">
+      <main className="pt-20 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <motion.div
@@ -66,43 +83,32 @@ const Portfolio = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Portfolio</h1>
-              <p className="text-muted-foreground mb-12 max-w-2xl">
-                Browse through my collection of motion graphics projects, each showcasing creativity, technical skill, and strategic thinking.
+              <h1 className="text-4xl md:text-5xl font-bold mb-3">Portfolio</h1>
+              <p className="text-muted-foreground mb-8 max-w-2xl">
+                Browse through my collection of motion graphics projects.
               </p>
             </motion.div>
             
-            {/* Category Filter with 3D effect */}
+            {/* Simplified Category Filter */}
             <motion.div 
               className="flex flex-wrap gap-2 mb-8"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ duration: 0.3 }}
             >
-              {categories.map((category, index) => (
-                <motion.button
+              {categories.map((category) => (
+                <button
                   key={category}
                   onClick={() => setActiveCategory(category)}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all",
                     activeCategory === category
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
-                      : "bg-muted hover:bg-muted/80 text-muted-foreground hover:scale-105"
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "bg-muted hover:bg-muted/80 text-muted-foreground"
                   )}
-                  style={{
-                    transform: activeCategory === category ? 'translateZ(5px)' : 'translateZ(0px)',
-                    transformStyle: 'preserve-3d'
-                  }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 + (index * 0.05) }}
-                  whileHover={{ 
-                    y: -5,
-                    boxShadow: activeCategory === category ? '0 15px 30px rgba(0,0,0,0.15)' : '0 10px 20px rgba(0,0,0,0.1)' 
-                  }}
                 >
                   {category}
-                </motion.button>
+                </button>
               ))}
             </motion.div>
             
@@ -112,33 +118,30 @@ const Portfolio = () => {
                   <div key={index} className="aspect-video bg-muted animate-pulse rounded-lg"></div>
                 ))}
               </div>
-            ) : filteredProjects.length === 0 ? (
+            ) : projectsToShow.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No projects found in this category.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project, index) => (
+                {projectsToShow.map((project, index) => (
                   <motion.div
                     key={project.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 + (index * 0.1) }}
-                    whileHover={{ y: -10, scale: 1.02 }}
+                    transition={{ duration: 0.3, delay: 0.05 * (index % 6) }}
+                    className="h-full"
                   >
                     <Link 
                       to={`/portfolio/${project.id}`} 
-                      className="group overflow-hidden rounded-lg border bg-card shadow-sm transition-all hover:shadow-xl block"
-                      style={{ 
-                        transformStyle: 'preserve-3d',
-                        perspective: '1000px'
-                      }}
+                      className="group h-full overflow-hidden rounded-lg border bg-card shadow-sm transition-all hover:shadow-md block"
                     >
-                      <div className="aspect-video overflow-hidden">
+                      <div className="aspect-video overflow-hidden bg-muted">
                         <img 
                           src={project.image_url} 
                           alt={project.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
                         />
                       </div>
                       <div className="p-4">

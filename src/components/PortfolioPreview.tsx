@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ export const PortfolioPreview = () => {
       try {
         const { data, error } = await supabase
           .from('projects')
-          .select('*')
+          .select('id, title, category, image_url, video_url, description')
           .order('created_at', { ascending: false })
           .limit(4);
           
@@ -46,18 +46,18 @@ export const PortfolioPreview = () => {
   }, []);
 
   return (
-    <section className="py-24 bg-background">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12"
+          className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12"
         >
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Work</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">Featured Work</h2>
             <p className="text-muted-foreground max-w-xl">
-              Explore a selection of my recent motion graphics projects, showcasing versatility across different styles and industries.
+              Explore a selection of my recent motion graphics projects.
             </p>
           </div>
           <Button variant="ghost" size="sm" asChild className="mt-4 md:mt-0">
@@ -101,21 +101,22 @@ const PortfolioCard = ({ item }: PortfolioCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+  
+  // Use memoized function for better performance
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current || !isHovered) return;
     
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
     
     setPosition({ x, y });
-  };
+  }, [isHovered]);
 
   return (
     <div 
       ref={cardRef}
-      className="group relative overflow-hidden rounded-lg parallax-card h-[300px] transition-all duration-300 shadow-lg hover:shadow-xl"
+      className="group relative overflow-hidden rounded-lg h-[300px] transition-all duration-300 shadow-lg hover:shadow-xl"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -123,52 +124,34 @@ const PortfolioCard = ({ item }: PortfolioCardProps) => {
       }}
       onMouseMove={handleMouseMove}
       style={{
-        transform: isHovered ? `perspective(1000px) rotateX(${position.y * 8}deg) rotateY(${-position.x * 8}deg) scale(1.02)` : 'perspective(1000px) rotateX(0) rotateY(0)',
-        transition: 'transform 0.3s ease'
+        transform: isHovered ? `perspective(1000px) rotateX(${position.y * 5}deg) rotateY(${-position.x * 5}deg)` : 'perspective(1000px)',
+        transition: 'transform 0.2s ease'
       }}
     >
-      {/* Background Image with enhanced 3D movement */}
+      {/* Background Image with optimized 3D movement */}
       <div 
         className="absolute inset-0 bg-cover bg-center transition-transform duration-300 ease-out"
         style={{ 
           backgroundImage: `url(${item.image_url})`,
-          transform: isHovered ? `translateX(${position.x * -15}px) translateY(${position.y * -15}px) scale(1.1)` : 'translateX(0) translateY(0) scale(1)'
+          transform: isHovered ? `translateX(${position.x * -10}px) translateY(${position.y * -10}px) scale(1.05)` : 'scale(1)'
         }}
       />
       
-      {/* Enhanced 3D overlay with depth */}
+      {/* Simplified overlay */}
       <div 
         className={cn(
           "absolute inset-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent transition-opacity duration-300",
-          isHovered ? "opacity-90" : "opacity-75"
+          isHovered ? "opacity-90" : "opacity-70"
         )}
-        style={{
-          transform: isHovered ? `translateZ(-10px)` : 'translateZ(0)',
-        }}
       />
       
-      {/* Content with enhanced 3D pop effect */}
-      <div className="absolute inset-0 p-6 flex flex-col justify-end parallax-card-content">
-        <div 
-          className="transform transition-transform duration-300" 
-          style={{ 
-            transform: isHovered ? 'translateZ(40px)' : 'translateZ(0)',
-            transformStyle: 'preserve-3d'
-          }}
-        >
-          <span 
-            className="inline-block text-xs font-medium text-primary mb-2 bg-primary/10 px-2 py-1 rounded backdrop-blur-sm"
-            style={{ transform: isHovered ? 'translateZ(10px)' : 'translateZ(0)' }}
-          >
+      {/* Content with simplified 3D effect */}
+      <div className="absolute inset-0 p-6 flex flex-col justify-end">
+        <div className="transform transition-transform duration-300">
+          <span className="inline-block text-xs font-medium text-primary mb-2 bg-primary/10 px-2 py-1 rounded">
             {item.category}
           </span>
-          <h3 
-            className="text-xl font-bold mb-2 group-hover:text-gradient transition-colors"
-            style={{ 
-              transform: isHovered ? 'translateZ(20px)' : 'translateZ(0)',
-              textShadow: isHovered ? '0 10px 20px rgba(0,0,0,0.2)' : 'none'
-            }}
-          >
+          <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
             {item.title}
           </h3>
           <p 
@@ -176,7 +159,6 @@ const PortfolioCard = ({ item }: PortfolioCardProps) => {
               "text-sm text-muted-foreground mb-4 line-clamp-2 transition-all duration-300",
               isHovered ? "opacity-100" : "opacity-0"
             )}
-            style={{ transform: isHovered ? 'translateZ(15px)' : 'translateZ(0)' }}
           >
             {item.description}
           </p>
@@ -186,7 +168,6 @@ const PortfolioCard = ({ item }: PortfolioCardProps) => {
               "inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-all duration-300",
               isHovered ? "opacity-100" : "opacity-0"
             )}
-            style={{ transform: isHovered ? 'translateZ(25px)' : 'translateZ(0)' }}
           >
             View Project <ExternalLink className="ml-1 h-3 w-3" />
           </Link>

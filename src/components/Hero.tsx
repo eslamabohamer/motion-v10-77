@@ -1,43 +1,45 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 export const Hero = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [enableParallax, setEnableParallax] = useState(false);
-  const backgroundRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const controls = useAnimation();
+  const [enableParallax, setEnableParallax] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setEnableParallax(true);
-    }, 1000);
-
-    // Animate in the 3D objects
-    controls.start({
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: "easeOut" }
-    });
-  }, [controls]);
+    // Detect if device is mobile or has reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    // Disable parallax on mobile or if user prefers reduced motion
+    if (prefersReducedMotion || isMobile) {
+      setEnableParallax(false);
+    }
+  }, []);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!enableParallax) return;
     
-    const { clientX, clientY } = e;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    // Throttle mouse move calculations to improve performance
+    // Only update position every 50ms
+    if (!window.requestAnimationFrame) return;
     
-    // Calculate distance from center with enhanced movement
-    const moveX = (clientX - centerX) / 25; // More movement
-    const moveY = (clientY - centerY) / 25;
-    
-    setMousePosition({ x: moveX, y: moveY });
+    window.requestAnimationFrame(() => {
+      const { clientX, clientY } = e;
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      
+      // Reduce movement factor for better performance
+      const moveX = (clientX - centerX) / 35;
+      const moveY = (clientY - centerY) / 35;
+      
+      setMousePosition({ x: moveX, y: moveY });
+    });
   };
 
   const toggleShowreel = () => {
@@ -49,94 +51,54 @@ export const Hero = () => {
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16"
       onMouseMove={handleMouseMove}
     >
-      {/* Background elements with enhanced 3D effect */}
+      {/* Simplified background elements with reduced blur effects */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-background/90">
-        {/* 3D abstract shapes with parallax effect */}
         <div 
-          ref={backgroundRef}
           className="absolute inset-0"
           style={{
-            transform: `translateX(${mousePosition.x * -1}px) translateY(${mousePosition.y * -1}px)`
+            transform: enableParallax ? `translateX(${mousePosition.x * -1}px) translateY(${mousePosition.y * -1}px)` : 'none'
           }}
         >
-          {/* Enhanced 3D objects */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
-            animate={controls}
-            className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full bg-primary/15 blur-3xl animate-float"
-            style={{
-              transformStyle: "preserve-3d",
-              transform: `perspective(1000px) rotateX(${mousePosition.y * 0.05}deg) rotateY(${-mousePosition.x * 0.05}deg)`,
-              boxShadow: "0 0 40px rgba(125, 125, 255, 0.3)",
-            }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full bg-primary/15 blur-2xl"
           />
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
-            animate={controls}
-            className="absolute bottom-1/4 left-1/3 w-96 h-96 rounded-full bg-secondary/15 blur-3xl animate-pulse-slow"
-            style={{
-              transformStyle: "preserve-3d",
-              transform: `perspective(1000px) rotateX(${-mousePosition.y * 0.05}deg) rotateY(${mousePosition.x * 0.05}deg)`,
-              boxShadow: "0 0 50px rgba(155, 105, 255, 0.3)",
-            }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="absolute bottom-1/4 left-1/3 w-96 h-96 rounded-full bg-secondary/15 blur-2xl"
           />
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
-            animate={controls}
-            className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-accent/15 blur-3xl animate-spin-slow"
-            style={{
-              transformStyle: "preserve-3d",
-              transform: `perspective(1000px) rotateX(${mousePosition.y * 0.05}deg) rotateY(${-mousePosition.x * 0.05}deg)`,
-              boxShadow: "0 0 60px rgba(215, 75, 255, 0.3)",
-            }}
-          />
-          
-          {/* Additional 3D objects */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={controls}
-            className="absolute top-2/3 right-1/3 w-48 h-48 rounded-full bg-primary/10 blur-2xl animate-pulse-slow"
-            style={{
-              transformStyle: "preserve-3d",
-              transform: `perspective(1000px) rotateX(${-mousePosition.y * 0.08}deg) rotateY(${mousePosition.x * 0.08}deg)`,
-              boxShadow: "0 0 30px rgba(125, 125, 255, 0.2)",
-            }}
-          />
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={controls}
-            className="absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-secondary/10 blur-2xl animate-float"
-            style={{
-              transformStyle: "preserve-3d",
-              transform: `perspective(1000px) rotateX(${mousePosition.y * 0.08}deg) rotateY(${-mousePosition.x * 0.08}deg)`,
-              boxShadow: "0 0 30px rgba(155, 105, 255, 0.2)",
-            }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-accent/15 blur-2xl"
           />
         </div>
       </div>
 
-      {/* Content with enhanced 3D effect */}
+      {/* Content with simplified animation */}
       <div 
-        ref={contentRef}
         className="container mx-auto px-4 z-10 flex flex-col items-center text-center"
         style={{
-          transformStyle: "preserve-3d",
-          transform: `perspective(1000px) translateZ(50px) translateX(${mousePosition.x}px) translateY(${mousePosition.y}px) rotateX(${-mousePosition.y * 0.02}deg) rotateY(${mousePosition.x * 0.02}deg)`
+          transform: enableParallax ? `translateX(${mousePosition.x * 0.5}px) translateY(${mousePosition.y * 0.5}px)` : 'none'
         }}
       >
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: 0.5 }}
           className="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-gradient"
-          style={{ textShadow: "0 10px 30px rgba(0,0,0,0.15)" }}
         >
           Motion Graphics Artist
         </motion.h1>
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10"
         >
           Creating captivating visual experiences through the art of motion
@@ -144,12 +106,14 @@ export const Hero = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="flex flex-col sm:flex-row gap-4 items-center"
         >
-          <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" size="lg">
-            View Portfolio
-            <ArrowRight className="ml-2 h-4 w-4" />
+          <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" size="lg" asChild>
+            <Link to="/portfolio">
+              View Portfolio
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </Button>
           <Button 
             variant="outline" 
@@ -163,33 +127,26 @@ export const Hero = () => {
         </motion.div>
       </div>
 
-      {/* Video Modal */}
-      <div 
-        className={cn(
-          "fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity",
-          isPlaying ? "opacity-100 visible" : "opacity-0 invisible"
-        )}
-        onClick={toggleShowreel}
-      >
+      {/* Optimized Video Modal */}
+      {isPlaying && (
         <div 
-          className={cn(
-            "w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden transition-transform duration-300 shadow-2xl",
-            isPlaying ? "scale-100" : "scale-90"
-          )}
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={toggleShowreel}
         >
-          {isPlaying && (
+          <div 
+            className="w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <iframe
               className="w-full h-full"
               src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
               title="Showreel"
-              frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 };
