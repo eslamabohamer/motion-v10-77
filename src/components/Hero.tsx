@@ -44,7 +44,7 @@ export const Hero = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-lg md:text-xl text-white/90 max-w-2xl mb-10 px-4"
         >
-          Creating captivating visual experiences through the art of motion
+          With 7 years of experience in motion design, I've mastered the art of creating compelling visual stories through dynamic branding and captivating animations. My expertise spans storytelling, motion branding, animation filmmaking, illustration, visual design, and creative coding.
         </motion.p>
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
