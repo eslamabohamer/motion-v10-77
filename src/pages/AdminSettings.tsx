@@ -12,13 +12,15 @@ import { Save, RefreshCcw, Upload } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   
-  // Mock settings for demo
-  const [settings, setSettings] = useState({
+  // Default settings
+  const defaultSettings = {
     general: {
       siteName: "Motion Graphics Artist",
       siteDescription: "Creating captivating visual experiences through the art of motion",
@@ -65,7 +67,87 @@ const AdminSettings = () => {
       ownerSkills: "Motion Graphics, 3D Animation, Visual Effects, After Effects, Cinema 4D, Blender",
       ownerLocation: "Cairo, Egypt",
     }
+  };
+
+  // Fetch settings from database
+  const { data: dbSettings, isLoading: isLoadingSettings, refetch: refetchSettings } = useQuery({
+    queryKey: ['siteSettings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Error fetching settings:', error);
+        throw error;
+      }
+      
+      return data?.length > 0 ? data[0].settings : null;
+    },
+    retry: 1
   });
+
+  // Save settings mutation
+  const { mutate: saveSettingsMutation } = useMutation({
+    mutationFn: async (settingsData: any) => {
+      const { data: existingData, error: fetchError } = await supabase
+        .from('site_settings')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (existingData && existingData.length > 0) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('site_settings')
+          .update({ settings: settingsData })
+          .eq('id', existingData[0].id);
+          
+        if (error) throw error;
+        
+        return existingData[0].id;
+      } else {
+        // Insert new settings
+        const { data, error } = await supabase
+          .from('site_settings')
+          .insert({ settings: settingsData })
+          .select('id');
+          
+        if (error) throw error;
+        
+        return data?.[0]?.id;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Settings saved successfully");
+      refetchSettings();
+      setIsLoading(false);
+    },
+    onError: (error) => {
+      console.error('Error saving settings:', error);
+      toast.error("Failed to save settings");
+      setIsLoading(false);
+    }
+  });
+
+  // Initialize settings state from database or defaults
+  const [settings, setSettings] = useState(defaultSettings);
+
+  // Update settings when DB data loads
+  useEffect(() => {
+    if (dbSettings) {
+      setSettings(prevSettings => ({
+        ...prevSettings,
+        ...dbSettings
+      }));
+    }
+  }, [dbSettings]);
 
   const handleSettingChange = (section: keyof typeof settings, key: string, value: any) => {
     setSettings(prev => ({
@@ -79,50 +161,18 @@ const AdminSettings = () => {
 
   const handleSaveSettings = () => {
     setIsLoading(true);
-    
-    // Simulate saving to database
-    setTimeout(() => {
-      setIsLoading(false);
-      // Store settings in localStorage for demo purposes
-      localStorage.setItem('siteSettings', JSON.stringify(settings));
-      toast.success("Settings saved successfully");
-    }, 800);
+    saveSettingsMutation(settings);
   };
 
   const handleResetSettings = (section: keyof typeof settings) => {
     if (window.confirm("Are you sure you want to reset these settings to their defaults?")) {
-      // This would reset to default values in a real application
+      setSettings(prev => ({
+        ...prev,
+        [section]: defaultSettings[section]
+      }));
       toast.info(`${section.charAt(0).toUpperCase() + section.slice(1)} settings reset to defaults`);
     }
   };
-
-  // Load settings from localStorage on component mount
-  useEffect(() => {
-    const savedSettings = localStorage.getItem('siteSettings');
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(prev => {
-          // Merge the saved settings with the default settings
-          // This ensures new settings properties are still present with default values
-          return {
-            ...prev,
-            ...parsed,
-            animation: {
-              ...prev.animation,
-              ...(parsed.animation || {})
-            },
-            about: {
-              ...prev.about,
-              ...(parsed.about || {})
-            }
-          };
-        });
-      } catch (error) {
-        console.error('Error parsing saved settings:', error);
-      }
-    }
-  }, []);
 
   return (
     <div className="space-y-6">
