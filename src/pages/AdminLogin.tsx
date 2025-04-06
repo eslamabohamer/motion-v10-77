@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { verifyAdminCredentials, createInitialAdmin } from '@/services/adminService';
+import { verifyAdminCredentials, createInitialAdmin, resetAdminPassword } from '@/services/adminService';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminLogin = () => {
@@ -14,6 +14,9 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -87,6 +90,53 @@ const AdminLogin = () => {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      toast.error('Please enter your admin email');
+      return;
+    }
+
+    if (!newPassword || !confirmPassword) {
+      toast.error('Please enter and confirm your new password');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { success, error } = await resetAdminPassword(email, newPassword);
+      
+      if (!success) {
+        toast.error(error || 'Failed to reset password');
+        setIsLoading(false);
+        return;
+      }
+      
+      toast.success('Password reset successfully. You can now log in with your new password.');
+      setIsResettingPassword(false);
+      setPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error('Failed to reset password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <motion.div
@@ -97,58 +147,127 @@ const AdminLogin = () => {
       >
         <Card className="border shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              {isResettingPassword ? 'Reset Admin Password' : 'Admin Login'}
+            </CardTitle>
             <CardDescription className="text-center">
-              {isFirstLogin 
-                ? 'Set up your admin account with the default credentials'
-                : 'Enter your credentials to access the admin area'}
+              {isResettingPassword 
+                ? 'Enter your admin email and set a new password'
+                : isFirstLogin 
+                  ? 'Set up your admin account with the default credentials'
+                  : 'Enter your credentials to access the admin area'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">Password</label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </form>
+            {!isResettingPassword ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium">Password</label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">⊚</span>
+                      {isFirstLogin ? 'Creating Account...' : 'Logging in...'}
+                    </>
+                  ) : (isFirstLogin ? 'Create Admin Account' : 'Login')}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="reset-email" className="text-sm font-medium">Admin Email</label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="new-password" className="text-sm font-medium">New Password</label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="confirm-password" className="text-sm font-medium">Confirm New Password</label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">⊚</span>
+                      Resetting Password...
+                    </>
+                  ) : 'Reset Password'}
+                </Button>
+              </form>
+            )}
           </CardContent>
-          <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className="animate-spin mr-2">⊚</span>
-                  {isFirstLogin ? 'Creating Account...' : 'Logging in...'}
-                </>
-              ) : (isFirstLogin ? 'Create Admin Account' : 'Login')}
-            </Button>
-          </CardFooter>
-          <div className="p-4 pt-0 text-center">
-            <a href="/" className="text-sm text-primary hover:underline">
+          <CardFooter className="flex flex-col space-y-4">
+            {!isResettingPassword ? (
+              <Button 
+                variant="ghost" 
+                className="w-full"
+                onClick={() => setIsResettingPassword(true)}
+              >
+                Forgot Password?
+              </Button>
+            ) : (
+              <Button 
+                variant="ghost" 
+                className="w-full"
+                onClick={() => setIsResettingPassword(false)}
+              >
+                Back to Login
+              </Button>
+            )}
+            <a href="/" className="text-sm text-center text-primary hover:underline">
               Return to public site
             </a>
-          </div>
+          </CardFooter>
         </Card>
       </motion.div>
     </div>

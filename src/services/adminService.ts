@@ -101,6 +101,54 @@ export const updateAdminPassword = async (
   }
 };
 
+export const resetAdminPassword = async (
+  email: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Verify admin email exists
+    const { data, error } = await supabase
+      .from('admin_credentials')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error || !data) {
+      console.error('Admin not found with email:', email);
+      return { 
+        success: false, 
+        error: 'No admin account found with this email' 
+      };
+    }
+    
+    const admin = data as AdminCredentials;
+    
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+    
+    // Update password in the database
+    const { error: updateError } = await supabase
+      .from('admin_credentials')
+      .update({ 
+        password_hash: newPasswordHash,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', admin.id);
+    
+    if (updateError) throw updateError;
+    
+    console.log('Password reset successful for admin:', email);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error resetting admin password:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to reset password'
+    };
+  }
+};
+
 export const verifyAdminCredentials = async (email: string, password: string): Promise<boolean> => {
   try {
     console.log('Verifying admin credentials for email:', email);
