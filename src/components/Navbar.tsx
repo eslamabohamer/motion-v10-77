@@ -57,11 +57,11 @@ export const Navbar = () => {
   return (
     <nav 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-2 px-3",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-16",
         scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]"
       )}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="h-full max-w-7xl mx-auto flex items-center justify-between px-3">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           {logoUrl ? (

@@ -52,7 +52,7 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative w-full pt-16 pb-12 md:pt-24 md:pb-16 overflow-hidden">
+    <section className="relative w-full pt-16 overflow-hidden" style={{ height: 'calc(100vh - 64px)', maxHeight: '800px' }}>
       {/* Background with gradient overlay */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[#1A1F2C] to-[#262b38]" />
@@ -91,7 +91,7 @@ export const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 z-10 flex flex-col items-center text-center">
+      <div className="container relative mx-auto px-4 z-10 flex flex-col h-full justify-center items-center text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,10 +132,10 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 items-center w-full justify-center"
+          className="flex flex-col sm:flex-row gap-3 items-center justify-center"
         >
           <Button 
-            className="bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] hover:opacity-90 text-white px-4 py-1.5 h-auto text-sm w-full sm:w-auto rounded-full shadow-md"
+            className="bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] hover:opacity-90 text-white px-4 py-1.5 h-auto text-sm sm:w-auto rounded-full shadow-md"
             asChild
           >
             <Link to="/portfolio" className="flex items-center justify-center">
@@ -146,7 +146,7 @@ export const Hero = () => {
           <Button 
             variant="outline" 
             onClick={toggleShowreel}
-            className="border-[#9b87f5] text-white hover:bg-[#9b87f5]/10 px-4 py-1.5 h-auto text-sm w-full sm:w-auto rounded-full"
+            className="border-[#9b87f5] text-white hover:bg-[#9b87f5]/10 px-4 py-1.5 h-auto text-sm sm:w-auto rounded-full"
           >
             <Play className="mr-2 h-3.5 w-3.5 text-[#9b87f5]" />
             Watch Showreel

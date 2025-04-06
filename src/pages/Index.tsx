@@ -27,11 +27,11 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#1A1F2C] text-white">
+    <div className="flex flex-col min-h-screen overflow-hidden">
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow flex flex-col">
         <Hero />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+        <div className="max-w-full w-full mx-auto">
           <PortfolioPreview />
           <ServicesSection />
           <Testimonials />
