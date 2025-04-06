@@ -8,14 +8,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, RefreshCcw, Upload } from 'lucide-react';
+import { Save, RefreshCcw, Upload, ShieldAlert, KeyIcon, User, Lock, Mail } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
+  const [currentEmail, setCurrentEmail] = useState("");
   
   // Mock settings for demo
   const [settings, setSettings] = useState({
@@ -67,6 +73,68 @@ const AdminSettings = () => {
     }
   });
 
+  // Email form schema
+  const emailFormSchema = z.object({
+    email: z
+      .string()
+      .email("Please enter a valid email address")
+      .min(5, "Email must be at least 5 characters")
+      .max(100, "Email must not exceed 100 characters"),
+  });
+
+  // Password form schema
+  const passwordFormSchema = z.object({
+    currentPassword: z
+      .string()
+      .min(6, "Current password must be at least 6 characters"),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(100, "Password must not exceed 100 characters"),
+    confirmPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters"),
+  }).refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+  // Email form
+  const emailForm = useForm<z.infer<typeof emailFormSchema>>({
+    resolver: zodResolver(emailFormSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  // Password form
+  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  useEffect(() => {
+    // Fetch current user email
+    const getCurrentUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (user) {
+          setCurrentEmail(user.email || "");
+          emailForm.setValue("email", user.email || "");
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+    
+    getCurrentUser();
+  }, []);
+
   const handleSettingChange = (section: keyof typeof settings, key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
@@ -93,6 +161,40 @@ const AdminSettings = () => {
     if (window.confirm("Are you sure you want to reset these settings to their defaults?")) {
       // This would reset to default values in a real application
       toast.info(`${section.charAt(0).toUpperCase() + section.slice(1)} settings reset to defaults`);
+    }
+  };
+
+  const onEmailSubmit = async (values: z.infer<typeof emailFormSchema>) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.updateUser({ email: values.email });
+      
+      if (error) throw error;
+      
+      toast.success("Email update request sent. Please check your new email inbox for confirmation.");
+      setCurrentEmail(values.email);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update email");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onPasswordSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.updateUser({ 
+        password: values.newPassword 
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Password updated successfully");
+      passwordForm.reset();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,6 +249,10 @@ const AdminSettings = () => {
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="social">Social Media</TabsTrigger>
           <TabsTrigger value="about">About Me</TabsTrigger>
+          <TabsTrigger value="account">
+            <ShieldAlert className="h-4 w-4 mr-2" />
+            Account
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="general">
@@ -821,6 +927,164 @@ const AdminSettings = () => {
                 </Button>
               </CardFooter>
             </Card>
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="account">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="grid gap-6">
+              {/* Email Update Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Mail className="h-5 w-5 mr-2 text-primary" />
+                    Update Email Address
+                  </CardTitle>
+                  <CardDescription>
+                    Change the email address associated with your admin account
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...emailForm}>
+                    <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                      <FormField
+                        control={emailForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Address</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder={currentEmail || "your@email.com"} 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Current email: {currentEmail}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button 
+                        type="submit" 
+                        disabled={isLoading || emailForm.getValues("email") === currentEmail}
+                        className="w-full"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Update Email
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+
+              {/* Password Update Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Lock className="h-5 w-5 mr-2 text-primary" />
+                    Change Password
+                  </CardTitle>
+                  <CardDescription>
+                    Update your admin account password
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                      <FormField
+                        control={passwordForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Current Password</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="password" 
+                                placeholder="••••••••" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="password" 
+                                placeholder="••••••••" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Password must be at least 8 characters long
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm New Password</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="password" 
+                                placeholder="••••••••" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button 
+                        type="submit" 
+                        disabled={isLoading || !passwordForm.formState.isValid}
+                        className="w-full"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <KeyIcon className="mr-2 h-4 w-4" />
+                            Update Password
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
         </TabsContent>
       </Tabs>
