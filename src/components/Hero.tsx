@@ -10,9 +10,42 @@ import { useIsMobile } from '@/hooks/use-mobile';
 export const Hero = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const isMobile = useIsMobile();
+  const [showreelUrl, setShowreelUrl] = useState("https://www.youtube.com/embed/dQw4w9WgXcQ");
+
+  useEffect(() => {
+    // Load settings from localStorage
+    const savedSettings = localStorage.getItem('siteSettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (settings.general && settings.general.showreelUrl) {
+          setShowreelUrl(settings.general.showreelUrl);
+        }
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
+  }, []);
 
   const toggleShowreel = () => {
     setIsPlaying(!isPlaying);
+  };
+
+  // Function to ensure the URL is in embed format
+  const getEmbedUrl = (url: string) => {
+    // Convert standard YouTube URLs to embed format
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+    }
+    // Convert youtu.be URLs to embed format
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    // Convert standard Vimeo URLs to embed format
+    if (url.includes('vimeo.com/') && !url.includes('player.vimeo.com/')) {
+      return url.replace('vimeo.com/', 'player.vimeo.com/video/');
+    }
+    return url;
   };
 
   return (
@@ -23,7 +56,7 @@ export const Hero = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
           style={{
-            backgroundImage: `url('/lovable-uploads/ccccdb7a-516f-4cd4-b0d3-849242f1923e.png')`,
+            backgroundImage: `url('/lovable-uploads/dfcb7e28-ad95-4a2f-94de-7fde37926891.png')`,
           }}
         />
       </div>
@@ -84,7 +117,7 @@ export const Hero = () => {
           >
             <iframe
               className="w-full h-full"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+              src={getEmbedUrl(showreelUrl)}
               title="Showreel"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

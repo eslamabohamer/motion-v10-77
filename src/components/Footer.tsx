@@ -1,9 +1,36 @@
 
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Youtube, Linkedin, Twitter, Mail, Phone } from 'lucide-react';
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [socialLinks, setSocialLinks] = useState({
+    instagramUrl: "https://instagram.com",
+    youtubeUrl: "https://youtube.com",
+    linkedinUrl: "https://linkedin.com",
+    twitterUrl: "https://twitter.com"
+  });
+
+  useEffect(() => {
+    // Load settings from localStorage
+    const savedSettings = localStorage.getItem('siteSettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (settings.social) {
+          setSocialLinks({
+            instagramUrl: settings.social.instagramUrl || "https://instagram.com",
+            youtubeUrl: settings.social.youtubeUrl || "https://youtube.com",
+            linkedinUrl: settings.social.linkedinUrl || "https://linkedin.com",
+            twitterUrl: settings.social.twitterUrl || "https://twitter.com"
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
+  }, []);
 
   return (
     <footer className="bg-background pt-16 pb-8 border-t border-border/60">
@@ -18,10 +45,10 @@ export const Footer = () => {
               Creating captivating motion graphics and animations that tell your story.
             </p>
             <div className="flex space-x-4">
-              <SocialLink href="https://instagram.com" icon={<Instagram size={18} />} />
-              <SocialLink href="https://youtube.com" icon={<Youtube size={18} />} />
-              <SocialLink href="https://linkedin.com" icon={<Linkedin size={18} />} />
-              <SocialLink href="https://twitter.com" icon={<Twitter size={18} />} />
+              <SocialLink href={socialLinks.instagramUrl} icon={<Instagram size={18} />} />
+              <SocialLink href={socialLinks.youtubeUrl} icon={<Youtube size={18} />} />
+              <SocialLink href={socialLinks.linkedinUrl} icon={<Linkedin size={18} />} />
+              <SocialLink href={socialLinks.twitterUrl} icon={<Twitter size={18} />} />
             </div>
           </div>
 

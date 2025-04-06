@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -35,6 +34,12 @@ const AdminSettings = () => {
       metaDescription: "Professional motion graphics and animation portfolio showcasing creative visual storytelling",
       ogImageUrl: "https://example.com/og-image.jpg",
       keywords: "motion graphics, animation, visual effects, 3D animation, explainer videos",
+    },
+    social: {
+      instagramUrl: "https://instagram.com",
+      youtubeUrl: "https://youtube.com",
+      linkedinUrl: "https://linkedin.com",
+      twitterUrl: "https://twitter.com",
     }
   });
 
@@ -54,6 +59,8 @@ const AdminSettings = () => {
     // Simulate saving to database
     setTimeout(() => {
       setIsLoading(false);
+      // Store settings in localStorage for demo purposes
+      localStorage.setItem('siteSettings', JSON.stringify(settings));
       toast.success("Settings saved successfully");
     }, 800);
   };
@@ -64,6 +71,18 @@ const AdminSettings = () => {
       toast.info(`${section.charAt(0).toUpperCase() + section.slice(1)} settings reset to defaults`);
     }
   };
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('siteSettings');
+    if (savedSettings) {
+      try {
+        setSettings(JSON.parse(savedSettings));
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -85,6 +104,7 @@ const AdminSettings = () => {
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
+          <TabsTrigger value="social">Social Media</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general">
@@ -329,6 +349,81 @@ const AdminSettings = () => {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={() => handleResetSettings('seo')}>
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Reset to Defaults
+                </Button>
+                <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </motion.div>
+        </TabsContent>
+        
+        <TabsContent value="social">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Media Links</CardTitle>
+                <CardDescription>Configure your social media profiles</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="instagramUrl">Instagram URL</Label>
+                  <Input 
+                    id="instagramUrl" 
+                    value={settings.social.instagramUrl}
+                    onChange={(e) => handleSettingChange('social', 'instagramUrl', e.target.value)}
+                    placeholder="https://instagram.com/yourusername"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="youtubeUrl">YouTube URL</Label>
+                  <Input 
+                    id="youtubeUrl" 
+                    value={settings.social.youtubeUrl}
+                    onChange={(e) => handleSettingChange('social', 'youtubeUrl', e.target.value)}
+                    placeholder="https://youtube.com/c/yourchannel"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                  <Input 
+                    id="linkedinUrl" 
+                    value={settings.social.linkedinUrl}
+                    onChange={(e) => handleSettingChange('social', 'linkedinUrl', e.target.value)}
+                    placeholder="https://linkedin.com/in/yourusername"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="twitterUrl">Twitter URL</Label>
+                  <Input 
+                    id="twitterUrl" 
+                    value={settings.social.twitterUrl}
+                    onChange={(e) => handleSettingChange('social', 'twitterUrl', e.target.value)}
+                    placeholder="https://twitter.com/yourusername"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => handleResetSettings('social')}>
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Reset to Defaults
                 </Button>
