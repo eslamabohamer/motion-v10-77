@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 interface GeneralSettings {
   siteName: string;
@@ -112,10 +113,11 @@ export const defaultSettings: SiteSettings = {
   }
 };
 
-interface SiteSettingsRecord {
+// Type definition for the database record
+interface DbSiteSettingsRecord {
   id: string;
   created_at: string;
-  settings: SiteSettings;
+  settings: Json;
 }
 
 export const getSettings = async (): Promise<SiteSettings> => {
@@ -131,13 +133,13 @@ export const getSettings = async (): Promise<SiteSettings> => {
     
     // If there are settings, return them
     if (data && data.length > 0) {
-      return (data[0] as SiteSettingsRecord).settings as SiteSettings;
+      const record = data[0] as DbSiteSettingsRecord;
+      // Convert from Json to SiteSettings
+      return record.settings as unknown as SiteSettings;
     }
     
     // If no settings exist, insert the defaults and return them
-    await supabase
-      .from('site_settings')
-      .insert([{ settings: defaultSettings }]);
+    await saveSettings(defaultSettings);
     
     return defaultSettings;
   } catch (error) {
@@ -152,7 +154,9 @@ export const saveSettings = async (settings: SiteSettings): Promise<{ success: b
     // Insert new settings record
     const { error } = await supabase
       .from('site_settings')
-      .insert([{ settings }]);
+      .insert([{ 
+        settings: settings as unknown as Json 
+      }]);
     
     if (error) throw error;
     
