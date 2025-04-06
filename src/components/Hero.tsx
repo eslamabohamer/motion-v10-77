@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Play, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, useAnimation } from 'framer-motion';
-import { Link } from 'react-router-dom';
 
 export const Hero = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,7 +12,6 @@ export const Hero = () => {
   const backgroundRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation();
-  const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
     setTimeout(() => {
@@ -26,13 +24,6 @@ export const Hero = () => {
       y: 0,
       transition: { duration: 0.8, ease: "easeOut" }
     });
-
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, [controls]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -60,16 +51,6 @@ export const Hero = () => {
     >
       {/* Background elements with enhanced 3D effect */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-background/90">
-        {/* Animated grid */}
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-            transform: `perspective(1000px) rotateX(60deg) translateY(${scrollY * 0.5}px) scale(2)`,
-          }}
-        />
-
         {/* 3D abstract shapes with parallax effect */}
         <div 
           ref={backgroundRef}
@@ -131,28 +112,6 @@ export const Hero = () => {
               boxShadow: "0 0 30px rgba(155, 105, 255, 0.2)",
             }}
           />
-
-          {/* 3D Floating Elements */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.7, scale: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="absolute top-[30%] right-[20%] w-12 h-12 bg-primary/40 rounded-full backdrop-blur-md"
-            style={{
-              boxShadow: "0 0 20px rgba(125, 125, 255, 0.5)",
-              transform: `translateZ(${50 - scrollY * 0.1}px) translateX(${mousePosition.x * 1.5}px) translateY(${mousePosition.y * 1.5}px)`,
-            }}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.7, scale: 1 }}
-            transition={{ duration: 1, delay: 0.6 }}
-            className="absolute bottom-[35%] left-[30%] w-8 h-8 bg-secondary/40 rounded-md backdrop-blur-md rotate-45"
-            style={{
-              boxShadow: "0 0 20px rgba(155, 105, 255, 0.5)",
-              transform: `translateZ(${30 - scrollY * 0.05}px) translateX(${-mousePosition.x * 2}px) translateY(${-mousePosition.y * 2}px)`,
-            }}
-          />
         </div>
       </div>
 
@@ -188,15 +147,9 @@ export const Hero = () => {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="flex flex-col sm:flex-row gap-4 items-center"
         >
-          <Button 
-            className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" 
-            size="lg"
-            asChild
-          >
-            <Link to="/portfolio">
-              View Portfolio
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
+          <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" size="lg">
+            View Portfolio
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <Button 
             variant="outline" 
@@ -207,39 +160,6 @@ export const Hero = () => {
             <Play className="mr-2 h-4 w-4" />
             Watch Showreel
           </Button>
-        </motion.div>
-
-        {/* 3D Cards Preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="w-full mt-20 flex justify-center"
-        >
-          <div className="grid grid-cols-3 gap-4 max-w-3xl perspective-1000">
-            {[1, 2, 3].map((index) => (
-              <div 
-                key={index}
-                className="group rounded-xl overflow-hidden bg-gradient-to-br from-background to-background/50 border border-primary/10 shadow-xl relative hover:-translate-y-2 transition-transform duration-300"
-                style={{
-                  transform: `perspective(1000px) rotateY(${mousePosition.x * 0.04}deg) rotateX(${-mousePosition.y * 0.04}deg)`,
-                  transformStyle: "preserve-3d",
-                  transition: "transform 0.3s ease"
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-primary/0 opacity-70"></div>
-                <div className="w-full aspect-video bg-background/50 overflow-hidden">
-                  <div className="w-full h-full bg-gray-200/30 animate-pulse flex items-center justify-center">
-                    <span className="text-primary/40 text-sm">Preview {index}</span>
-                  </div>
-                </div>
-                <div className="p-3">
-                  <div className="w-3/4 h-4 bg-gray-200/30 rounded animate-pulse"></div>
-                  <div className="w-1/2 h-3 bg-gray-200/20 rounded animate-pulse mt-2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
         </motion.div>
       </div>
 
@@ -270,29 +190,6 @@ export const Hero = () => {
           )}
         </div>
       </div>
-
-      {/* Scroll indicator */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 1 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
-      >
-        <div className="flex flex-col items-center">
-          <span className="text-xs text-muted-foreground mb-2">Scroll to explore</span>
-          <motion.div 
-            animate={{ y: [0, 10, 0] }} 
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-6 h-10 border-2 border-primary/30 rounded-full flex justify-center"
-          >
-            <motion.div 
-              animate={{ y: [0, 15, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="w-1.5 h-3 bg-primary rounded-full mt-2"
-            />
-          </motion.div>
-        </div>
-      </motion.div>
     </section>
   );
 };

@@ -19,8 +19,6 @@ interface PortfolioItem {
 export const PortfolioPreview = () => {
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const fetchPortfolioItems = async () => {
@@ -47,22 +45,8 @@ export const PortfolioPreview = () => {
     fetchPortfolioItems();
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const { clientX, clientY } = e;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    
-    const moveX = (clientX - centerX) / 25;
-    const moveY = (clientY - centerY) / 25;
-    
-    setMousePosition({ x: moveX, y: moveY });
-  };
-
   return (
-    <section 
-      className="py-24 bg-background"
-      onMouseMove={handleMouseMove}
-    >
+    <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -84,51 +68,26 @@ export const PortfolioPreview = () => {
           </Button>
         </motion.div>
 
-        {/* 3D Grid Background */}
-        <div className="relative">
-          <div 
-            className="absolute inset-0 dots-grid opacity-30 -z-10"
-            style={{
-              transform: `perspective(1000px) rotateX(60deg) translateZ(-100px) scale(1.5)`,
-            }}
-          />
-          
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, index) => (
-                <div 
-                  key={index} 
-                  className="h-[300px] bg-muted animate-pulse rounded-lg perspective-1000 preserve-3d"
-                  style={{
-                    transform: `perspective(1000px) rotateX(${-mousePosition.y * 0.03}deg) rotateY(${mousePosition.x * 0.03}deg)`,
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {portfolioItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  onMouseEnter={() => setHoverIndex(index)}
-                  onMouseLeave={() => setHoverIndex(null)}
-                  style={{
-                    transform: hoverIndex === index 
-                      ? `perspective(1000px) rotateX(${-mousePosition.y * 0.05}deg) rotateY(${mousePosition.x * 0.05}deg) scale(1.03)`
-                      : `perspective(1000px) rotateX(${-mousePosition.y * 0.02}deg) rotateY(${mousePosition.x * 0.02}deg)`,
-                    transition: 'transform 0.3s ease',
-                    zIndex: hoverIndex === index ? 10 : 1,
-                  }}
-                >
-                  <PortfolioCard item={item} isHighlighted={hoverIndex === index} />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="h-[300px] bg-muted animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {portfolioItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <PortfolioCard item={item} />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -136,10 +95,9 @@ export const PortfolioPreview = () => {
 
 interface PortfolioCardProps {
   item: PortfolioItem;
-  isHighlighted?: boolean;
 }
 
-const PortfolioCard = ({ item, isHighlighted = false }: PortfolioCardProps) => {
+const PortfolioCard = ({ item }: PortfolioCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
@@ -157,10 +115,7 @@ const PortfolioCard = ({ item, isHighlighted = false }: PortfolioCardProps) => {
   return (
     <div 
       ref={cardRef}
-      className={cn(
-        "group relative overflow-hidden rounded-lg parallax-card h-[300px] transition-all duration-300 shadow-lg",
-        isHighlighted ? "shadow-2xl ring-2 ring-primary/20" : "hover:shadow-xl"
-      )}
+      className="group relative overflow-hidden rounded-lg parallax-card h-[300px] transition-all duration-300 shadow-lg hover:shadow-xl"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -168,21 +123,10 @@ const PortfolioCard = ({ item, isHighlighted = false }: PortfolioCardProps) => {
       }}
       onMouseMove={handleMouseMove}
       style={{
-        transform: isHovered ? `perspective(1000px) rotateX(${position.y * 12}deg) rotateY(${-position.x * 12}deg) scale(1.02)` : 'perspective(1000px) rotateX(0) rotateY(0)',
+        transform: isHovered ? `perspective(1000px) rotateX(${position.y * 8}deg) rotateY(${-position.x * 8}deg) scale(1.02)` : 'perspective(1000px) rotateX(0) rotateY(0)',
         transition: 'transform 0.3s ease'
       }}
     >
-      {/* Background Glow */}
-      {isHovered && (
-        <div 
-          className="absolute -inset-[100px] bg-primary/5 blur-[100px] rounded-full z-0 pointer-events-none"
-          style={{
-            opacity: isHovered ? 0.8 : 0,
-            transition: 'opacity 0.5s ease',
-          }}
-        />
-      )}
-      
       {/* Background Image with enhanced 3D movement */}
       <div 
         className="absolute inset-0 bg-cover bg-center transition-transform duration-300 ease-out"
@@ -202,36 +146,6 @@ const PortfolioCard = ({ item, isHighlighted = false }: PortfolioCardProps) => {
           transform: isHovered ? `translateZ(-10px)` : 'translateZ(0)',
         }}
       />
-      
-      {/* 3D floating particles (only visible on hover) */}
-      {isHovered && (
-        <>
-          <div 
-            className="absolute w-2 h-2 rounded-full bg-primary/70 animate-pulse-slow"
-            style={{ 
-              top: '20%', 
-              left: '30%',
-              transform: `translateZ(30px) translateX(${position.x * -20}px) translateY(${position.y * -20}px)`,
-            }}
-          />
-          <div 
-            className="absolute w-3 h-3 rounded-full bg-secondary/70 animate-pulse-slow"
-            style={{ 
-              top: '60%', 
-              right: '20%',
-              transform: `translateZ(40px) translateX(${position.x * -30}px) translateY(${position.y * -30}px)`,
-            }}
-          />
-          <div 
-            className="absolute w-1.5 h-1.5 rounded-full bg-accent/70 animate-pulse-slow"
-            style={{ 
-              bottom: '25%', 
-              left: '40%',
-              transform: `translateZ(20px) translateX(${position.x * -10}px) translateY(${position.y * -10}px)`,
-            }}
-          />
-        </>
-      )}
       
       {/* Content with enhanced 3D pop effect */}
       <div className="absolute inset-0 p-6 flex flex-col justify-end parallax-card-content">
