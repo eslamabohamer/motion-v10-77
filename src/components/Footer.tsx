@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Youtube, Linkedin, Twitter, Mail, Phone } from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -96,8 +97,23 @@ export const Footer = () => {
           </div>
         </div>
 
+        {/* Developer Credits */}
+        <div className="mt-8 pt-6 border-t border-border/60 text-center">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium">Developed with <span className="text-red-500">❤</span> by </span>
+            <a 
+              href="https://github.com/islamabuhamar" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-semibold hover:text-primary transition-colors"
+            >
+              Islam Abu Hamar
+            </a>
+          </p>
+        </div>
+
         {/* Copyright */}
-        <div className="mt-12 pt-8 border-t border-border/60 flex flex-col md:flex-row justify-between items-center">
+        <div className="mt-6 pt-6 border-t border-border/60 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground mb-4 md:mb-0">
             © {currentYear} Muhammad Ali. All rights reserved.
           </p>
