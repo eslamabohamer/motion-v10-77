@@ -6,9 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ArrowRight, Film, Boxes, Sparkles, PenTool, Video } from 'lucide-react';
 
-// Add framer-motion
-<lov-add-dependency>framer-motion@^10.15.0</lov-add-dependency>
-
 // Service data
 const services = [
   {
