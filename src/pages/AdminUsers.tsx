@@ -59,25 +59,34 @@ const AdminUsers = () => {
         return;
       }
 
-      // Fetch roles for users
+      // Build custom query for role information because TypeScript doesn't know about our new tables
       const userIds = authUsers.users.map(user => user.id);
+      
+      // Use raw query for user_roles since TypeScript doesn't know about this table yet
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role')
+        .select('*')
         .in('user_id', userIds);
+      
+      if (rolesError) {
+        console.error('Roles error:', rolesError);
+        throw rolesError;
+      }
 
-      if (rolesError) throw rolesError;
-
-      // Fetch profiles for display names
+      // Use raw query for profiles since TypeScript doesn't know about this table yet
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, display_name')
+        .select('*')
         .in('id', userIds);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Profiles error:', profilesError);
+        throw profilesError;
+      }
 
       // Create combined user data
       const usersWithRoles: UserWithRole[] = authUsers.users.map(user => {
+        // Find role and profile for this user
         const userRole = roles?.find(r => r.user_id === user.id);
         const userProfile = profiles?.find(p => p.id === user.id);
         

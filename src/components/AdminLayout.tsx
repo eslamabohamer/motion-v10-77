@@ -33,7 +33,7 @@ const AdminLayout = () => {
         setUser(sessionData.session.user);
         
         // Check if user is an admin
-        const { data: roleData, error: roleError } = await supabase.rpc('get_user_role');
+        const { data: roleData, error: roleError } = await supabase.rpc('get_user_role', {});
         
         if (roleError) {
           console.error('Role error:', roleError);
