@@ -4,46 +4,46 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
-// Sample testimonial data
-const testimonials = [
-  {
-    id: 1,
-    content: "Muhammad's ability to transform our brand guidelines into captivating motion graphics exceeded our expectations. His work helped us increase engagement across all our digital platforms.",
-    author: "Sarah Johnson",
-    position: "Marketing Director, TechVision",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    rating: 5
-  },
-  {
-    id: 2,
-    content: "Working with Muhammad was a game-changer for our product launch. The 3D animations he created perfectly showcased our product features and contributed significantly to our successful launch.",
-    author: "David Chen",
-    position: "Product Manager, InnovateCorp",
-    avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    rating: 5
-  },
-  {
-    id: 3,
-    content: "Exceptional creativity and technical skill. Muhammad took our complex data and transformed it into clear, engaging motion graphics that our clients love. Highly recommended!",
-    author: "Emily Parker",
-    position: "Data Analytics Lead, DataSphere",
-    avatar: "https://randomuser.me/api/portraits/women/3.jpg",
-    rating: 5
-  },
-  {
-    id: 4,
-    content: "Muhammad is not just a motion designer but a strategic partner. He understood our objectives and delivered animations that perfectly communicated our message to our target audience.",
-    author: "Michael Roberts",
-    position: "Creative Director, BrandForward",
-    avatar: "https://randomuser.me/api/portraits/men/4.jpg",
-    rating: 5
-  }
-];
+interface Testimonial {
+  id: string;
+  author: string;
+  position: string;
+  content: string;
+  avatar_url: string | null;
+  rating: number;
+}
 
 export const Testimonials = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState<'next' | 'prev' | null>(null);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('testimonials')
+          .select('*')
+          .order('created_at');
+          
+        if (error) {
+          console.error('Error fetching testimonials:', error);
+          return;
+        }
+        
+        setTestimonials(data);
+      } catch (error) {
+        console.error('Error fetching testimonials:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   const handlePrev = () => {
     setDirection('prev');
@@ -58,11 +58,36 @@ export const Testimonials = () => {
   useEffect(() => {
     // Auto-advance testimonials
     const interval = setInterval(() => {
-      handleNext();
+      if (testimonials.length > 1) {
+        handleNext();
+      }
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [activeIndex]);
+  }, [activeIndex, testimonials.length]);
+
+  if (isLoading) {
+    return (
+      <section className="py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Client Testimonials</h2>
+            <p className="text-muted-foreground">
+              Hear what clients have to say about their experience working with me on their motion graphics projects.
+            </p>
+          </div>
+          
+          <div className="relative max-w-4xl mx-auto">
+            <div className="h-[300px] sm:h-[250px] md:h-[220px] bg-card rounded-lg animate-pulse"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (testimonials.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-24 bg-muted/30">
@@ -92,7 +117,7 @@ export const Testimonials = () => {
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="flex-shrink-0 flex flex-col items-center">
                     <Avatar className="w-16 h-16 border-2 border-primary/20">
-                      <AvatarImage src={testimonial.avatar} alt={testimonial.author} />
+                      <AvatarImage src={testimonial.avatar_url || ''} alt={testimonial.author} />
                       <AvatarFallback>{testimonial.author.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex items-center mt-2">
@@ -131,6 +156,7 @@ export const Testimonials = () => {
               size="icon" 
               onClick={handlePrev}
               className="rounded-full h-10 w-10"
+              disabled={testimonials.length <= 1}
             >
               <ChevronLeft className="h-5 w-5" />
               <span className="sr-only">Previous</span>
@@ -153,6 +179,7 @@ export const Testimonials = () => {
               size="icon" 
               onClick={handleNext}
               className="rounded-full h-10 w-10"
+              disabled={testimonials.length <= 1}
             >
               <ChevronRight className="h-5 w-5" />
               <span className="sr-only">Next</span>

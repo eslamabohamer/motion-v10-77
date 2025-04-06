@@ -4,44 +4,37 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-// Sample portfolio data
-const portfolioItems = [
-  {
-    id: 1,
-    title: "Abstract Waves",
-    category: "Motion Graphics",
-    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f",
-    video: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    description: "A mesmerizing exploration of dynamic wave forms in motion."
-  },
-  {
-    id: 2,
-    title: "Brand Evolution",
-    category: "Corporate",
-    image: "https://images.unsplash.com/photo-1626785774573-4b799315345d",
-    video: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    description: "Visual identity animation for a tech startup's rebranding."
-  },
-  {
-    id: 3,
-    title: "Particle Universe",
-    category: "3D Animation",
-    image: "https://images.unsplash.com/photo-1636953056323-9c09fdd74fa6",
-    video: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    description: "An immersive journey through a universe of dynamic particles."
-  },
-  {
-    id: 4,
-    title: "Kinetic Typography",
-    category: "Typography",
-    image: "https://images.unsplash.com/photo-1579548122080-c35fd6820ecb",
-    video: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    description: "Expressive typography that moves with purpose and emotion."
-  }
-];
+import { supabase } from '@/integrations/supabase/client';
 
 export const PortfolioPreview = () => {
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPortfolioItems = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(4);
+          
+        if (error) {
+          console.error('Error fetching portfolio items:', error);
+          return;
+        }
+        
+        setPortfolioItems(data);
+      } catch (error) {
+        console.error('Error fetching portfolio items:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPortfolioItems();
+  }, []);
+
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
@@ -60,22 +53,30 @@ export const PortfolioPreview = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {portfolioItems.map((item) => (
-            <PortfolioCard key={item.id} item={item} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="h-[300px] bg-muted animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {portfolioItems.map((item) => (
+              <PortfolioCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 };
 
 interface PortfolioItem {
-  id: number;
+  id: string;
   title: string;
   category: string;
-  image: string;
-  video: string;
+  image_url: string;
+  video_url: string | null;
   description: string;
 }
 
@@ -116,7 +117,7 @@ const PortfolioCard = ({ item }: PortfolioCardProps) => {
       <div 
         className="absolute inset-0 bg-cover bg-center transition-transform duration-300 ease-out"
         style={{ 
-          backgroundImage: `url(${item.image})`,
+          backgroundImage: `url(${item.image_url})`,
           transform: isHovered ? `translateX(${position.x * -10}px) translateY(${position.y * -10}px) scale(1.1)` : 'translateX(0) translateY(0) scale(1)'
         }}
       />

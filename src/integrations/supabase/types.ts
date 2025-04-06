@@ -9,13 +9,178 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          read: boolean | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          read?: boolean | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          read?: boolean | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          featured: boolean | null
+          id: string
+          image_url: string
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          featured?: boolean | null
+          id?: string
+          image_url: string
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          featured?: boolean | null
+          id?: string
+          image_url?: string
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      service_features: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          service_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          service_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_features_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          color: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          author: string
+          avatar_url: string | null
+          content: string
+          created_at: string
+          id: string
+          position: string
+          rating: number
+        }
+        Insert: {
+          author: string
+          avatar_url?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          position: string
+          rating: number
+        }
+        Update: {
+          author?: string
+          avatar_url?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          position?: string
+          rating?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_message: {
+        Args: {
+          p_name: string
+          p_email: string
+          p_subject: string
+          p_message: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
