@@ -27,15 +27,13 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#1A1F2C] text-white w-full">
+    <div className="min-h-screen bg-[#1A1F2C] text-white">
       <Navbar />
       <Hero />
-      <div className="max-w-6xl mx-auto">
-        <PortfolioPreview />
-        <ServicesSection />
-        <Testimonials />
-        <ContactCta />
-      </div>
+      <PortfolioPreview />
+      <ServicesSection />
+      <Testimonials />
+      <ContactCta />
       <Footer />
     </div>
   );

@@ -57,38 +57,36 @@ export const Navbar = () => {
   return (
     <nav 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-3 px-4 md:px-6 lg:px-10",
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-4 md:px-6 lg:px-12",
         scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]"
       )}
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-7" />
+            <img src={logoUrl} alt={siteName} className="h-8" />
           ) : (
-            <span className="text-lg font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span>
+            <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span>
           )}
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-4 lg:space-x-5">
-          <NavLink to="/" icon={<HomeIcon className="h-3.5 w-3.5" />} label="Home" />
-          <NavLink to="/portfolio" icon={<Briefcase className="h-3.5 w-3.5" />} label="Portfolio" />
-          <NavLink to="/services" icon={<Settings className="h-3.5 w-3.5" />} label="Services" />
-          <NavLink to="/about" icon={<User className="h-3.5 w-3.5" />} label="About" />
-          <NavLink to="/contact" icon={<Mail className="h-3.5 w-3.5" />} label="Contact" />
+        <div className="hidden md:flex items-center space-x-6">
+          <NavLink to="/" icon={<HomeIcon className="h-4 w-4" />} label="Home" />
+          <NavLink to="/portfolio" icon={<Briefcase className="h-4 w-4" />} label="Portfolio" />
+          <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
+          <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" />
+          <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
           <Button 
             variant="ghost"
-            size="sm"
             className="flex items-center space-x-1 text-white hover:text-white/80"
             onClick={handleAdminArea}
           >
-            <ShieldIcon className="h-3.5 w-3.5 mr-1" />
+            <ShieldIcon className="h-4 w-4 mr-1" />
             <span>Admin</span>
           </Button>
           <Button 
-            size="sm"
             className="bg-[#4a6cf7] hover:bg-[#3a5ce7]"
             onClick={handleGetInTouch}
           >
@@ -99,7 +97,7 @@ export const Navbar = () => {
         {/* Mobile menu button */}
         <div className="md:hidden">
           <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Toggle menu" className="text-white">
-            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
       </div>
@@ -111,7 +109,7 @@ export const Navbar = () => {
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="flex flex-col items-center space-y-5 text-center">
+        <div className="flex flex-col items-center space-y-6 text-center">
           <MobileNavLink to="/" label="Home" onClick={closeMenu} />
           <MobileNavLink to="/portfolio" label="Portfolio" onClick={closeMenu} />
           <MobileNavLink to="/services" label="Services" onClick={closeMenu} />
@@ -146,7 +144,7 @@ const NavLink = ({ to, icon, label }: NavLinkProps) => {
   return (
     <Link 
       to={to} 
-      className="group flex items-center space-x-1 text-white/80 hover:text-white transition-colors text-sm"
+      className="group flex items-center space-x-1 text-white/80 hover:text-white transition-colors"
     >
       {icon}
       <span>{label}</span>
@@ -166,7 +164,7 @@ const MobileNavLink = ({ to, label, onClick }: MobileNavLinkProps) => {
     <Link
       to={to}
       onClick={onClick}
-      className="text-xl font-semibold text-white hover:text-[#4a6cf7] transition-colors"
+      className="text-2xl font-semibold text-white hover:text-[#4a6cf7] transition-colors"
     >
       {label}
     </Link>
