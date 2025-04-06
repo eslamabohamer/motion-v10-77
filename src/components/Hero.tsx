@@ -61,24 +61,17 @@ export const Hero = () => {
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16"
       onMouseMove={enableParallax ? handleMouseMove : undefined}
     >
-      {/* Simplified background elements that are pre-generated */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-background/90">
-        {enableParallax && backgroundElements.map((el, index) => (
-          <motion.div 
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: el.delay }}
-            className={`absolute w-${el.width} h-${el.height} rounded-full bg-${el.color}/15 blur-2xl`}
-            style={{
-              top: el.top,
-              right: el.right,
-              bottom: el.bottom,
-              left: el.left,
-              transform: `translateX(${mousePosition.x * -1}px) translateY(${mousePosition.y * -1}px)`
-            }}
-          />
-        ))}
+      {/* Background image */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/lovable-uploads/b6b10c11-daca-40d3-814f-996a2f82ea00.png')", 
+            filter: "brightness(0.9)",
+            transform: enableParallax ? `translateX(${mousePosition.x * 0.05}px) translateY(${mousePosition.y * 0.05}px)` : 'none'
+          }}
+        />
+        <div className="absolute inset-0 bg-background/30 backdrop-blur-[2px]" />
       </div>
 
       {/* Content with optimized animation */}
@@ -100,7 +93,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10"
+          className="text-lg md:text-xl text-foreground max-w-2xl mb-10 bg-background/30 backdrop-blur-sm p-4 rounded-lg"
         >
           Creating captivating visual experiences through the art of motion
         </motion.p>
