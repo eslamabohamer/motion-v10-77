@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, RefreshCcw } from 'lucide-react';
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +31,18 @@ const AdminSettings = () => {
       lazyLoadImages: true,
       enableImageOptimization: true,
       cachingEnabled: true,
+    },
+    animation: {
+      enable3DEffects: true,
+      animationIntensity: 75,
+      scrollAnimations: true,
+      hoverAnimations: true,
+      loadingAnimations: true,
+      particleEffects: false,
+      backgroundColor: "#1A1F2C",
+      accentColor: "#4a6cf7",
+      secondaryAccentColor: "#9b87f5",
+      animationSpeed: "normal", // "slow", "normal", "fast"
     },
     seo: {
       metaTitle: "Motion Graphics Artist Portfolio",
@@ -77,7 +92,19 @@ const AdminSettings = () => {
     const savedSettings = localStorage.getItem('siteSettings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        setSettings(prev => {
+          // Merge the saved settings with the default settings
+          // This ensures new settings properties are still present with default values
+          return {
+            ...prev,
+            ...parsed,
+            animation: {
+              ...prev.animation,
+              ...(parsed.animation || {})
+            }
+          };
+        });
       } catch (error) {
         console.error('Error parsing saved settings:', error);
       }
@@ -102,6 +129,7 @@ const AdminSettings = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="animation">Animation</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="social">Social Media</TabsTrigger>
@@ -162,6 +190,217 @@ const AdminSettings = () => {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={() => handleResetSettings('general')}>
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Reset to Defaults
+                </Button>
+                <Button onClick={handleSaveSettings} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </motion.div>
+        </TabsContent>
+        
+        <TabsContent value="animation">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>3D Animation Settings</CardTitle>
+                <CardDescription>Configure the visual effects and animations across your website</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="enable3DEffects">Enable 3D Effects</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Toggle all 3D and advanced animation effects
+                    </p>
+                  </div>
+                  <Switch 
+                    id="enable3DEffects"
+                    checked={settings.animation.enable3DEffects}
+                    onCheckedChange={(checked) => handleSettingChange('animation', 'enable3DEffects', checked)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="animationIntensity">Animation Intensity</Label>
+                    <span className="text-sm text-muted-foreground">{settings.animation.animationIntensity}%</span>
+                  </div>
+                  <Slider 
+                    id="animationIntensity"
+                    value={[settings.animation.animationIntensity]}
+                    onValueChange={(value) => handleSettingChange('animation', 'animationIntensity', value[0])}
+                    min={0}
+                    max={100}
+                    step={5}
+                    disabled={!settings.animation.enable3DEffects}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Adjust the intensity of animations and effects
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="animationSpeed">Animation Speed</Label>
+                  <ToggleGroup 
+                    type="single" 
+                    id="animationSpeed"
+                    value={settings.animation.animationSpeed}
+                    onValueChange={(value) => {
+                      if (value) handleSettingChange('animation', 'animationSpeed', value);
+                    }}
+                    className="justify-start"
+                    disabled={!settings.animation.enable3DEffects}
+                  >
+                    <ToggleGroupItem value="slow">Slow</ToggleGroupItem>
+                    <ToggleGroupItem value="normal">Normal</ToggleGroupItem>
+                    <ToggleGroupItem value="fast">Fast</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-medium">Animation Types</h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="scrollAnimations">Scroll Animations</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Animate elements as you scroll
+                      </p>
+                    </div>
+                    <Switch 
+                      id="scrollAnimations"
+                      checked={settings.animation.scrollAnimations}
+                      onCheckedChange={(checked) => handleSettingChange('animation', 'scrollAnimations', checked)}
+                      disabled={!settings.animation.enable3DEffects}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="hoverAnimations">Hover Animations</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Animate elements when hovered
+                      </p>
+                    </div>
+                    <Switch 
+                      id="hoverAnimations"
+                      checked={settings.animation.hoverAnimations}
+                      onCheckedChange={(checked) => handleSettingChange('animation', 'hoverAnimations', checked)}
+                      disabled={!settings.animation.enable3DEffects}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="loadingAnimations">Loading Animations</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Animate elements when page first loads
+                      </p>
+                    </div>
+                    <Switch 
+                      id="loadingAnimations"
+                      checked={settings.animation.loadingAnimations}
+                      onCheckedChange={(checked) => handleSettingChange('animation', 'loadingAnimations', checked)}
+                      disabled={!settings.animation.enable3DEffects}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="particleEffects">Particle Effects</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable floating particle animations in backgrounds
+                      </p>
+                    </div>
+                    <Switch 
+                      id="particleEffects"
+                      checked={settings.animation.particleEffects}
+                      onCheckedChange={(checked) => handleSettingChange('animation', 'particleEffects', checked)}
+                      disabled={!settings.animation.enable3DEffects}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-medium">Color Settings</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="backgroundColor">Background Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        id="backgroundColor" 
+                        type="color"
+                        value={settings.animation.backgroundColor}
+                        onChange={(e) => handleSettingChange('animation', 'backgroundColor', e.target.value)}
+                        className="w-12 h-8 p-1"
+                        disabled={!settings.animation.enable3DEffects}
+                      />
+                      <Input 
+                        value={settings.animation.backgroundColor}
+                        onChange={(e) => handleSettingChange('animation', 'backgroundColor', e.target.value)}
+                        disabled={!settings.animation.enable3DEffects}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="accentColor">Primary Accent Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        id="accentColor" 
+                        type="color"
+                        value={settings.animation.accentColor}
+                        onChange={(e) => handleSettingChange('animation', 'accentColor', e.target.value)}
+                        className="w-12 h-8 p-1"
+                        disabled={!settings.animation.enable3DEffects}
+                      />
+                      <Input 
+                        value={settings.animation.accentColor}
+                        onChange={(e) => handleSettingChange('animation', 'accentColor', e.target.value)}
+                        disabled={!settings.animation.enable3DEffects}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="secondaryAccentColor">Secondary Accent Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        id="secondaryAccentColor" 
+                        type="color"
+                        value={settings.animation.secondaryAccentColor}
+                        onChange={(e) => handleSettingChange('animation', 'secondaryAccentColor', e.target.value)}
+                        className="w-12 h-8 p-1" 
+                        disabled={!settings.animation.enable3DEffects}
+                      />
+                      <Input 
+                        value={settings.animation.secondaryAccentColor}
+                        onChange={(e) => handleSettingChange('animation', 'secondaryAccentColor', e.target.value)}
+                        disabled={!settings.animation.enable3DEffects}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => handleResetSettings('animation')}>
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Reset to Defaults
                 </Button>

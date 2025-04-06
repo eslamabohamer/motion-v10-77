@@ -5,7 +5,7 @@ import { ArrowRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 interface PortfolioItem {
   id: string;
@@ -19,8 +19,31 @@ interface PortfolioItem {
 export const PortfolioPreview = () => {
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"]
+  });
+  
+  const y = useTransform(scrollYProgress, [0, 1], [100, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.3], [0, 1]);
 
   useEffect(() => {
+    // Load animation settings from localStorage
+    const savedSettings = localStorage.getItem('siteSettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (settings.animation && settings.animation.enable3DEffects !== undefined) {
+          setAnimations3DEnabled(settings.animation.enable3DEffects);
+        }
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
+    
     const fetchPortfolioItems = async () => {
       try {
         const { data, error } = await supabase
@@ -46,12 +69,13 @@ export const PortfolioPreview = () => {
   }, []);
 
   return (
-    <section className="py-16 md:py-20 bg-background">
+    <section ref={sectionRef} className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          style={animations3DEnabled ? { y, opacity } : {}}
           className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12"
         >
           <div>
@@ -82,8 +106,12 @@ export const PortfolioPreview = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
+                style={animations3DEnabled ? { 
+                  y: useTransform(scrollYProgress, [0, 1], [50 + (index * 10), 0]), 
+                  opacity: useTransform(scrollYProgress, [0, 0.3 + (index * 0.05)], [0, 1])
+                } : {}}
               >
-                <PortfolioCard item={item} />
+                <PortfolioCard item={item} enable3D={animations3DEnabled} />
               </motion.div>
             ))}
           </div>
@@ -95,45 +123,51 @@ export const PortfolioPreview = () => {
 
 interface PortfolioCardProps {
   item: PortfolioItem;
+  enable3D: boolean;
 }
 
-const PortfolioCard = ({ item }: PortfolioCardProps) => {
+const PortfolioCard = ({ item, enable3D }: PortfolioCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   
   // Use memoized function for better performance
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || !isHovered) return;
+    if (!cardRef.current || !isHovered || !enable3D) return;
     
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
     
     setPosition({ x, y });
-  }, [isHovered]);
+  }, [isHovered, enable3D]);
 
   return (
     <div 
       ref={cardRef}
-      className="group relative overflow-hidden rounded-lg h-[300px] transition-all duration-300 shadow-lg hover:shadow-xl"
+      className={cn(
+        "group relative overflow-hidden rounded-lg h-[300px] transition-all duration-300 shadow-lg hover:shadow-xl",
+        enable3D && "hover:shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
         setPosition({ x: 0, y: 0 });
       }}
       onMouseMove={handleMouseMove}
-      style={{
+      style={enable3D ? {
         transform: isHovered ? `perspective(1000px) rotateX(${position.y * 5}deg) rotateY(${-position.x * 5}deg)` : 'perspective(1000px)',
         transition: 'transform 0.2s ease'
-      }}
+      } : {}}
     >
       {/* Background Image with optimized 3D movement */}
       <div 
         className="absolute inset-0 bg-cover bg-center transition-transform duration-300 ease-out"
         style={{ 
           backgroundImage: `url(${item.image_url})`,
-          transform: isHovered ? `translateX(${position.x * -10}px) translateY(${position.y * -10}px) scale(1.05)` : 'scale(1)'
+          transform: enable3D && isHovered ? 
+            `translateX(${position.x * -10}px) translateY(${position.y * -10}px) scale(1.05)` : 
+            'scale(1)'
         }}
       />
       
@@ -147,7 +181,8 @@ const PortfolioCard = ({ item }: PortfolioCardProps) => {
       
       {/* Content with simplified 3D effect */}
       <div className="absolute inset-0 p-6 flex flex-col justify-end">
-        <div className="transform transition-transform duration-300">
+        <div className={enable3D ? "transform transition-transform duration-300" : ""} 
+          style={enable3D && isHovered ? { transform: `translateZ(20px)` } : {}}>
           <span className="inline-block text-xs font-medium text-primary mb-2 bg-primary/10 px-2 py-1 rounded">
             {item.category}
           </span>
