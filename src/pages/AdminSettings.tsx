@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from '@/integrations/supabase/client';
 import { getSettings, saveSettings, defaultSettings, SiteSettings } from '@/services/settingsService';
+import { updateAdminEmail, updateAdminPassword } from '@/services/adminService';
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +26,6 @@ const AdminSettings = () => {
   const [currentEmail, setCurrentEmail] = useState("");
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   
-  // Email form schema
   const emailFormSchema = z.object({
     email: z
       .string()
@@ -34,7 +34,6 @@ const AdminSettings = () => {
       .max(100, "Email must not exceed 100 characters"),
   });
 
-  // Password form schema
   const passwordFormSchema = z.object({
     currentPassword: z
       .string()
@@ -51,7 +50,6 @@ const AdminSettings = () => {
     path: ["confirmPassword"],
   });
 
-  // Email form
   const emailForm = useForm<z.infer<typeof emailFormSchema>>({
     resolver: zodResolver(emailFormSchema),
     defaultValues: {
@@ -59,7 +57,6 @@ const AdminSettings = () => {
     },
   });
 
-  // Password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -69,7 +66,6 @@ const AdminSettings = () => {
     },
   });
 
-  // Load settings from the database on component mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -77,7 +73,6 @@ const AdminSettings = () => {
         const loadedSettings = await getSettings();
         setSettings(loadedSettings);
         
-        // Also load from localStorage as a fallback if database fetch fails
         const savedSettings = localStorage.getItem('siteSettings');
         if (!loadedSettings && savedSettings) {
           try {
@@ -99,7 +94,6 @@ const AdminSettings = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch current user email from localStorage
     const email = localStorage.getItem('adminEmail');
     if (email) {
       setCurrentEmail(email);
@@ -138,7 +132,6 @@ const AdminSettings = () => {
 
   const handleResetSettings = async (section: keyof typeof settings) => {
     if (window.confirm("Are you sure you want to reset these settings to their defaults?")) {
-      // Reset the specific section to defaults
       setSettings(prev => ({
         ...prev,
         [section]: { ...defaultSettings[section] }
@@ -158,7 +151,6 @@ const AdminSettings = () => {
         throw new Error(error || 'Failed to update email');
       }
       
-      // Update localStorage
       localStorage.setItem('adminEmail', values.email);
       setCurrentEmail(values.email);
       
@@ -903,7 +895,6 @@ const AdminSettings = () => {
             transition={{ duration: 0.3 }}
           >
             <div className="grid gap-6">
-              {/* Email Update Form */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -958,7 +949,6 @@ const AdminSettings = () => {
                 </CardContent>
               </Card>
 
-              {/* Password Update Form */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
