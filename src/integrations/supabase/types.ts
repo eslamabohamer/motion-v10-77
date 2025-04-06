@@ -9,30 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_credentials: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          password_hash: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          password_hash: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          password_hash?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           created_at: string
@@ -158,24 +134,6 @@ export type Database = {
           slug?: string
           title?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      site_settings: {
-        Row: {
-          created_at: string
-          id: string
-          settings: Json
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          settings: Json
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          settings?: Json
         }
         Relationships: []
       }

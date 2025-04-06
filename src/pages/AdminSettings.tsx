@@ -17,15 +17,63 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from '@/integrations/supabase/client';
-import { getSettings, saveSettings, defaultSettings, SiteSettings } from '@/services/settingsService';
-import { updateAdminEmail, updateAdminPassword } from '@/services/adminService';
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [currentEmail, setCurrentEmail] = useState("");
-  const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   
+  // Mock settings for demo
+  const [settings, setSettings] = useState({
+    general: {
+      siteName: "Motion Graphics Artist",
+      siteDescription: "Creating captivating visual experiences through the art of motion",
+      contactEmail: "contact@example.com",
+      showreelUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      logoUrl: "",
+    },
+    performance: {
+      enableAnimations: true,
+      enableParallax: true,
+      lazyLoadImages: true,
+      enableImageOptimization: true,
+      cachingEnabled: true,
+    },
+    animation: {
+      enable3DEffects: true,
+      animationIntensity: 75,
+      scrollAnimations: true,
+      hoverAnimations: true,
+      loadingAnimations: true,
+      particleEffects: false,
+      backgroundColor: "#1A1F2C",
+      accentColor: "#4a6cf7",
+      secondaryAccentColor: "#9b87f5",
+      animationSpeed: "normal", // "slow", "normal", "fast"
+    },
+    seo: {
+      metaTitle: "Motion Graphics Artist Portfolio",
+      metaDescription: "Professional motion graphics and animation portfolio showcasing creative visual storytelling",
+      ogImageUrl: "https://example.com/og-image.jpg",
+      keywords: "motion graphics, animation, visual effects, 3D animation, explainer videos",
+    },
+    social: {
+      instagramUrl: "https://instagram.com",
+      youtubeUrl: "https://youtube.com",
+      linkedinUrl: "https://linkedin.com",
+      twitterUrl: "https://twitter.com",
+    },
+    about: {
+      ownerName: "Muhammad Ali",
+      ownerTitle: "Motion Graphics Artist & 3D Animator",
+      ownerBio: "I'm a passionate motion graphics artist with over 8 years of experience creating stunning visual animations for brands worldwide. My work focuses on bringing ideas to life through creative storytelling and cutting-edge animation techniques.",
+      ownerPhotoUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=400&auto=format&fit=crop",
+      ownerSkills: "Motion Graphics, 3D Animation, Visual Effects, After Effects, Cinema 4D, Blender",
+      ownerLocation: "Cairo, Egypt",
+    }
+  });
+
+  // Email form schema
   const emailFormSchema = z.object({
     email: z
       .string()
@@ -34,6 +82,7 @@ const AdminSettings = () => {
       .max(100, "Email must not exceed 100 characters"),
   });
 
+  // Password form schema
   const passwordFormSchema = z.object({
     currentPassword: z
       .string()
@@ -50,6 +99,7 @@ const AdminSettings = () => {
     path: ["confirmPassword"],
   });
 
+  // Email form
   const emailForm = useForm<z.infer<typeof emailFormSchema>>({
     resolver: zodResolver(emailFormSchema),
     defaultValues: {
@@ -57,6 +107,7 @@ const AdminSettings = () => {
     },
   });
 
+  // Password form
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -67,38 +118,21 @@ const AdminSettings = () => {
   });
 
   useEffect(() => {
-    const loadSettings = async () => {
+    // Fetch current user email
+    const getCurrentUser = async () => {
       try {
-        setIsLoading(true);
-        const loadedSettings = await getSettings();
-        setSettings(loadedSettings);
-        
-        const savedSettings = localStorage.getItem('siteSettings');
-        if (!loadedSettings && savedSettings) {
-          try {
-            const parsed = JSON.parse(savedSettings);
-            setSettings(parsed);
-          } catch (error) {
-            console.error('Error parsing saved settings:', error);
-          }
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (user) {
+          setCurrentEmail(user.email || "");
+          emailForm.setValue("email", user.email || "");
         }
       } catch (error) {
-        console.error("Error loading settings:", error);
-        toast.error("Failed to load settings");
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching user:", error);
       }
     };
     
-    loadSettings();
-  }, []);
-
-  useEffect(() => {
-    const email = localStorage.getItem('adminEmail');
-    if (email) {
-      setCurrentEmail(email);
-      emailForm.setValue("email", email);
-    }
+    getCurrentUser();
   }, []);
 
   const handleSettingChange = (section: keyof typeof settings, key: string, value: any) => {
@@ -111,32 +145,21 @@ const AdminSettings = () => {
     }));
   };
 
-  const handleSaveSettings = async () => {
+  const handleSaveSettings = () => {
     setIsLoading(true);
     
-    try {
-      const { success, error } = await saveSettings(settings);
-      
-      if (!success) {
-        throw new Error(error || 'Failed to save settings');
-      }
-      
-      toast.success("Settings saved successfully");
-    } catch (error: any) {
-      console.error("Error saving settings:", error);
-      toast.error(error.message || "Failed to save settings");
-    } finally {
+    // Simulate saving to database
+    setTimeout(() => {
       setIsLoading(false);
-    }
+      // Store settings in localStorage for demo purposes
+      localStorage.setItem('siteSettings', JSON.stringify(settings));
+      toast.success("Settings saved successfully");
+    }, 800);
   };
 
-  const handleResetSettings = async (section: keyof typeof settings) => {
+  const handleResetSettings = (section: keyof typeof settings) => {
     if (window.confirm("Are you sure you want to reset these settings to their defaults?")) {
-      setSettings(prev => ({
-        ...prev,
-        [section]: { ...defaultSettings[section] }
-      }));
-      
+      // This would reset to default values in a real application
       toast.info(`${section.charAt(0).toUpperCase() + section.slice(1)} settings reset to defaults`);
     }
   };
@@ -144,17 +167,12 @@ const AdminSettings = () => {
   const onEmailSubmit = async (values: z.infer<typeof emailFormSchema>) => {
     try {
       setIsLoading(true);
+      const { error } = await supabase.auth.updateUser({ email: values.email });
       
-      const { success, error } = await updateAdminEmail(values.email);
+      if (error) throw error;
       
-      if (!success) {
-        throw new Error(error || 'Failed to update email');
-      }
-      
-      localStorage.setItem('adminEmail', values.email);
+      toast.success("Email update request sent. Please check your new email inbox for confirmation.");
       setCurrentEmail(values.email);
-      
-      toast.success("Email updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to update email");
     } finally {
@@ -165,15 +183,11 @@ const AdminSettings = () => {
   const onPasswordSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
     try {
       setIsLoading(true);
+      const { error } = await supabase.auth.updateUser({ 
+        password: values.newPassword 
+      });
       
-      const { success, error } = await updateAdminPassword(
-        values.currentPassword,
-        values.newPassword
-      );
-      
-      if (!success) {
-        throw new Error(error || 'Failed to update password');
-      }
+      if (error) throw error;
       
       toast.success("Password updated successfully");
       passwordForm.reset();
@@ -183,6 +197,34 @@ const AdminSettings = () => {
       setIsLoading(false);
     }
   };
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('siteSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(prev => {
+          // Merge the saved settings with the default settings
+          // This ensures new settings properties are still present with default values
+          return {
+            ...prev,
+            ...parsed,
+            animation: {
+              ...prev.animation,
+              ...(parsed.animation || {})
+            },
+            about: {
+              ...prev.about,
+              ...(parsed.about || {})
+            }
+          };
+        });
+      } catch (error) {
+        console.error('Error parsing saved settings:', error);
+      }
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -895,6 +937,7 @@ const AdminSettings = () => {
             transition={{ duration: 0.3 }}
           >
             <div className="grid gap-6">
+              {/* Email Update Form */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -949,6 +992,7 @@ const AdminSettings = () => {
                 </CardContent>
               </Card>
 
+              {/* Password Update Form */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
