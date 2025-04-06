@@ -30,6 +30,21 @@ export const PortfolioPreview = () => {
   const y = useTransform(scrollYProgress, [0, 1], [100, 0]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], [0, 1]);
 
+  // Create fixed transform values to use in the item animations
+  const transformValues = [
+    useTransform(scrollYProgress, [0, 1], [50, 0]),
+    useTransform(scrollYProgress, [0, 1], [60, 0]),
+    useTransform(scrollYProgress, [0, 1], [70, 0]),
+    useTransform(scrollYProgress, [0, 1], [80, 0]),
+  ];
+  
+  const opacityValues = [
+    useTransform(scrollYProgress, [0, 0.3], [0, 1]),
+    useTransform(scrollYProgress, [0, 0.35], [0, 1]),
+    useTransform(scrollYProgress, [0, 0.4], [0, 1]),
+    useTransform(scrollYProgress, [0, 0.45], [0, 1]),
+  ];
+
   useEffect(() => {
     // Load animation settings from localStorage
     const savedSettings = localStorage.getItem('siteSettings');
@@ -107,8 +122,8 @@ export const PortfolioPreview = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 style={animations3DEnabled ? { 
-                  y: useTransform(scrollYProgress, [0, 1], [50 + (index * 10), 0]), 
-                  opacity: useTransform(scrollYProgress, [0, 0.3 + (index * 0.05)], [0, 1])
+                  y: transformValues[Math.min(index, 3)], 
+                  opacity: opacityValues[Math.min(index, 3)]
                 } : {}}
               >
                 <PortfolioCard item={item} enable3D={animations3DEnabled} />
@@ -211,3 +226,4 @@ const PortfolioCard = ({ item, enable3D }: PortfolioCardProps) => {
     </div>
   );
 };
+
