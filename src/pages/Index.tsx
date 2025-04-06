@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { PortfolioPreview } from '@/components/PortfolioPreview';
-import { ServicesSection } from '@/components/Services';
+import { ServicesSection } from '@/components/ServicesSection';
 import { Testimonials } from '@/components/Testimonials';
 import { ContactCta } from '@/components/ContactCta';
 import { Footer } from '@/components/Footer';
@@ -27,13 +27,15 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#1A1F2C] text-white">
+    <div className="min-h-screen bg-[#1A1F2C] text-white w-full">
       <Navbar />
       <Hero />
-      <PortfolioPreview />
-      <ServicesSection />
-      <Testimonials />
-      <ContactCta />
+      <div className="max-w-6xl mx-auto">
+        <PortfolioPreview />
+        <ServicesSection />
+        <Testimonials />
+        <ContactCta />
+      </div>
       <Footer />
     </div>
   );
