@@ -9,30 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_credentials: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          password_hash: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          password_hash: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          password_hash?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           created_at: string
@@ -60,30 +36,6 @@ export type Database = {
           name?: string
           read?: boolean | null
           subject?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          id: string
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -185,24 +137,6 @@ export type Database = {
         }
         Relationships: []
       }
-      site_settings: {
-        Row: {
-          created_at: string
-          id: string
-          settings: Json
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          settings: Json
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          settings?: Json
-        }
-        Relationships: []
-      }
       testimonials: {
         Row: {
           author: string
@@ -233,27 +167,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -268,32 +181,9 @@ export type Database = {
         }
         Returns: string
       }
-      demote_to_user: {
-        Args: {
-          user_id_to_demote: string
-        }
-        Returns: boolean
-      }
-      get_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      has_role: {
-        Args: {
-          _user_id: string
-          _role: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: boolean
-      }
-      promote_to_admin: {
-        Args: {
-          user_id_to_promote: string
-        }
-        Returns: boolean
-      }
     }
     Enums: {
-      app_role: "admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never

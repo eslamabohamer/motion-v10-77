@@ -4,50 +4,26 @@ import { useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AdminDashboard } from '@/components/AdminDashboard';
-import { Session, User } from '@supabase/supabase-js';
 
 const AdminLayout = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Get current session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          throw sessionError;
+        if (error) {
+          throw error;
         }
         
-        if (!sessionData.session) {
-          navigate('/admin/login');
-          return;
-        }
-
-        setSession(sessionData.session);
-        setUser(sessionData.session.user);
-        
-        // Check if user is an admin
-        const { data: roleData, error: roleError } = await supabase.rpc('get_user_role', {});
-        
-        if (roleError) {
-          console.error('Role error:', roleError);
+        if (!data.session) {
           navigate('/admin/login');
           return;
         }
         
-        if (roleData !== 'admin') {
-          toast.error('Access denied. Admin privileges required.');
-          navigate('/');
-          return;
-        }
-        
-        setIsAdmin(true);
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Auth error:', error);
@@ -62,14 +38,9 @@ const AdminLayout = () => {
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
-        setSession(session);
-        setUser(session?.user ?? null);
-        // We'll check admin status when the component mounts
+        setIsAuthenticated(true);
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
-        setIsAdmin(false);
-        setSession(null);
-        setUser(null);
         navigate('/admin/login');
       }
     });
@@ -87,11 +58,11 @@ const AdminLayout = () => {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated) {
     return null; // Will redirect in the useEffect
   }
 
-  return <AdminDashboard>{user?.email}</AdminDashboard>;
+  return <AdminDashboard />;
 };
 
 export default AdminLayout;

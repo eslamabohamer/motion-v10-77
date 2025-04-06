@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Grid3X3, PanelLeft, Settings, Tag, MessageSquare, Users } from "lucide-react";
+import { ChevronLeft, Grid3X3, PanelLeft, Settings, Tag, MessageSquare } from "lucide-react";
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
@@ -21,7 +21,6 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
     if (path.includes('/admin/projects')) return 'projects';
     if (path.includes('/admin/messages')) return 'messages';
     if (path.includes('/admin/categories')) return 'categories';
-    if (path.includes('/admin/users')) return 'users';
     if (path.includes('/admin/settings')) return 'settings';
     return 'projects';
   });
@@ -48,11 +47,6 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
             <span className="text-sm text-muted-foreground">Admin</span>
           </div>
           <div className="flex flex-1 items-center space-x-4 justify-end">
-            {children && (
-              <span className="text-sm mr-2">
-                Logged in as: <strong>{children}</strong>
-              </span>
-            )}
             <Button variant="ghost" size="sm" asChild>
               <a href="/" target="_blank" rel="noopener noreferrer">
                 View Site
@@ -103,16 +97,6 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     <Link to="/admin/messages" onClick={() => setActiveTab('messages')}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       Messages
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'users' ? "secondary" : "ghost"} 
-                    className="justify-start" 
-                    asChild
-                  >
-                    <Link to="/admin/users" onClick={() => setActiveTab('users')}>
-                      <Users className="mr-2 h-4 w-4" />
-                      Users
                     </Link>
                   </Button>
                   <Button 
