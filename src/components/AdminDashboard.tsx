@@ -27,7 +27,10 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Remove admin login info from localStorage
+      localStorage.removeItem('isAdminLoggedIn');
+      localStorage.removeItem('adminEmail');
+      
       toast.success('Logged out successfully');
       navigate('/admin/login');
     } catch (error) {

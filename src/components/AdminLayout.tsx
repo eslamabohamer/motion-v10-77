@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AdminDashboard } from '@/components/AdminDashboard';
 
@@ -13,13 +12,10 @@ const AdminLayout = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        // Check if admin is logged in via localStorage
+        const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
         
-        if (error) {
-          throw error;
-        }
-        
-        if (!data.session) {
+        if (!isLoggedIn) {
           navigate('/admin/login');
           return;
         }
@@ -35,19 +31,6 @@ const AdminLayout = () => {
     };
     
     checkAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        setIsAuthenticated(true);
-      } else if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-        navigate('/admin/login');
-      }
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [navigate]);
 
   if (isLoading) {

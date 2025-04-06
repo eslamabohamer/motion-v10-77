@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
+import { verifyAdminCredentials } from '@/services/adminService';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -25,15 +25,17 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const isValid = await verifyAdminCredentials(email, password);
       
-      if (error) {
-        toast.error(error.message);
+      if (!isValid) {
+        toast.error('Invalid email or password');
+        setIsLoading(false);
         return;
       }
+      
+      // Store login status in localStorage
+      localStorage.setItem('isAdminLoggedIn', 'true');
+      localStorage.setItem('adminEmail', email);
       
       toast.success('Logged in successfully');
       navigate('/admin/projects');

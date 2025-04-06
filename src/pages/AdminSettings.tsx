@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -100,21 +99,12 @@ const AdminSettings = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch current user email
-    const getCurrentUser = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        if (user) {
-          setCurrentEmail(user.email || "");
-          emailForm.setValue("email", user.email || "");
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-    
-    getCurrentUser();
+    // Fetch current user email from localStorage
+    const email = localStorage.getItem('adminEmail');
+    if (email) {
+      setCurrentEmail(email);
+      emailForm.setValue("email", email);
+    }
   }, []);
 
   const handleSettingChange = (section: keyof typeof settings, key: string, value: any) => {
@@ -161,12 +151,18 @@ const AdminSettings = () => {
   const onEmailSubmit = async (values: z.infer<typeof emailFormSchema>) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.updateUser({ email: values.email });
       
-      if (error) throw error;
+      const { success, error } = await updateAdminEmail(values.email);
       
-      toast.success("Email update request sent. Please check your new email inbox for confirmation.");
+      if (!success) {
+        throw new Error(error || 'Failed to update email');
+      }
+      
+      // Update localStorage
+      localStorage.setItem('adminEmail', values.email);
       setCurrentEmail(values.email);
+      
+      toast.success("Email updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to update email");
     } finally {
@@ -177,11 +173,15 @@ const AdminSettings = () => {
   const onPasswordSubmit = async (values: z.infer<typeof passwordFormSchema>) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.updateUser({ 
-        password: values.newPassword 
-      });
       
-      if (error) throw error;
+      const { success, error } = await updateAdminPassword(
+        values.currentPassword,
+        values.newPassword
+      );
+      
+      if (!success) {
+        throw new Error(error || 'Failed to update password');
+      }
       
       toast.success("Password updated successfully");
       passwordForm.reset();
