@@ -1,16 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, HomeIcon, Briefcase, Settings, User, Mail, LogIn } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, X, HomeIcon, Briefcase, Settings, User, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { user, isAdmin } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,30 +45,7 @@ export const Navbar = () => {
           <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
           <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" />
           <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
-          
-          {isAdmin ? (
-            <Button 
-              className="bg-primary hover:bg-primary/90"
-              onClick={() => navigate('/admin/projects')}
-            >
-              Admin Dashboard
-            </Button>
-          ) : user ? (
-            <Button 
-              className="bg-primary hover:bg-primary/90"
-              onClick={() => navigate('/admin/projects')}
-            >
-              Dashboard
-            </Button>
-          ) : (
-            <Button 
-              className="bg-primary hover:bg-primary/90"
-              onClick={() => navigate('/login')}
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Admin Login
-            </Button>
-          )}
+          <Button className="bg-primary hover:bg-primary/90">Get in Touch</Button>
         </div>
 
         {/* Mobile menu button */}
@@ -95,14 +69,7 @@ export const Navbar = () => {
           <MobileNavLink to="/services" label="Services" onClick={closeMenu} />
           <MobileNavLink to="/about" label="About" onClick={closeMenu} />
           <MobileNavLink to="/contact" label="Contact" onClick={closeMenu} />
-          
-          {isAdmin ? (
-            <MobileNavLink to="/admin/projects" label="Admin Dashboard" onClick={closeMenu} />
-          ) : user ? (
-            <MobileNavLink to="/admin/projects" label="Dashboard" onClick={closeMenu} />
-          ) : (
-            <MobileNavLink to="/login" label="Admin Login" onClick={closeMenu} />
-          )}
+          <Button className="mt-4 bg-primary hover:bg-primary/90">Get in Touch</Button>
         </div>
       </div>
     </nav>
