@@ -125,13 +125,13 @@ export const getSettings = async (): Promise<SiteSettings> => {
       .from('site_settings')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1) as { data: SiteSettingsRecord[] | null, error: any };
+      .limit(1);
     
     if (error) throw error;
     
     // If there are settings, return them
     if (data && data.length > 0) {
-      return data[0].settings as SiteSettings;
+      return (data[0] as SiteSettingsRecord).settings as SiteSettings;
     }
     
     // If no settings exist, insert the defaults and return them
