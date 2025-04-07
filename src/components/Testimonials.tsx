@@ -26,7 +26,7 @@ interface UserRating {
   profiles?: {
     display_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 export const Testimonials = () => {
@@ -56,22 +56,26 @@ export const Testimonials = () => {
         // Fetch user ratings
         const { data: ratingData, error: ratingError } = await supabase
           .from('user_ratings')
-          .select(`
-            *,
-            profiles:user_id (
-              display_name,
-              avatar_url
-            )
-          `)
-          .order('rating', { ascending: false })
-          .limit(10);
+          .select('*, profiles:user_id(display_name, avatar_url)');
           
         if (ratingError) {
           console.error('Error fetching user ratings:', ratingError);
-          return;
+          // If there's an error with the join query, try a simpler query
+          const { data: simpleRatingData } = await supabase
+            .from('user_ratings')
+            .select('*')
+            .order('rating', { ascending: false })
+            .limit(10);
+          
+          // Use the data without profiles
+          setUserRatings((simpleRatingData || []).map(rating => ({
+            ...rating,
+            profiles: null
+          })));
+        } else {
+          // Cast the data to the expected type
+          setUserRatings((ratingData || []) as unknown as UserRating[]);
         }
-        
-        setUserRatings(ratingData || []);
         
         // Set display items to testimonials by default
         setActiveDisplayItems(testimonialData || []);

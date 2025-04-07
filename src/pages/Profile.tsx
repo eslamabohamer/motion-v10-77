@@ -13,8 +13,19 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Loader2, Upload } from 'lucide-react';
 
+// Enhanced profile interface to include gender
+interface Profile {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+  gender?: 'male' | 'female';
+}
+
 const Profile = () => {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +64,7 @@ const Profile = () => {
               id: user.id,
               display_name: user.user_metadata.display_name || user.email?.split('@')[0] || 'User',
               avatar_url: user.user_metadata.avatar_url,
+              gender: 'male' // Default gender
             });
             
             // Fetch the newly created profile
@@ -62,13 +74,13 @@ const Profile = () => {
               .eq('id', user.id)
               .single();
               
-            setProfile(newProfile);
+            setProfile(newProfile as Profile);
             setDisplayName(newProfile?.display_name || '');
             setGender(newProfile?.gender || 'male');
             setAvatarUrl(newProfile?.avatar_url || null);
           }
         } else {
-          setProfile(profileData);
+          setProfile(profileData as Profile);
           setDisplayName(profileData?.display_name || '');
           setGender(profileData?.gender || 'male');
           setAvatarUrl(profileData?.avatar_url || null);
