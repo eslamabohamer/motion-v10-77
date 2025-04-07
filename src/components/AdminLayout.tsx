@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,16 +81,18 @@ const AdminLayout = () => {
             { data: performanceData, error: performanceError },
             { data: animationData, error: animationError },
             { data: seoData, error: seoError },
-            { data: socialData, error: socialError }
+            { data: socialData, error: socialError },
+            { data: designData, error: designError }
           ] = await Promise.all([
             supabase.from('general_settings').select('*').limit(1),
             supabase.from('performance_settings').select('*').limit(1),
             supabase.from('animation_settings').select('*').limit(1),
             supabase.from('seo_settings').select('*').limit(1),
-            supabase.from('social_settings').select('*').limit(1)
+            supabase.from('social_settings').select('*').limit(1),
+            supabase.from('design_settings').select('*').limit(1)
           ]);
           
-          if (generalError || performanceError || animationError || seoError || socialError) {
+          if (generalError || performanceError || animationError || seoError || socialError || designError) {
             throw new Error('Error fetching settings');
           }
           
@@ -99,7 +102,8 @@ const AdminLayout = () => {
             performance: performanceData?.[0] || {},
             animation: animationData?.[0] || {},
             seo: seoData?.[0] || {},
-            social: socialData?.[0] || {}
+            social: socialData?.[0] || {},
+            design: designData?.[0] || {}
           };
           
           localStorage.setItem('siteSettings', JSON.stringify(settings));
