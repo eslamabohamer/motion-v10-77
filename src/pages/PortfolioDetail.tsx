@@ -31,6 +31,16 @@ const PortfolioDetail = () => {
     accentColor: "#4a6cf7", 
     secondaryAccentColor: "#9b87f5"
   });
+  const [isRTL, setIsRTL] = useState(false);
+
+  // Check if text is RTL
+  useEffect(() => {
+    if (project?.title) {
+      // Simple RTL detection - if the first character is RTL
+      const rtlChars = /[\u0591-\u07FF\u200F\u202B\u202E\uFB1D-\uFDFD\uFE70-\uFEFC]/;
+      setIsRTL(rtlChars.test(project.title[0]));
+    }
+  }, [project]);
 
   // Fetch single project
   useEffect(() => {
@@ -141,6 +151,8 @@ const PortfolioDetail = () => {
     );
   }
 
+  const rtlClass = isRTL ? 'rtl text-right' : '';
+
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
@@ -152,10 +164,10 @@ const PortfolioDetail = () => {
           transition={{ duration: 0.4 }}
           className="mb-8"
         >
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white rtl:text-right">{project.title}</h1>
-          <div className="flex items-center text-sm text-gray-300 rtl:flex-row-reverse">
-            <span className="inline-flex items-center">
-              <Calendar className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
+          <h1 className={`text-3xl md:text-4xl font-bold mb-2 text-white ${rtlClass}`}>{project.title}</h1>
+          <div className={`flex items-center text-sm text-gray-300 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span className={`inline-flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <Calendar className={`h-4 w-4 ${isRTL ? 'ml-1 mr-0' : 'mr-1'}`} />
               {project.created_at && format(new Date(project.created_at), 'MMMM yyyy')}
             </span>
             <span className="mx-2">•</span>
@@ -171,14 +183,14 @@ const PortfolioDetail = () => {
           className="mb-10"
         >
           {project.video_url ? (
-            <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-black">
+            <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-black relative">
               <iframe 
                 src={project.video_url}
                 title={project.title} 
                 frameBorder="0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                 allowFullScreen
-                className="w-full h-full"
+                className="w-full h-full absolute inset-0"
               ></iframe>
             </div>
           ) : (
@@ -188,6 +200,16 @@ const PortfolioDetail = () => {
                 alt={project.title} 
                 className="w-full h-full object-cover"
               />
+              {project.video_url && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/30"
+                  onClick={() => setShowVideo(true)}
+                >
+                  <div className="w-16 h-16 bg-primary/90 rounded-full flex items-center justify-center">
+                    <Play className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </motion.div>
@@ -199,8 +221,8 @@ const PortfolioDetail = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mb-16"
         >
-          <h2 className="text-2xl font-bold mb-4 text-white rtl:text-right">Project Overview</h2>
-          <p className="text-gray-300 leading-relaxed mb-6 rtl:text-right">
+          <h2 className={`text-2xl font-bold mb-4 text-white ${rtlClass}`}>Project Overview</h2>
+          <p className={`text-gray-300 leading-relaxed mb-6 ${rtlClass}`}>
             {project.description}
           </p>
           
@@ -208,7 +230,7 @@ const PortfolioDetail = () => {
           <div className="mt-8">
             <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
               <Link to="/portfolio">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                 Back to Portfolio
               </Link>
             </Button>
@@ -233,7 +255,7 @@ const PortfolioDetail = () => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="mb-16"
           >
-            <h2 className="text-2xl font-bold mb-6 text-white rtl:text-right">Related Projects</h2>
+            <h2 className={`text-2xl font-bold mb-6 text-white ${rtlClass}`}>Related Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {relatedProjects.map((relatedProject) => (
                 <Link 
@@ -249,10 +271,10 @@ const PortfolioDetail = () => {
                     />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-1 text-white group-hover:text-primary transition-colors rtl:text-right">
+                    <h3 className={`text-lg font-semibold mb-1 text-white group-hover:text-primary transition-colors ${rtlClass}`}>
                       {relatedProject.title}
                     </h3>
-                    <p className="text-sm text-gray-400 rtl:text-right">{relatedProject.category}</p>
+                    <p className={`text-sm text-gray-400 ${rtlClass}`}>{relatedProject.category}</p>
                   </div>
                 </Link>
               ))}
@@ -272,7 +294,7 @@ const PortfolioDetail = () => {
             >
               <X className="h-6 w-6" />
             </button>
-            <div className="aspect-video">
+            <div className="aspect-w-16 aspect-h-9">
               <iframe 
                 src={project.video_url}
                 title="Project Video" 
