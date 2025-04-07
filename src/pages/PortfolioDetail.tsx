@@ -134,6 +134,43 @@ const PortfolioDetail = () => {
     }).format(date);
   };
 
+  // Helper to safely parse YouTube/Vimeo URLs
+  const getEmbedUrl = (videoUrl: string | null): string | null => {
+    if (!videoUrl) return null;
+    
+    try {
+      // Handle YouTube URLs
+      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+        let videoId = '';
+        
+        if (videoUrl.includes('youtube.com/watch')) {
+          const url = new URL(videoUrl);
+          videoId = url.searchParams.get('v') || '';
+        } else if (videoUrl.includes('youtu.be/')) {
+          videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0] || '';
+        }
+        
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+      
+      // Handle Vimeo URLs
+      if (videoUrl.includes('vimeo.com')) {
+        const vimeoId = videoUrl.split('vimeo.com/')[1]?.split('?')[0] || '';
+        if (vimeoId) {
+          return `https://player.vimeo.com/video/${vimeoId}`;
+        }
+      }
+      
+      // If we can't parse it, return the original URL
+      return videoUrl;
+    } catch (error) {
+      console.error('Error parsing video URL:', error);
+      return videoUrl;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -161,6 +198,8 @@ const PortfolioDetail = () => {
       </div>
     );
   }
+
+  const embedUrl = getEmbedUrl(project.video_url);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: colorSettings.backgroundColor }}>
@@ -196,7 +235,7 @@ const PortfolioDetail = () => {
           className="mb-12"
         >
           <img 
-            src={project.cover_image} 
+            src={project.cover_image || project.image_url} 
             alt={project.title} 
             className="w-full h-auto rounded-lg object-cover shadow-lg" 
             style={{ maxHeight: '600px' }}
@@ -213,7 +252,7 @@ const PortfolioDetail = () => {
           >
             <h2 className="text-2xl font-bold mb-6">About this project</h2>
             <div className="prose prose-lg dark:prose-invert max-w-none">
-              <p>{project.long_description}</p>
+              <p>{project.long_description || project.description}</p>
             </div>
             
             {project.project_url && (
@@ -243,7 +282,7 @@ const PortfolioDetail = () => {
                   <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="font-medium">Completion Date</p>
-                    <p className="text-muted-foreground">{formatDate(project.completed_date)}</p>
+                    <p className="text-muted-foreground">{formatDate(project.completed_date || project.created_at)}</p>
                   </div>
                 </div>
                 
@@ -251,7 +290,7 @@ const PortfolioDetail = () => {
                   <Briefcase className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="font-medium">Client</p>
-                    <p className="text-muted-foreground">{project.client_name}</p>
+                    <p className="text-muted-foreground">{project.client_name || "Internal Project"}</p>
                   </div>
                 </div>
                 
@@ -318,13 +357,13 @@ const PortfolioDetail = () => {
             className="mb-12"
           >
             <h2 className="text-2xl font-bold mb-6">Project Video</h2>
-            <div className="aspect-w-16 aspect-h-9">
+            <div className="relative w-full pt-[56.25%]">
               <iframe
-                src={project.video_url}
+                src={embedUrl || ''}
                 title={`${project.title} video`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                className="rounded-lg w-full h-[500px]"
+                className="absolute top-0 left-0 w-full h-full rounded-lg"
               ></iframe>
             </div>
           </motion.div>
@@ -337,7 +376,7 @@ const PortfolioDetail = () => {
           transition={{ duration: 0.6, delay: 0.7 }}
           className="mb-12"
         >
-          <UserRating projectId={project?.id} />
+          <UserRating projectId={project.id} />
         </motion.div>
       </main>
       <Footer />

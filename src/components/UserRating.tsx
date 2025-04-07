@@ -69,40 +69,45 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchRatings = async () => {
-      if (!projectId) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_ratings')
-          .select(`
-            id, 
-            rating, 
-            comment, 
-            created_at, 
-            user_id,
-            photo_url,
-            project_id,
-            updated_at,
-            profiles(display_name, avatar_url)
-          `)
-          .eq('project_id', projectId)
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('Error fetching ratings:', error);
-          return;
-        }
-        
-        // Properly cast the data to ensure type safety
-        setExistingRatings(data as unknown as UserRatingData[]);
-      } catch (error) {
-        console.error('Error in fetchRatings:', error);
-      }
-    };
+  // Function to fetch ratings
+  const fetchRatings = async () => {
+    if (!projectId) return;
     
-    fetchRatings();
+    try {
+      const { data, error } = await supabase
+        .from('user_ratings')
+        .select(`
+          id, 
+          rating, 
+          comment, 
+          created_at, 
+          user_id,
+          photo_url,
+          project_id,
+          updated_at,
+          profiles(display_name, avatar_url)
+        `)
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching ratings:', error);
+        return;
+      }
+      
+      console.log('Fetched ratings:', data);
+      setExistingRatings(data as unknown as UserRatingData[]);
+    } catch (error) {
+      console.error('Error in fetchRatings:', error);
+    }
+  };
+
+  // Fetch ratings on component mount and when projectId changes
+  useEffect(() => {
+    if (projectId) {
+      setIsLoading(true);
+      fetchRatings().finally(() => setIsLoading(false));
+    }
   }, [projectId]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,6 +145,11 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       return;
     }
     
+    if (!projectId) {
+      toast.error('Project ID is missing.');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -149,30 +159,38 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
         const fileName = `${user.id}-${Date.now()}-${userPhoto.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('user-photos')
-          .upload(fileName, userPhoto);
+          .upload(`${user.id}/${fileName}`, userPhoto);
         
         if (uploadError) {
+          console.error('Upload error:', uploadError);
           throw new Error('Failed to upload photo');
         }
         
         const { data: urlData } = supabase.storage
           .from('user-photos')
-          .getPublicUrl(fileName);
+          .getPublicUrl(`${user.id}/${fileName}`);
           
         photoUrl = urlData.publicUrl;
       }
       
+      const newRating = {
+        project_id: projectId,
+        user_id: user.id,
+        rating,
+        comment,
+        photo_url: photoUrl
+      };
+      
+      console.log('Submitting rating:', newRating);
+      
       const { error } = await supabase
         .from('user_ratings')
-        .insert({
-          project_id: projectId || 'general',
-          user_id: user.id,
-          rating,
-          comment,
-          photo_url: photoUrl
-        });
+        .insert(newRating);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
       
       toast.success('Your rating has been submitted. Thank you!');
       setRating(0);
@@ -180,33 +198,8 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       setUserPhoto(null);
       setPhotoPreview(null);
       
-      try {
-        const { data, error } = await supabase
-          .from('user_ratings')
-          .select(`
-            id, 
-            rating, 
-            comment, 
-            created_at, 
-            user_id,
-            photo_url,
-            project_id,
-            updated_at,
-            profiles(display_name, avatar_url)
-          `)
-          .eq('project_id', projectId || 'general')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error('Error refreshing ratings:', error);
-          return;
-        }
-        
-        // Properly cast the data to ensure type safety
-        setExistingRatings(data as unknown as UserRatingData[]);
-      } catch (error) {
-        console.error('Error refreshing ratings:', error);
-      }
+      // Refresh ratings after submission
+      await fetchRatings();
       
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -344,7 +337,7 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       )}
       
       <div className="space-y-6">
-        <h3 className="text-xl font-semibold">User Reviews</h3>
+        <h3 className="text-xl font-semibold">User Reviews ({existingRatings.length})</h3>
         
         {existingRatings.length === 0 ? (
           <p className="text-muted-foreground italic">No reviews yet. Be the first to leave a review!</p>
@@ -354,7 +347,7 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={review.profiles?.avatar_url || review.photo_url} />
+                    <AvatarImage src={review.profiles?.avatar_url || undefined} alt="User avatar" />
                     <AvatarFallback>
                       {review.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
