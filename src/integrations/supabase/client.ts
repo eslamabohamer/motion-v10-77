@@ -15,5 +15,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     storageKey: 'supabase-auth',
     debug: import.meta.env.DEV // Enable debug logs in development
+  },
+  db: {
+    schema: 'public'
   }
 });

@@ -74,19 +74,10 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     if (!projectId) return;
     
     try {
+      // Use a simplified query that doesn't join with profiles
       const { data, error } = await supabase
         .from('user_ratings')
-        .select(`
-          id, 
-          rating, 
-          comment, 
-          created_at, 
-          user_id,
-          photo_url,
-          project_id,
-          updated_at,
-          profiles(display_name, avatar_url)
-        `)
+        .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       
@@ -96,7 +87,37 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       }
       
       console.log('Fetched ratings:', data);
-      setExistingRatings(data as unknown as UserRatingData[]);
+      
+      // Get user profiles for these ratings
+      if (data && data.length > 0) {
+        const userIds = data.map(rating => rating.user_id).filter(Boolean);
+        
+        if (userIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .in('id', userIds);
+            
+          if (!profilesError && profilesData) {
+            // Map profiles to ratings
+            const ratingsWithProfiles = data.map(rating => {
+              const userProfile = profilesData.find(p => p.id === rating.user_id);
+              return {
+                ...rating,
+                profiles: userProfile ? {
+                  display_name: userProfile.display_name,
+                  avatar_url: userProfile.avatar_url
+                } : undefined
+              };
+            });
+            
+            setExistingRatings(ratingsWithProfiles as UserRatingData[]);
+            return;
+          }
+        }
+      }
+      
+      setExistingRatings(data as UserRatingData[]);
     } catch (error) {
       console.error('Error in fetchRatings:', error);
     }
@@ -198,12 +219,12 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       setUserPhoto(null);
       setPhotoPreview(null);
       
-      // Refresh ratings after submission
+      // Refresh ratings immediately after submission
       await fetchRatings();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting rating:', error);
-      toast.error('Failed to submit rating. Please try again.');
+      toast.error(`Failed to submit rating: ${error.message || 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }
