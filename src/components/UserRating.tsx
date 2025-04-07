@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { addUserRating, deleteUserRating } from '@/utils/supabaseUtils';
@@ -74,14 +75,17 @@ export default function UserRating({ projectId }: UserRatingProps) {
             setUserProfile(data);
           }
           
-          // Check if user is admin
+          // Check if user is admin using user_roles table
           const { data: roleData, error: roleError } = await supabase
-            .rpc('is_admin');
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single();
             
           if (roleError) {
             console.error('Error checking admin status:', roleError);
           } else {
-            setIsAdmin(roleData === true);
+            setIsAdmin(roleData?.role === 'admin');
           }
         }
       } catch (error) {
