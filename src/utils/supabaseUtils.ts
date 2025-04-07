@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Fix for the UserRating component error
+// Fix for the UserRating component error - ensure we return a success boolean
 export async function addUserRating(data: {
   project_id: string;
   rating: number;

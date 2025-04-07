@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StarRating } from '@/components/StarRating';
+import { Rating } from '@/components/Rating';
 import { supabase, getDefaultAvatar, getDisplayNameOrEmail, deleteUserRating } from '@/integrations/supabase/client';
 import { addUserRating } from '@/utils/supabaseUtils';
 import { toast } from 'sonner';
@@ -66,7 +66,7 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
   }, []);
 
   useEffect(() => {
-    const fetchRatings = async () => {
+    const fetchRatingsData = async () => {
       try {
         setIsLoading(true);
         const { data, error } = await supabase
@@ -104,7 +104,7 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
     };
 
     if (projectId) {
-      fetchRatings();
+      fetchRatingsData();
     }
   }, [projectId]);
 
@@ -122,7 +122,7 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
     try {
       setIsSubmitting(true);
       
-      const { error } = await addUserRating({
+      const { error, success } = await addUserRating({
         project_id: projectId,
         rating: rating,
         comment: comment,
@@ -130,12 +130,47 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
         photo_url: user?.user_metadata?.avatar_url || null
       });
 
-      if (!error) {
+      if (success) {
         toast.success('Your rating has been submitted. Thank you!');
         setComment('');
         setRating(0);
         setShowForm(false);
-        fetchRatings();
+        
+        const fetchRatingsData = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('user_ratings')
+              .select('*, profiles:user_id(display_name, email, avatar_url)')
+              .eq('project_id', projectId);
+    
+            if (error) throw error;
+    
+            const formattedRatings = data.map(item => {
+              const formattedProfile = item.profiles 
+                ? {
+                    display_name: item.profiles.display_name || 'Anonymous User',
+                    email: item.profiles.email || '',
+                    avatar_url: item.profiles.avatar_url || ''
+                  }
+                : {
+                    display_name: 'Anonymous User',
+                    email: '',
+                    avatar_url: ''
+                  };
+    
+              return {
+                ...item,
+                profiles: formattedProfile
+              };
+            });
+    
+            setRatings(formattedRatings);
+          } catch (error) {
+            console.error('Error fetching ratings:', error);
+          }
+        };
+        
+        fetchRatingsData();
       } else {
         toast.error('Failed to submit rating. Please try again.');
       }
@@ -176,12 +211,8 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
   const filteredRatings = activeTab === 'all' 
     ? ratings 
     : ratings.filter(r => {
-        if (activeTab === '5') return r.rating === 5;
-        if (activeTab === '4') return r.rating === 4;
-        if (activeTab === '3') return r.rating === 3;
-        if (activeTab === '2') return r.rating === 2;
-        if (activeTab === '1') return r.rating === 1;
-        return true;
+        const ratingStr = String(r.rating) as "1" | "2" | "3" | "4" | "5";
+        return ratingStr === activeTab;
       });
 
   const getRatingCounts = () => {
