@@ -91,14 +91,12 @@ const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   
-  // Company Logos state
   const [newLogo, setNewLogo] = useState({
     name: '',
     logo_url: '',
     website: ''
   });
 
-  // Settings state
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings | null>(null);
   const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings | null>(null);
   const [animationSettings, setAnimationSettings] = useState<AnimationSettings | null>(null);
@@ -106,7 +104,6 @@ const AdminSettings = () => {
   const [socialSettings, setSocialSettings] = useState<SocialSettings | null>(null);
   const [aboutMe, setAboutMe] = useState<AboutMeData | null>(null);
 
-  // General settings query
   const { data: generalData, isLoading: isLoadingGeneral, refetch: refetchGeneral } = useQuery({
     queryKey: ['generalSettings'],
     queryFn: async () => {
@@ -128,7 +125,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Performance settings query
   const { data: performanceData, isLoading: isLoadingPerformance, refetch: refetchPerformance } = useQuery({
     queryKey: ['performanceSettings'],
     queryFn: async () => {
@@ -150,7 +146,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Animation settings query
   const { data: animationData, isLoading: isLoadingAnimation, refetch: refetchAnimation } = useQuery({
     queryKey: ['animationSettings'],
     queryFn: async () => {
@@ -172,7 +167,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // SEO settings query
   const { data: seoData, isLoading: isLoadingSeo, refetch: refetchSeo } = useQuery({
     queryKey: ['seoSettings'],
     queryFn: async () => {
@@ -194,7 +188,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Social settings query
   const { data: socialData, isLoading: isLoadingSocial, refetch: refetchSocial } = useQuery({
     queryKey: ['socialSettings'],
     queryFn: async () => {
@@ -216,7 +209,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Fetch about me data
   const { data: aboutData, isLoading: isLoadingAbout, refetch: refetchAbout } = useQuery({
     queryKey: ['aboutMe'],
     queryFn: async () => {
@@ -236,7 +228,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Fetch company logos
   const { data: companyLogos, isLoading: isLoadingLogos, refetch: refetchLogos } = useQuery({
     queryKey: ['companyLogos'],
     queryFn: async () => {
@@ -258,7 +249,6 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Update settings when data loads
   useEffect(() => {
     if (generalData) setGeneralSettings(generalData);
     if (performanceData) setPerformanceSettings(performanceData);
@@ -268,7 +258,6 @@ const AdminSettings = () => {
     if (aboutData) setAboutMe(aboutData);
   }, [generalData, performanceData, animationData, seoData, socialData, aboutData]);
 
-  // General settings mutation
   const { mutate: saveGeneralSettings } = useMutation({
     mutationFn: async (data: Partial<GeneralSettings>) => {
       if (generalSettings?.id) {
@@ -306,7 +295,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Performance settings mutation
   const { mutate: savePerformanceSettings } = useMutation({
     mutationFn: async (data: Partial<PerformanceSettings>) => {
       if (performanceSettings?.id) {
@@ -344,7 +332,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Animation settings mutation
   const { mutate: saveAnimationSettings } = useMutation({
     mutationFn: async (data: Partial<AnimationSettings>) => {
       if (animationSettings?.id) {
@@ -382,7 +369,6 @@ const AdminSettings = () => {
     }
   });
 
-  // SEO settings mutation
   const { mutate: saveSeoSettings } = useMutation({
     mutationFn: async (data: Partial<SeoSettings>) => {
       if (seoSettings?.id) {
@@ -420,7 +406,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Social settings mutation
   const { mutate: saveSocialSettings } = useMutation({
     mutationFn: async (data: Partial<SocialSettings>) => {
       if (socialSettings?.id) {
@@ -458,7 +443,6 @@ const AdminSettings = () => {
     }
   });
 
-  // About me data mutation
   const { mutate: saveAboutMeData } = useMutation({
     mutationFn: async (data: Partial<AboutMeData>) => {
       if (aboutMe?.id) {
@@ -491,7 +475,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Save company logo mutation
   const { mutate: saveLogoMutation } = useMutation({
     mutationFn: async (logoData: Omit<CompanyLogo, 'id' | 'display_order'>) => {
       const { data: maxOrderData, error: maxOrderError } = await supabase
@@ -541,7 +524,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Update company logo mutation
   const { mutate: updateLogoMutation } = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<CompanyLogo> }) => {
       const { error } = await supabase
@@ -571,7 +553,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Delete company logo mutation
   const { mutate: deleteLogoMutation } = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -642,7 +623,6 @@ const AdminSettings = () => {
     }
   };
 
-  // Main render
   return (
     <div className="space-y-6">
       <motion.div
@@ -669,7 +649,6 @@ const AdminSettings = () => {
           <TabsTrigger value="about">About Me</TabsTrigger>
         </TabsList>
         
-        {/* General Settings */}
         <TabsContent value="general">
           {isLoadingGeneral ? (
             <div className="p-8 flex justify-center">
@@ -765,7 +744,6 @@ const AdminSettings = () => {
           )}
         </TabsContent>
         
-        {/* Company Logos Tab */}
         <TabsContent value="logos">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -889,7 +867,6 @@ const AdminSettings = () => {
           </motion.div>
         </TabsContent>
         
-        {/* Additional tabs would be implemented similarly */}
         <TabsContent value="about">
           {isLoadingAbout ? (
             <div className="p-8 flex justify-center">
@@ -957,3 +934,66 @@ const AdminSettings = () => {
                         <Label htmlFor="ownerPhotoUrl">Your Photo URL</Label>
                         <div className="flex flex-col items-center space-y-4">
                           <Avatar className="w-32 h-32">
+                            <AvatarImage src={aboutMe?.owner_photo_url || ''} alt="Profile photo" />
+                            <AvatarFallback>{aboutMe?.owner_name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <Input
+                            id="ownerPhotoUrl"
+                            value={aboutMe?.owner_photo_url || ''}
+                            onChange={(e) => setAboutMe(prev => prev ? {...prev, owner_photo_url: e.target.value} : null)}
+                            placeholder="https://example.com/profile.jpg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-end">
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="animation">
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Animation settings configuration panel.</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="performance">
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Performance settings configuration panel.</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="seo">
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">SEO settings configuration panel.</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="social">
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Social media settings configuration panel.</p>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AdminSettings;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -41,7 +40,6 @@ export const ServicesSection = () => {
           return;
         }
         
-        // Get all service features for efficient fetching
         const { data: featuresData, error: featuresError } = await supabase
           .from('service_features')
           .select('*');
@@ -51,7 +49,6 @@ export const ServicesSection = () => {
           return;
         }
         
-        // Map features to services
         const servicesWithFeatures = servicesData.map(service => ({
           ...service,
           features: featuresData.filter(feature => feature.service_id === service.id)
@@ -205,3 +202,5 @@ export const ServicesSection = () => {
     </section>
   );
 };
+
+export const Services = ServicesSection;
