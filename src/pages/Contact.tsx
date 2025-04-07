@@ -73,11 +73,14 @@ const Contact = () => {
             message: data.message
           };
           
+          // Fix: Get the session correctly using getSession method
+          const { data: sessionData } = await supabase.auth.getSession();
+          
           const response = await fetch('https://tyczqgeyhjxwfyjgwmio.supabase.co/functions/v1/send-contact-notification', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`,
+              'Authorization': `Bearer ${sessionData.session?.access_token || ''}`,
             },
             body: JSON.stringify(messageData),
           });
