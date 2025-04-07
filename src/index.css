@@ -38,9 +38,9 @@
     --radius: 0.5rem;
     
     /* Custom color variables that can be updated from settings */
-    --background-color: #1A1F2C;
-    --accent-color: #4a6cf7;
-    --secondary-accent-color: #9b87f5;
+    --custom-background-color: #1A1F2C;
+    --custom-accent-color: #4a6cf7;
+    --custom-secondary-accent-color: #9b87f5;
   }
 
   .dark {
@@ -213,27 +213,34 @@ img {
 
 /* Classes for dynamic color application */
 .primary-accent {
-  color: var(--accent-color);
+  color: var(--custom-accent-color);
 }
 
 .primary-accent-bg {
-  background-color: var(--accent-color);
+  background-color: var(--custom-accent-color);
 }
 
 .secondary-accent {
-  color: var(--secondary-accent-color);
+  color: var(--custom-secondary-accent-color);
 }
 
 .secondary-accent-bg {
-  background-color: var(--secondary-accent-color);
+  background-color: var(--custom-secondary-accent-color);
 }
 
 .custom-gradient-text {
-  background-image: linear-gradient(to right, var(--accent-color), var(--secondary-accent-color));
+  background-image: linear-gradient(to right, var(--custom-accent-color), var(--custom-secondary-accent-color));
   background-clip: text;
   color: transparent;
 }
 
 .custom-gradient-bg {
-  background-image: linear-gradient(to right, var(--accent-color), var(--secondary-accent-color));
+  background-image: linear-gradient(to right, var(--custom-accent-color), var(--custom-secondary-accent-color));
+}
+
+/* Fix for dynamic CSS variables */
+.apply-custom-colors {
+  --background-color: var(--custom-background-color);
+  --accent-color: var(--custom-accent-color);
+  --secondary-accent-color: var(--custom-secondary-accent-color);
 }

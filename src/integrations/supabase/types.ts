@@ -153,6 +153,27 @@ export type Database = {
         }
         Relationships: []
       }
+      design_settings: {
+        Row: {
+          background: Json | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          background?: Json | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          background?: Json | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       general_settings: {
         Row: {
           contact_email: string | null

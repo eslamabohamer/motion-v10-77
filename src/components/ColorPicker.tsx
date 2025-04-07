@@ -10,20 +10,26 @@ interface ColorPickerProps {
 
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
   const [color, setColor] = useState(value || '#000000');
+  const [isOpen, setIsOpen] = useState(false);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     setColor(newColor);
-    onChange(newColor);
   };
   
+  const handleSave = () => {
+    // Only call onChange when user confirms the color
+    onChange(color);
+    setIsOpen(false);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
           className="w-10 h-10 p-0 rounded-md border"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: value || '#000000' }}
         >
           <span className="sr-only">Pick a color</span>
         </Button>
@@ -42,6 +48,24 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
             onChange={handleChange}
             className="w-full h-10 cursor-pointer" 
           />
+          <div className="flex justify-end space-x-2 pt-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setColor(value || '#000000');
+                setIsOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              size="sm"
+              onClick={handleSave}
+            >
+              Apply
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
