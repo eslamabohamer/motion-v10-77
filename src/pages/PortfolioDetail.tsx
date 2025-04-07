@@ -13,12 +13,20 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Link as LinkIcon, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  GalleryHorizontal
 } from 'lucide-react';
 import UserRating from '@/components/UserRating';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface Project {
   id: string;
@@ -57,6 +65,7 @@ const PortfolioDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showVideo, setShowVideo] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showGallery, setShowGallery] = useState(false);
   const [colorSettings, setColorSettings] = useState({
     backgroundColor: "#1A1F2C",
     accentColor: "#4a6cf7", 
@@ -85,7 +94,7 @@ const PortfolioDetail = () => {
           // Ensure website_url is included (added as a nullable property in our interface)
           setProject(data as Project);
 
-          // Fetch project images - Use .from() with type assertion for custom tables
+          // Fetch project images
           const { data: imagesData, error: imagesError } = await supabase
             .from('project_images')
             .select('*')
@@ -96,11 +105,10 @@ const PortfolioDetail = () => {
             console.error('Error fetching project images:', imagesError);
           } else {
             console.log("Project images:", imagesData);
-            // Use type assertion to handle the new table
             setProjectImages(imagesData as ProjectImage[] || []);
           }
 
-          // Fetch project links - Use .from() with type assertion for custom tables
+          // Fetch project links
           const { data: linksData, error: linksError } = await supabase
             .from('project_links')
             .select('*')
@@ -111,7 +119,6 @@ const PortfolioDetail = () => {
             console.error('Error fetching project links:', linksError);
           } else {
             console.log("Project links:", linksData);
-            // Use type assertion to handle the new table
             setProjectLinks(linksData as ProjectLink[] || []);
           }
 
@@ -170,7 +177,6 @@ const PortfolioDetail = () => {
         throw error;
       }
       
-      // Use type assertion to handle website_url which might be missing in some items
       setRelatedProjects(data as Project[] || []);
     } catch (error) {
       console.error('Error fetching related projects:', error);
@@ -217,6 +223,12 @@ const PortfolioDetail = () => {
     }
   };
 
+  // Function to open fullscreen gallery
+  const openGallery = (index: number = 0) => {
+    setCurrentImageIndex(index);
+    setShowGallery(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colorSettings.backgroundColor }}>
@@ -248,9 +260,10 @@ const PortfolioDetail = () => {
     );
   }
 
+  // Combine main image with project images for gallery
   const allImages = [
-    { id: 'main', url: project.image_url, caption: 'Main image' },
-    ...projectImages.map(img => ({ id: img.id, url: img.image_url, caption: img.caption }))
+    { id: 'main', project_id: project.id, image_url: project.image_url, caption: 'Main image', display_order: -1 },
+    ...projectImages
   ];
 
   // Determine if text should be RTL
@@ -260,6 +273,7 @@ const PortfolioDetail = () => {
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
+      
       <div className="container mx-auto px-4 py-8 md:py-16">
         {/* Page Header Section */}
         <motion.div
@@ -268,160 +282,22 @@ const PortfolioDetail = () => {
           transition={{ duration: 0.4 }}
           className={`mb-8 ${rtlClass}`}
         >
-          <h1 className={`text-3xl md:text-4xl font-bold mb-2 text-white ${isRTL ? 'text-right' : 'text-left'}`}>
-            {project.title}
-          </h1>
-          <div className={`flex items-center text-sm text-gray-300 ${isRTL ? 'flex-row-reverse justify-end' : ''}`}>
-            <span className={`inline-flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <Calendar className={`h-4 w-4 ${isRTL ? 'ml-1 mr-0' : 'mr-1'}`} />
-              {project.created_at && format(new Date(project.created_at), 'MMMM yyyy')}
-            </span>
-            <span className="mx-2">•</span>
-            <span>{project.category}</span>
-          </div>
-        </motion.div>
-        
-        {/* Video/Image Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-10"
-        >
-          {project.video_url ? (
-            <div className="relative pt-[56.25%] rounded-lg overflow-hidden bg-black">
-              <iframe 
-                src={getEmbedUrl(project.video_url)}
-                title={project.title} 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-                loading="lazy"
-              ></iframe>
-            </div>
-          ) : allImages.length > 0 ? (
-            <div className="relative rounded-lg overflow-hidden bg-black">
-              <div className="aspect-video relative">
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={currentImageIndex}
-                    src={allImages[currentImageIndex].url}
-                    alt={allImages[currentImageIndex].caption || project.title}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </AnimatePresence>
-                
-                {allImages.length > 1 && (
-                  <>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                      onClick={() => navigateImages('prev')}
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                      onClick={() => navigateImages('next')}
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </>
-                )}
-              </div>
-              
-              {/* Caption for current image */}
-              {allImages[currentImageIndex].caption && (
-                <div className="p-3 bg-black/70 text-sm text-gray-200">
-                  {allImages[currentImageIndex].caption}
-                </div>
-              )}
-              
-              {/* Image thumbnails */}
-              {allImages.length > 1 && (
-                <div className="flex gap-2 mt-2 overflow-x-auto pb-2">
-                  {allImages.map((image, index) => (
-                    <button
-                      key={image.id}
-                      className={`flex-shrink-0 w-16 h-16 rounded overflow-hidden border-2 
-                        ${currentImageIndex === index ? 'border-primary' : 'border-transparent'}`}
-                      onClick={() => setCurrentImageIndex(index)}
-                    >
-                      <img 
-                        src={image.url} 
-                        alt={image.caption || `Thumbnail ${index}`}
-                        className="w-full h-full object-cover" 
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="aspect-video bg-gray-800 flex items-center justify-center rounded-lg">
-              <ImageIcon className="h-12 w-12 text-gray-400" />
-            </div>
-          )}
-        </motion.div>
-
-        {/* Project Details */}
-        <motion.section
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className={`mb-16 ${rtlClass}`}
-        >
-          <h2 className={`text-2xl font-bold mb-4 text-white ${isRTL ? 'text-right' : ''}`}>Project Overview</h2>
-          <p className={`text-gray-300 leading-relaxed mb-6 ${isRTL ? 'text-right' : ''}`}>
-            {project.description}
-          </p>
-          
-          {/* Project Links */}
-          {(projectLinks.length > 0 || project.website_url) && (
-            <div className={`mt-8 space-y-2 ${isRTL ? 'text-right' : ''}`}>
-              <h3 className="text-xl font-semibold mb-3">Links</h3>
-              <div className="flex flex-wrap gap-3">
-                {project.website_url && (
-                  <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
-                    <a href={project.website_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Visit Website
-                    </a>
-                  </Button>
-                )}
-                
-                {projectLinks.map(link => (
-                  <Button 
-                    key={link.id} 
-                    asChild 
-                    variant="outline" 
-                    className="border-gray-500 hover:bg-gray-700"
-                  >
-                    <a href={link.url} target="_blank" rel="noopener noreferrer">
-                      {link.icon ? (
-                        <span className="mr-2">{link.icon}</span>
-                      ) : (
-                        <LinkIcon className="mr-2 h-4 w-4" />
-                      )}
-                      {link.title}
-                    </a>
-                  </Button>
-                ))}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className={`text-3xl md:text-4xl font-bold mb-2 text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+                {project.title}
+              </h1>
+              <div className={`flex items-center text-sm text-gray-300 ${isRTL ? 'flex-row-reverse justify-end' : ''}`}>
+                <span className={`inline-flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <Calendar className={`h-4 w-4 ${isRTL ? 'ml-1 mr-0' : 'mr-1'}`} />
+                  {project.created_at && format(new Date(project.created_at), 'MMMM yyyy')}
+                </span>
+                <span className="mx-2">•</span>
+                <span>{project.category}</span>
               </div>
             </div>
-          )}
-          
-          {/* Back button moved to bottom of content */}
-          <div className={`mt-8 ${isRTL ? 'text-right' : ''}`}>
-            <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
+            
+            <Button asChild variant="outline" className={`mt-4 md:mt-0 border-gray-500 hover:bg-gray-700 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Link to="/portfolio">
                 {isRTL ? (
                   <>
@@ -436,6 +312,141 @@ const PortfolioDetail = () => {
                 )}
               </Link>
             </Button>
+          </div>
+        </motion.div>
+        
+        {/* Media Section (Video/Main Image) */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-10"
+        >
+          {project.video_url ? (
+            <div className="relative rounded-xl overflow-hidden shadow-2xl bg-black">
+              <div className="aspect-video">
+                <iframe 
+                  src={getEmbedUrl(project.video_url)}
+                  title={project.title} 
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                  loading="lazy"
+                ></iframe>
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="relative rounded-xl overflow-hidden shadow-2xl bg-black cursor-pointer"
+              onClick={() => openGallery(0)}
+            >
+              <div className="aspect-video relative">
+                <img
+                  src={project.image_url}
+                  alt={project.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <GalleryHorizontal className="h-12 w-12 mx-auto mb-2" />
+                    <span className="font-medium">View Gallery</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+        
+        {/* Project Images Gallery */}
+        {projectImages.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mb-12"
+          >
+            <h2 className={`text-2xl font-bold mb-6 text-white ${isRTL ? 'text-right' : ''}`}>Project Gallery</h2>
+            <Carousel className="w-full">
+              <CarouselContent>
+                {projectImages.map((image, index) => (
+                  <CarouselItem key={image.id} className="md:basis-1/2 lg:basis-1/3">
+                    <div 
+                      className="relative rounded-lg overflow-hidden aspect-square bg-gray-800 cursor-pointer group"
+                      onClick={() => openGallery(index + 1)} // +1 because main image is at index 0
+                    >
+                      <img 
+                        src={image.image_url} 
+                        alt={image.caption || `Project image ${index + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <span className="font-medium">View Fullscreen</span>
+                        </div>
+                      </div>
+                      {image.caption && (
+                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/70 text-sm text-white">
+                          {image.caption}
+                        </div>
+                      )}
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2 bg-black/50 text-white hover:bg-black/70" />
+              <CarouselNext className="right-2 bg-black/50 text-white hover:bg-black/70" />
+            </Carousel>
+          </motion.div>
+        )}
+
+        {/* Project Details */}
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className={`mb-16 ${rtlClass}`}
+        >
+          <h2 className={`text-2xl font-bold mb-4 text-white ${isRTL ? 'text-right' : ''}`}>Project Overview</h2>
+          <div className="bg-gray-800/30 p-6 rounded-xl shadow-lg">
+            <p className={`text-gray-300 leading-relaxed mb-6 ${isRTL ? 'text-right' : ''}`}>
+              {project.description}
+            </p>
+            
+            {/* Project Links */}
+            {(projectLinks.length > 0 || project.website_url) && (
+              <div className={`mt-8 space-y-2 ${isRTL ? 'text-right' : ''}`}>
+                <h3 className="text-xl font-semibold mb-3 text-white">Links</h3>
+                <div className="flex flex-wrap gap-3">
+                  {project.website_url && (
+                    <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
+                      <a href={project.website_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Visit Website
+                      </a>
+                    </Button>
+                  )}
+                  
+                  {projectLinks.map(link => (
+                    <Button 
+                      key={link.id} 
+                      asChild 
+                      variant="outline" 
+                      className="border-gray-500 hover:bg-gray-700"
+                    >
+                      <a href={link.url} target="_blank" rel="noopener noreferrer">
+                        {link.icon ? (
+                          <span className="mr-2">{link.icon}</span>
+                        ) : (
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                        )}
+                        {link.title}
+                      </a>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </motion.section>
         
@@ -463,7 +474,7 @@ const PortfolioDetail = () => {
                 <Link 
                   key={relatedProject.id} 
                   to={`/portfolio/project/${relatedProject.id}`}
-                  className="group rounded-lg overflow-hidden bg-gray-800/30 hover:bg-gray-800/50 transition-all"
+                  className="group rounded-lg overflow-hidden bg-gray-800/30 hover:bg-gray-800/50 transition-all shadow-lg"
                 >
                   <div className="aspect-video overflow-hidden">
                     <img 
@@ -485,6 +496,107 @@ const PortfolioDetail = () => {
         )}
       </div>
       <Footer />
+
+      {/* Fullscreen Gallery Modal */}
+      {showGallery && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setShowGallery(false)}
+        >
+          <Button 
+            variant="ghost" 
+            className="absolute top-4 right-4 text-white hover:bg-white/10 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowGallery(false);
+            }}
+          >
+            <X className="h-6 w-6" />
+          </Button>
+          
+          <div 
+            className="relative w-full max-w-5xl mx-auto px-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentImageIndex}
+                  src={allImages[currentImageIndex].image_url}
+                  alt={allImages[currentImageIndex].caption || project.title}
+                  className="w-full h-auto max-h-[80vh] object-contain mx-auto"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </AnimatePresence>
+              
+              {allImages.length > 1 && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 rounded-full h-12 w-12"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateImages('prev');
+                    }}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 rounded-full h-12 w-12"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateImages('next');
+                    }}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            {/* Caption */}
+            {allImages[currentImageIndex].caption && (
+              <div className="text-center mt-4 text-white">
+                {allImages[currentImageIndex].caption}
+              </div>
+            )}
+            
+            {/* Thumbnails */}
+            {allImages.length > 1 && (
+              <div className="mt-6 flex justify-center overflow-x-auto pb-2 gap-2">
+                {allImages.map((image, index) => (
+                  <button
+                    key={image.id}
+                    className={`flex-shrink-0 w-16 h-16 rounded overflow-hidden border-2 
+                      ${currentImageIndex === index ? 'border-primary' : 'border-transparent'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(index);
+                    }}
+                  >
+                    <img 
+                      src={image.image_url} 
+                      alt={image.caption || `Thumbnail ${index}`}
+                      className="w-full h-full object-cover" 
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* Counter */}
+            <div className="text-center mt-4 text-gray-400">
+              {currentImageIndex + 1} of {allImages.length}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Video Modal */}
       {showVideo && project.video_url && (
