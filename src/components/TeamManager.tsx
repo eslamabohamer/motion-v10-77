@@ -6,7 +6,6 @@ import * as z from 'zod';
 import { Pencil, Trash2, Plus, ArrowUpDown, Linkedin, Twitter, Instagram, Github, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { StarRating } from '@/components/StarRating';
 
 import {
   Form,
@@ -15,6 +14,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import {
   Dialog,

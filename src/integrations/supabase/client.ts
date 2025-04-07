@@ -14,6 +14,44 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 type CustomDatabase = Database & {
   public: {
     Tables: {
+      team_members: {
+        Row: {
+          id: string;
+          name: string;
+          position: string;
+          bio: string | null;
+          photo_url: string | null;
+          social_links: Record<string, string> | null;
+          display_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          position: string;
+          bio?: string | null;
+          photo_url?: string | null;
+          social_links?: Record<string, string> | null;
+          display_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          position?: string;
+          bio?: string | null;
+          photo_url?: string | null;
+          social_links?: Record<string, string> | null;
+          display_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       site_sections: {
         Row: {
           id: string;

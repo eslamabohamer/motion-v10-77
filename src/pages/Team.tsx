@@ -23,6 +23,7 @@ interface TeamMember {
   photo_url: string | null;
   social_links: SocialLinks;
   display_order: number;
+  is_active: boolean;
 }
 
 const TeamPage = () => {
