@@ -2,7 +2,7 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
-import { Services } from "@/components/Services"; 
+import { ServicesSection } from "@/components/Services"; 
 import { PortfolioPreview } from "@/components/PortfolioPreview";
 import { Testimonials } from "@/components/Testimonials";
 import { ContactCta } from "@/components/ContactCta";
@@ -13,7 +13,7 @@ export default function Index() {
     <>
       <Navbar />
       <Hero />
-      <Services />
+      <ServicesSection />
       <PortfolioPreview />
       <CompanyLogos />
       <Testimonials />

@@ -445,10 +445,22 @@ const AdminSettings = () => {
 
   const { mutate: saveAboutMeData } = useMutation({
     mutationFn: async (data: Partial<AboutMeData>) => {
+      const isNewRecord = !aboutMe?.id;
+      const dataToSave = isNewRecord ? {
+        owner_name: data.owner_name || '',
+        owner_title: data.owner_title || '',
+        owner_bio: data.owner_bio || '',
+        owner_skills: data.owner_skills || '',
+        owner_location: data.owner_location,
+        owner_photo_url: data.owner_photo_url,
+        client_focused_text: data.client_focused_text,
+        quality_first_text: data.quality_first_text
+      } : data;
+      
       if (aboutMe?.id) {
         const { error } = await supabase
           .from('about_me')
-          .update(data)
+          .update(dataToSave)
           .eq('id', aboutMe.id);
           
         if (error) throw error;
@@ -456,7 +468,7 @@ const AdminSettings = () => {
       } else {
         const { data: insertData, error } = await supabase
           .from('about_me')
-          .insert(data)
+          .insert(dataToSave)
           .select('id');
           
         if (error) throw error;

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,11 +82,11 @@ const AdminLayout = () => {
             { data: seoData, error: seoError },
             { data: socialData, error: socialError }
           ] = await Promise.all([
-            supabase.from('general_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
-            supabase.from('performance_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
-            supabase.from('animation_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
-            supabase.from('seo_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
-            supabase.from('social_settings').select('*').limit(1) as unknown as { data: any; error: Error | null }
+            supabase.from('general_settings').select('*').limit(1),
+            supabase.from('performance_settings').select('*').limit(1),
+            supabase.from('animation_settings').select('*').limit(1),
+            supabase.from('seo_settings').select('*').limit(1),
+            supabase.from('social_settings').select('*').limit(1)
           ]);
           
           if (generalError || performanceError || animationError || seoError || socialError) {

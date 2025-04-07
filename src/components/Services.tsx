@@ -204,3 +204,4 @@ export const ServicesSection = () => {
 };
 
 export const Services = ServicesSection;
+export default ServicesSection;
