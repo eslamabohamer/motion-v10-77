@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Rating } from 'react-simple-star-rating';
 import { supabase } from '@/integrations/supabase/client';
 import { addUserRating } from '@/utils/supabaseUtils';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
+import { StarRating } from '@/components/StarRating';
+import { User } from 'lucide-react';
 
 interface UserRatingProps {
   projectId: string;
@@ -21,8 +22,8 @@ export default function UserRating({ projectId }: UserRatingProps) {
   const [loading, setLoading] = useState(true);
 
   // Handling rating change
-  const handleRating = (rate: number) => {
-    setRating(rate);
+  const handleRating = (newRating: number) => {
+    setRating(newRating);
   };
 
   // Fetch the current user
@@ -159,24 +160,31 @@ export default function UserRating({ projectId }: UserRatingProps) {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
   return (
     <div className="space-y-8">
-      <div className="bg-card rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold mb-4">Leave a Review</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-card rounded-lg shadow-lg p-6 border border-border/30">
+        <h3 className="text-xl font-semibold mb-6 text-primary">Leave a Review</h3>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2">Your Rating</label>
-            <Rating
-              onClick={handleRating}
-              initialValue={rating}
-              size={24}
-              fillColor="#4a6cf7"
-              emptyColor="#e2e8f0"
-              className="mb-2"
+            <label className="block text-sm font-medium mb-2 text-foreground/80">Your Rating</label>
+            <StarRating 
+              value={rating} 
+              onChange={handleRating} 
+              readOnly={false} 
+              size="large"
             />
           </div>
           <div>
-            <label htmlFor="comment" className="block text-sm font-medium mb-2">
+            <label htmlFor="comment" className="block text-sm font-medium mb-2 text-foreground/80">
               Your Review
             </label>
             <Textarea
@@ -184,13 +192,14 @@ export default function UserRating({ projectId }: UserRatingProps) {
               placeholder="Share your thoughts about this project..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[120px] bg-background/50 border-border/50 focus:border-primary"
             />
           </div>
           <Button 
             type="submit" 
             disabled={submitting}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto transition-all"
+            variant="default"
           >
             {submitting ? 'Submitting...' : 'Submit Review'}
           </Button>
@@ -198,7 +207,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
       </div>
 
       <div className="space-y-6">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-xl font-semibold border-b pb-2">
           Reviews {userRatings.length > 0 && `(${userRatings.length})`}
         </h3>
         
@@ -211,11 +220,16 @@ export default function UserRating({ projectId }: UserRatingProps) {
           <div className="space-y-6">
             {userRatings.map((item) => (
               <div key={item.id} className="border-b pb-6 last:border-0">
-                <div className="flex items-start">
-                  <Avatar className="h-10 w-10 mr-4">
-                    <AvatarImage src={item.photo_url || (item.profiles?.avatar_url || '')} />
-                    <AvatarFallback>
-                      {item.profiles?.display_name ? item.profiles.display_name.charAt(0) : 'U'}
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-10 w-10 rounded-full border border-border/30">
+                    {item.photo_url || item.profiles?.avatar_url ? (
+                      <AvatarImage 
+                        src={item.photo_url || (item.profiles?.avatar_url || '')} 
+                        alt="User avatar" 
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      <User className="h-5 w-5" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -223,27 +237,25 @@ export default function UserRating({ projectId }: UserRatingProps) {
                       <div>
                         <p className="font-medium">{item.profiles?.display_name || 'Anonymous User'}</p>
                         <div className="mt-1">
-                          <Rating
-                            initialValue={item.rating}
-                            readonly
-                            size={16}
-                            fillColor="#4a6cf7"
-                            emptyColor="#e2e8f0"
+                          <StarRating
+                            value={item.rating}
+                            readOnly={true}
+                            size="small"
                           />
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
-                        {new Date(item.created_at).toLocaleDateString()}
+                        {formatDate(item.created_at)}
                       </p>
                     </div>
-                    <p className="mt-2 text-muted-foreground">{item.comment}</p>
+                    <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 bg-muted/50 rounded-lg">
+          <div className="text-center py-10 bg-muted/30 rounded-lg border border-border/20">
             <p className="text-muted-foreground">No reviews yet. Be the first to share your thoughts!</p>
           </div>
         )}
