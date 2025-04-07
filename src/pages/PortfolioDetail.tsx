@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Briefcase, Globe, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface Project {
   id: string;
@@ -204,9 +205,9 @@ const PortfolioDetail = () => {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
-      <main className="flex-grow pt-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <main className="flex-grow pt-16 pb-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Back button */}
-        <div className="mb-8">
+        <div className="mb-6 mt-8">
           <Button variant="outline" asChild className="group">
             <Link to="/portfolio" className="flex items-center">
               <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -220,30 +221,53 @@ const PortfolioDetail = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="mb-8"
         >
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">{project.title}</h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">{project.title}</h1>
+          <p className="text-lg text-muted-foreground max-w-3xl">
             {project.description}
           </p>
         </motion.div>
         
-        {/* Hero Image */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-12"
-        >
-          <img 
-            src={project.cover_image || project.image_url} 
-            alt={project.title} 
-            className="w-full h-auto rounded-lg object-cover shadow-lg" 
-            style={{ maxHeight: '600px' }}
-          />
-        </motion.div>
+        <div className="grid grid-cols-1 gap-8 mb-12">
+          {/* Only show video if available, otherwise fall back to image */}
+          {embedUrl ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="mb-8"
+            >
+              <div className="relative w-full pt-[56.25%] rounded-xl overflow-hidden">
+                <iframe
+                  src={embedUrl}
+                  title={`${project.title} video`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute top-0 left-0 w-full h-full"
+                  style={{ borderRadius: "0.75rem" }}
+                ></iframe>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="mb-8"
+            >
+              <img 
+                src={project.cover_image || project.image_url} 
+                alt={project.title} 
+                className="w-full h-auto rounded-xl object-cover shadow-lg" 
+                style={{ maxHeight: '600px' }}
+              />
+            </motion.div>
+          )}
+        </div>
         
-        {/* Project Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        {/* Project Details Content */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -274,7 +298,7 @@ const PortfolioDetail = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <Card>
+            <Card className="shadow-md">
               <CardContent className="p-6 space-y-4">
                 <h3 className="text-xl font-semibold mb-4">Project Details</h3>
                 
@@ -309,7 +333,10 @@ const PortfolioDetail = () => {
                       {project.technologies.map((tech, idx) => (
                         <span 
                           key={idx} 
-                          className="px-3 py-1 rounded-full text-xs font-medium"
+                          className={cn(
+                            "px-3 py-1 rounded-full text-xs font-medium",
+                            "bg-opacity-20"
+                          )}
                           style={{ 
                             backgroundColor: colorSettings.accentColor + '20',
                             color: colorSettings.accentColor
@@ -326,13 +353,13 @@ const PortfolioDetail = () => {
           </motion.div>
         </div>
         
-        {/* Gallery */}
-        {project.gallery_images && project.gallery_images.length > 0 && (
+        {/* Gallery section - only show if there are gallery images and no video */}
+        {!embedUrl && project.gallery_images && project.gallery_images.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
-            className="mb-12"
+            className="mb-16"
           >
             <h2 className="text-2xl font-bold mb-6">Project Gallery</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -348,27 +375,6 @@ const PortfolioDetail = () => {
           </motion.div>
         )}
         
-        {/* Video Embed */}
-        {project.video_url && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="mb-12"
-          >
-            <h2 className="text-2xl font-bold mb-6">Project Video</h2>
-            <div className="relative w-full pt-[56.25%]">
-              <iframe
-                src={embedUrl || ''}
-                title={`${project.title} video`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute top-0 left-0 w-full h-full rounded-lg"
-              ></iframe>
-            </div>
-          </motion.div>
-        )}
-        
         {/* User Ratings */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -376,6 +382,7 @@ const PortfolioDetail = () => {
           transition={{ duration: 0.6, delay: 0.7 }}
           className="mb-12"
         >
+          <h2 className="text-2xl font-bold mb-6">User Reviews</h2>
           <UserRating projectId={project.id} />
         </motion.div>
       </main>
