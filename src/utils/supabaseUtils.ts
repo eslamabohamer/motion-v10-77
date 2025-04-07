@@ -9,11 +9,32 @@ export async function addUserRating(data: {
   user_id?: string | null;
   photo_url?: string | null;
 }) {
-  const { error } = await supabase
-    .from('user_ratings')
-    .insert([data]);
+  try {
+    // Ensure the storage bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(bucket => bucket.name === 'user-photos');
     
-  return { error, success: !error };
+    if (!bucketExists) {
+      // Create user-photos bucket if it doesn't exist
+      console.log('Creating user-photos bucket');
+      await supabase.storage.createBucket('user-photos', {
+        public: true, // Make bucket public
+        fileSizeLimit: 5242880 // 5MB in bytes
+      });
+    }
+    
+    const { error } = await supabase
+      .from('user_ratings')
+      .insert([data]);
+      
+    return { error, success: !error };
+  } catch (error) {
+    console.error('Error in addUserRating:', error);
+    return { 
+      error, 
+      success: false 
+    };
+  }
 }
 
 // Helper to handle project sections
