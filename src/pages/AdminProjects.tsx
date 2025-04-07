@@ -165,7 +165,6 @@ const AdminProjects = () => {
   const fetchProjects = async () => {
     try {
       setIsLoading(true);
-      // Fetch projects with their sections
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -177,7 +176,6 @@ const AdminProjects = () => {
         return;
       }
       
-      // Fetch project sections
       const { data: projectSectionsData, error: sectionsError } = await supabase
         .from('project_sections')
         .select('project_id, section_id');
@@ -186,14 +184,12 @@ const AdminProjects = () => {
         console.error('Error fetching project sections:', sectionsError);
       }
       
-      // Fetch site sections
       const { data: siteSectionsData, error: siteSectionsError } = await fetchSiteSections();
       
       if (siteSectionsError) {
         console.error('Error fetching site sections:', siteSectionsError);
       }
 
-      // Fetch project images - using type assertion for custom table
       const { data: projectImagesData, error: imagesError } = await supabase
         .from('project_images')
         .select('*')
@@ -203,7 +199,6 @@ const AdminProjects = () => {
         console.error('Error fetching project images:', imagesError);
       }
 
-      // Fetch project links - using type assertion for custom table
       const { data: projectLinksData, error: linksError } = await supabase
         .from('project_links')
         .select('*')
@@ -214,7 +209,6 @@ const AdminProjects = () => {
       }
       
       const projectsWithData = data?.map(project => {
-        // Get sections for this project
         const projectSectionIds = projectSectionsData
           ?.filter(ps => ps.project_id === project.id)
           .map(ps => ps.section_id) || [];
@@ -222,11 +216,9 @@ const AdminProjects = () => {
         const projectSections = siteSectionsData
           ?.filter(section => projectSectionIds.includes(section.id)) || [];
         
-        // Get images for this project - use type assertion for the custom table
         const images = projectImagesData
           ?.filter(img => img.project_id === project.id) || [];
         
-        // Get links for this project - use type assertion for the custom table
         const links = projectLinksData
           ?.filter(link => link.project_id === project.id) || [];
         
@@ -292,16 +284,13 @@ const AdminProjects = () => {
     }
   };
 
-  // Fix for the handling of image form changes
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const { name, value } = e.target;
     
     if (index !== undefined) {
-      // Updating an existing image
       const updatedImages = [...projectImages];
       
       if (name === 'display_order') {
-        // Convert string to number for display_order
         updatedImages[index] = { 
           ...updatedImages[index], 
           [name]: parseInt(value, 10) || 0 
@@ -312,9 +301,7 @@ const AdminProjects = () => {
       
       setProjectImages(updatedImages);
     } else {
-      // Updating the new image form
       if (name === 'display_order') {
-        // Convert string to number for display_order
         setNewImage(prev => ({ 
           ...prev, 
           [name]: parseInt(value, 10) || 0 
@@ -325,16 +312,13 @@ const AdminProjects = () => {
     }
   };
 
-  // Fix for the handling of link form changes
   const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const { name, value } = e.target;
     
     if (index !== undefined) {
-      // Updating an existing link
       const updatedLinks = [...projectLinks];
       
       if (name === 'display_order') {
-        // Convert string to number for display_order
         updatedLinks[index] = { 
           ...updatedLinks[index], 
           [name]: parseInt(value, 10) || 0 
@@ -345,9 +329,7 @@ const AdminProjects = () => {
       
       setProjectLinks(updatedLinks);
     } else {
-      // Updating the new link form
       if (name === 'display_order') {
-        // Convert string to number for display_order
         setNewLink(prev => ({ 
           ...prev, 
           [name]: parseInt(value, 10) || 0 
@@ -388,12 +370,10 @@ const AdminProjects = () => {
     const newImages = [...projectImages];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     
-    // Swap display_order values
     const currentOrder = newImages[index].display_order;
     newImages[index].display_order = newImages[targetIndex].display_order;
     newImages[targetIndex].display_order = currentOrder;
     
-    // Swap positions in array
     [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]];
     
     setProjectImages(newImages);
@@ -429,12 +409,10 @@ const AdminProjects = () => {
     const newLinks = [...projectLinks];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     
-    // Swap display_order values
     const currentOrder = newLinks[index].display_order;
     newLinks[index].display_order = newLinks[targetIndex].display_order;
     newLinks[targetIndex].display_order = currentOrder;
     
-    // Swap positions in array
     [newLinks[index], newLinks[targetIndex]] = [newLinks[targetIndex], newLinks[index]];
     
     setProjectLinks(newLinks);
@@ -472,7 +450,6 @@ const AdminProjects = () => {
       sections: project.sections
     });
     
-    // Fetch project sections
     const { data, error } = await supabase
       .from('project_sections')
       .select('section_id')
@@ -484,7 +461,6 @@ const AdminProjects = () => {
       setSelectedSections(data?.map(ps => ps.section_id) || []);
     }
     
-    // Fetch project images - using type assertion for custom table
     const { data: imagesData, error: imagesError } = await supabase
       .from('project_images')
       .select('*')
@@ -497,7 +473,6 @@ const AdminProjects = () => {
       setProjectImages(imagesData as ProjectImage[] || []);
     }
     
-    // Fetch project links - using type assertion for custom table
     const { data: linksData, error: linksError } = await supabase
       .from('project_links')
       .select('*')
@@ -530,7 +505,6 @@ const AdminProjects = () => {
       }
       
       if (editingProjectId) {
-        // Update existing project
         const projectData = {
           title: newProject.title,
           description: newProject.description,
@@ -552,7 +526,6 @@ const AdminProjects = () => {
           return;
         }
         
-        // Update project sections
         const { error: sectionsError } = await addProjectSections(editingProjectId, selectedSections);
         
         if (sectionsError) {
@@ -560,11 +533,7 @@ const AdminProjects = () => {
           toast.error(`Failed to update project sections: ${sectionsError.message}`);
         }
         
-        // Update project images
         await handleProjectImages(editingProjectId);
-        
-        // Update project links
-        await handleProjectLinks(editingProjectId);
         
         const updatedProjects = projects.map(project => 
           project.id === editingProjectId 
@@ -583,7 +552,6 @@ const AdminProjects = () => {
         
         toast.success('Project updated successfully');
       } else {
-        // Create new project
         const projectData = {
           title: newProject.title,
           description: newProject.description,
@@ -608,7 +576,6 @@ const AdminProjects = () => {
         if (data && data.length > 0) {
           const projectId = data[0].id;
           
-          // Add project sections
           if (selectedSections.length > 0) {
             const { error: sectionsError } = await addProjectSections(projectId, selectedSections);
             
@@ -618,13 +585,8 @@ const AdminProjects = () => {
             }
           }
           
-          // Add project images
           await handleProjectImages(projectId);
           
-          // Add project links
-          await handleProjectLinks(projectId);
-          
-          // Fetch the complete project with all relations
           const { data: completeProject, error: fetchError } = await supabase
             .from('projects')
             .select('*')
@@ -661,7 +623,6 @@ const AdminProjects = () => {
 
   const handleProjectImages = async (projectId: string) => {
     try {
-      // First, delete all existing images for this project
       const { error: deleteError } = await supabase
         .from('project_images')
         .delete()
@@ -673,13 +634,12 @@ const AdminProjects = () => {
         return;
       }
       
-      // Then, add all current images
       if (projectImages.length > 0) {
         const imagesToInsert = projectImages.map((img, index) => ({
           project_id: projectId,
           image_url: img.image_url,
           caption: img.caption || null,
-          display_order: index // Make sure display_order is a number
+          display_order: index
         }));
         
         const { error: insertError } = await supabase
@@ -699,7 +659,6 @@ const AdminProjects = () => {
 
   const handleProjectLinks = async (projectId: string) => {
     try {
-      // First, delete all existing links for this project
       const { error: deleteError } = await supabase
         .from('project_links')
         .delete()
@@ -711,14 +670,13 @@ const AdminProjects = () => {
         return;
       }
       
-      // Then, add all current links
       if (projectLinks.length > 0) {
         const linksToInsert = projectLinks.map((link, index) => ({
           project_id: projectId,
           title: link.title,
           url: link.url,
           icon: link.icon || null,
-          display_order: index // Make sure display_order is a number
+          display_order: index
         }));
         
         const { error: insertError } = await supabase
@@ -839,7 +797,7 @@ const AdminProjects = () => {
                     </TabsList>
                     
                     <TabsContent value="details">
-                      <form className="space-y-4">
+                      <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <label htmlFor="title" className="text-sm font-medium">Project Title *</label>
@@ -962,4 +920,423 @@ const AdminProjects = () => {
                             name="website_url"
                             value={newProject.website_url}
                             onChange={handleInputChange}
-                            placeholder="https://example.com
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="featured" 
+                            checked={newProject.featured} 
+                            onCheckedChange={handleFeaturedChange} 
+                          />
+                          <label htmlFor="featured" className="text-sm font-medium">
+                            Feature this project on the homepage
+                          </label>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Project Sections</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                            {sections.map(section => (
+                              <div key={section.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`section-${section.id}`} 
+                                  checked={selectedSections.includes(section.id)}
+                                  onCheckedChange={(checked) => handleSectionChange(section.id, checked as boolean)}
+                                />
+                                <label 
+                                  htmlFor={`section-${section.id}`} 
+                                  className="text-sm"
+                                  style={{ color: section.color || 'inherit' }}
+                                >
+                                  {section.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 flex justify-between">
+                          <Button type="button" variant="outline" onClick={cancelForm}>
+                            Cancel
+                          </Button>
+                          <Button type="submit">
+                            <Save className="mr-2 h-4 w-4" />
+                            {editingProjectId ? 'Update Project' : 'Save Project'}
+                          </Button>
+                        </div>
+                      </form>
+                    </TabsContent>
+                    
+                    <TabsContent value="images">
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <h4 className="font-medium">Project Images</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Add additional images to your project gallery.
+                          </p>
+                          
+                          {projectImages.length > 0 && (
+                            <div className="space-y-4">
+                              {projectImages.map((image, index) => (
+                                <div key={index} className="flex items-start gap-4 p-4 border rounded-md">
+                                  <div className="flex-shrink-0 w-20 h-20">
+                                    <img 
+                                      src={image.image_url} 
+                                      alt={image.caption || `Project image ${index + 1}`} 
+                                      className="w-full h-full object-cover rounded"
+                                      onError={addDefaultSrc}
+                                    />
+                                  </div>
+                                  <div className="flex-grow space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <Input
+                                        name="image_url"
+                                        value={image.image_url}
+                                        onChange={(e) => handleImageChange(e, index)}
+                                        placeholder="Image URL"
+                                      />
+                                      <Input
+                                        name="caption"
+                                        value={image.caption}
+                                        onChange={(e) => handleImageChange(e, index)}
+                                        placeholder="Image caption"
+                                      />
+                                    </div>
+                                    <Input
+                                      type="number"
+                                      name="display_order"
+                                      value={image.display_order}
+                                      onChange={(e) => handleImageChange(e, index)}
+                                      placeholder="Display order"
+                                      className="w-24"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col space-y-2">
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => moveImage(index, 'up')}
+                                      disabled={index === 0}
+                                    >
+                                      <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => moveImage(index, 'down')}
+                                      disabled={index === projectImages.length - 1}
+                                    >
+                                      <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => removeImage(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <Input
+                              name="image_url"
+                              value={newImage.image_url}
+                              onChange={handleImageChange}
+                              placeholder="Image URL"
+                            />
+                            <Input
+                              name="caption"
+                              value={newImage.caption}
+                              onChange={handleImageChange}
+                              placeholder="Image caption (optional)"
+                            />
+                            <Button type="button" onClick={addNewImage}>
+                              <ImageIcon className="mr-2 h-4 w-4" /> Add Image
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 flex justify-between">
+                          <Button type="button" variant="outline" onClick={() => setActiveTab('details')}>
+                            Back to Details
+                          </Button>
+                          <Button type="button" onClick={() => setActiveTab('links')}>
+                            Next: Links
+                          </Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="links">
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <h4 className="font-medium">Project Links</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Add relevant links to your project (GitHub, Dribbble, Behance, etc.)
+                          </p>
+                          
+                          {projectLinks.length > 0 && (
+                            <div className="space-y-4">
+                              {projectLinks.map((link, index) => (
+                                <div key={index} className="flex items-start gap-4 p-4 border rounded-md">
+                                  <div className="flex-grow space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <Input
+                                        name="title"
+                                        value={link.title}
+                                        onChange={(e) => handleLinkChange(e, index)}
+                                        placeholder="Link title"
+                                      />
+                                      <Input
+                                        name="url"
+                                        value={link.url}
+                                        onChange={(e) => handleLinkChange(e, index)}
+                                        placeholder="URL"
+                                      />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <Input
+                                        name="icon"
+                                        value={link.icon}
+                                        onChange={(e) => handleLinkChange(e, index)}
+                                        placeholder="Icon name (e.g., GitHub)"
+                                      />
+                                      <Input
+                                        type="number"
+                                        name="display_order"
+                                        value={link.display_order}
+                                        onChange={(e) => handleLinkChange(e, index)}
+                                        placeholder="Display order"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col space-y-2">
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => moveLink(index, 'up')}
+                                      disabled={index === 0}
+                                    >
+                                      <ArrowUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => moveLink(index, 'down')}
+                                      disabled={index === projectLinks.length - 1}
+                                    >
+                                      <ArrowDown className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => removeLink(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                            <Input
+                              name="title"
+                              value={newLink.title}
+                              onChange={handleLinkChange}
+                              placeholder="Link title"
+                            />
+                            <Input
+                              name="url"
+                              value={newLink.url}
+                              onChange={handleLinkChange}
+                              placeholder="URL"
+                            />
+                            <Input
+                              name="icon"
+                              value={newLink.icon}
+                              onChange={handleLinkChange}
+                              placeholder="Icon name (optional)"
+                            />
+                            <Button type="button" onClick={addNewLink}>
+                              <Link className="mr-2 h-4 w-4" /> Add Link
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 flex justify-between">
+                          <Button type="button" variant="outline" onClick={() => setActiveTab('images')}>
+                            Back to Images
+                          </Button>
+                          <Button type="button" onClick={handleSubmit}>
+                            <Save className="mr-2 h-4 w-4" />
+                            {editingProjectId ? 'Update Project' : 'Save Project'}
+                          </Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Your Projects</h2>
+              <div className="flex items-center gap-2">
+                {/* Additional actions can go here */}
+              </div>
+            </div>
+            
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading projects...</p>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-12 border rounded-lg">
+                <h3 className="text-lg font-medium mb-2">No projects yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by adding your first project.
+                </p>
+                <Button onClick={() => {
+                  resetForm();
+                  setFormOpen(true);
+                }}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add New Project
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(project => (
+                  <Card key={project.id} className="overflow-hidden border hover:shadow-lg transition-shadow">
+                    <div className="relative aspect-video">
+                      <img 
+                        src={project.image_url} 
+                        alt={project.title} 
+                        className="w-full h-full object-cover"
+                        onError={addDefaultSrc}
+                      />
+                      {project.featured && (
+                        <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded text-xs font-medium">
+                          Featured
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xl">{project.title}</CardTitle>
+                      <CardDescription className="flex items-center gap-2">
+                        <span className="bg-secondary/50 px-2 py-1 rounded-full text-xs">
+                          {project.category}
+                        </span>
+                        {project.sections && project.sections.length > 0 && (
+                          <div className="flex gap-1">
+                            {project.sections.map(section => (
+                              <span 
+                                key={section.id} 
+                                className="px-2 py-1 rounded-full text-xs"
+                                style={{ 
+                                  backgroundColor: section.color ? `${section.color}30` : 'var(--secondary)',
+                                  color: section.color || 'inherit'
+                                }}
+                              >
+                                {section.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-sm line-clamp-3">{project.description}</p>
+                      
+                      {project.images && project.images.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-xs text-muted-foreground">Gallery: {project.images.length} images</p>
+                        </div>
+                      )}
+                      
+                      {project.links && project.links.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {project.links.slice(0, 3).map((link, i) => (
+                            <a 
+                              key={i}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full hover:bg-muted-foreground/20"
+                            >
+                              {link.title}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ))}
+                          {project.links.length > 3 && (
+                            <span className="text-xs px-2 py-1 bg-muted rounded-full">
+                              +{project.links.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex justify-between pt-0">
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`/portfolio/${project.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="mr-2 h-4 w-4" /> Preview
+                          </a>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => openEditForm(project)}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Button>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the project "{project.title}" and all associated data.
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => deleteProject(project.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default AdminProjects;
