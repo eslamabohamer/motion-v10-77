@@ -9,6 +9,7 @@ import "./App.css";
 import IndexPage from '@/pages/Index';
 import AboutPage from '@/pages/About';
 import ServicesPage from '@/pages/Services';
+import TeamPage from '@/pages/Team';
 import PortfolioPage from '@/pages/Portfolio';
 import PortfolioDetailPage from '@/pages/PortfolioDetail';
 import ContactPage from '@/pages/Contact';
@@ -24,6 +25,7 @@ import AdminSections from '@/pages/AdminSections';
 import AdminSettings from '@/pages/AdminSettings';
 import AdminUsers from '@/pages/AdminUsers';
 import AdminMessage from '@/pages/AdminMessage';
+import AdminTeam from '@/pages/AdminTeam';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -44,6 +46,7 @@ function App() {
             <Route path="/" element={<IndexPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/team" element={<TeamPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
@@ -55,6 +58,7 @@ function App() {
               <Route path="projects" element={<AdminProjects />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="sections" element={<AdminSections />} />
+              <Route path="team" element={<AdminTeam />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="messages" element={<AdminMessage />} />

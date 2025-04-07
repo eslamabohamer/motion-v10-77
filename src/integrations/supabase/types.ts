@@ -533,6 +533,45 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          photo_url: string | null
+          position: string
+          social_links: Json | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          photo_url?: string | null
+          position: string
+          social_links?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          photo_url?: string | null
+          position?: string
+          social_links?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           author: string

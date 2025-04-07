@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Grid3X3, MessageSquare, Settings, Tag, Users, Layers } from "lucide-react";
+import { Grid3X3, MessageSquare, Settings, Tag, Users, Layers, Users2 } from "lucide-react";
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
@@ -20,6 +20,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
     if (path.includes('/admin/messages')) return 'messages';
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/sections')) return 'sections';
+    if (path.includes('/admin/team')) return 'team';
     if (path.includes('/admin/settings')) return 'settings';
     if (path.includes('/admin/users')) return 'users';
     return 'projects';
@@ -139,6 +140,16 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     <Link to="/admin/categories" onClick={() => handlePageChange('categories')}>
                       <Tag className="mr-2 h-4 w-4" />
                       Categories
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'team' ? "secondary" : "ghost"} 
+                    className="justify-start" 
+                    asChild
+                  >
+                    <Link to="/admin/team" onClick={() => handlePageChange('team')}>
+                      <Users2 className="mr-2 h-4 w-4" />
+                      Team
                     </Link>
                   </Button>
                   <Button 
