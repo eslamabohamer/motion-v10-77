@@ -137,15 +137,27 @@ const AdminSettings = () => {
   });
 
   // Initialize settings state from database or defaults
-  const [settings, setSettings] = useState(defaultSettings);
+  const [settings, setSettings] = useState({...defaultSettings});
 
   // Update settings when DB data loads
   useEffect(() => {
     if (dbSettings) {
-      setSettings(prevSettings => ({
-        ...prevSettings,
-        ...dbSettings
-      }));
+      setSettings(prevSettings => {
+        // Create a deep copy of the previous settings
+        const updatedSettings = JSON.parse(JSON.stringify(prevSettings));
+        
+        // Update with database settings
+        for (const sectionKey in dbSettings) {
+          if (updatedSettings[sectionKey]) {
+            updatedSettings[sectionKey] = {
+              ...updatedSettings[sectionKey],
+              ...dbSettings[sectionKey]
+            };
+          }
+        }
+        
+        return updatedSettings;
+      });
     }
   }, [dbSettings]);
 

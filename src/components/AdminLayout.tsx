@@ -68,6 +68,31 @@ const AdminLayout = () => {
     };
   }, [navigate]);
 
+  // Load site settings to localStorage for other pages to access
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      const loadSettings = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('site_settings')
+            .select('settings')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            localStorage.setItem('siteSettings', JSON.stringify(data[0].settings));
+          }
+        } catch (error) {
+          console.error('Error loading settings:', error);
+        }
+      };
+      
+      loadSettings();
+    }
+  }, [isAuthenticated, isAdmin]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
