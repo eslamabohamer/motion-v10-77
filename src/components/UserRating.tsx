@@ -61,20 +61,10 @@ export default function UserRating({ projectId }: UserRatingProps) {
     const fetchRatings = async () => {
       setLoading(true);
       try {
+        // Fix: Use a simpler query without join to avoid RLS errors
         const { data, error } = await supabase
           .from('user_ratings')
-          .select(`
-            id,
-            comment,
-            rating,
-            created_at,
-            user_id,
-            photo_url,
-            profiles:user_id (
-              display_name,
-              avatar_url
-            )
-          `)
+          .select('*')
           .eq('project_id', projectId)
           .order('created_at', { ascending: false });
           
@@ -82,8 +72,30 @@ export default function UserRating({ projectId }: UserRatingProps) {
           throw error;
         }
         
-        console.log('Fetched ratings:', data);
-        setUserRatings(data || []);
+        // For each rating, if there's a user_id, fetch the profile separately
+        const ratingsWithProfiles = await Promise.all((data || []).map(async (rating) => {
+          if (rating.user_id) {
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('display_name, avatar_url')
+                .eq('id', rating.user_id)
+                .single();
+                
+              return {
+                ...rating,
+                profiles: profileData
+              };
+            } catch (err) {
+              console.error('Error fetching profile for rating:', err);
+              return rating;
+            }
+          }
+          return rating;
+        }));
+        
+        console.log('Fetched ratings:', ratingsWithProfiles);
+        setUserRatings(ratingsWithProfiles || []);
       } catch (error) {
         console.error('Error fetching ratings:', error);
         toast.error('Failed to load reviews');
@@ -194,28 +206,39 @@ export default function UserRating({ projectId }: UserRatingProps) {
         setComment('');
         setImagePreview(null);
         
-        // Refresh ratings
+        // Refresh ratings - using the fixed query approach
         const { data, error: refreshError } = await supabase
           .from('user_ratings')
-          .select(`
-            id,
-            comment,
-            rating,
-            created_at,
-            user_id,
-            photo_url,
-            profiles:user_id (
-              display_name,
-              avatar_url
-            )
-          `)
+          .select('*')
           .eq('project_id', projectId)
           .order('created_at', { ascending: false });
           
         if (refreshError) {
           console.error('Error refreshing ratings:', refreshError);
         } else {
-          setUserRatings(data || []);
+          // Process the fetched ratings to add profiles where needed
+          const ratingsWithProfiles = await Promise.all((data || []).map(async (rating) => {
+            if (rating.user_id) {
+              try {
+                const { data: profileData } = await supabase
+                  .from('profiles')
+                  .select('display_name, avatar_url')
+                  .eq('id', rating.user_id)
+                  .single();
+                  
+                return {
+                  ...rating,
+                  profiles: profileData
+                };
+              } catch (err) {
+                console.error('Error fetching profile for rating:', err);
+                return rating;
+              }
+            }
+            return rating;
+          }));
+          
+          setUserRatings(ratingsWithProfiles || []);
         }
       }
     } catch (error) {
@@ -342,7 +365,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
               <div key={item.id} className="bg-card/50 rounded-lg p-6 border border-border/20 transition-all hover:border-border/40">
                 <div className="flex items-start gap-4">
                   <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
-                    {item.photo_url || item.profiles?.avatar_url ? (
+                    {item.photo_url || (item.profiles?.avatar_url) ? (
                       <AvatarImage 
                         src={item.photo_url || (item.profiles?.avatar_url || '')} 
                         alt="User avatar" 
