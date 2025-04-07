@@ -6,6 +6,7 @@ import { Footer } from '@/components/Footer';
 import { Briefcase, MapPin, Award } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 const About = () => {
   const [aboutInfo, setAboutInfo] = useState({
@@ -17,26 +18,63 @@ const About = () => {
     ownerLocation: "Cairo, Egypt",
   });
 
+  // Load the most recent settings directly from the database
   useEffect(() => {
-    // Load about info from localStorage
-    const savedSettings = localStorage.getItem('siteSettings');
-    if (savedSettings) {
+    const fetchSettings = async () => {
       try {
-        const settings = JSON.parse(savedSettings);
-        if (settings.about) {
+        // First try to get settings from the database
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('settings')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (error) {
+          console.error('Error fetching settings:', error);
+          throw error;
+        }
+        
+        // If we have settings in the database, use them
+        if (data && data.length > 0 && data[0].settings?.about) {
+          const dbAboutInfo = data[0].settings.about;
           setAboutInfo({
-            ownerName: settings.about.ownerName || "Muhammad Ali",
-            ownerTitle: settings.about.ownerTitle || "Motion Graphics Artist & 3D Animator",
-            ownerBio: settings.about.ownerBio || "I'm a passionate motion graphics artist with over 8 years of experience creating stunning visual animations for brands worldwide.",
-            ownerPhotoUrl: settings.about.ownerPhotoUrl || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=400&auto=format&fit=crop",
-            ownerSkills: settings.about.ownerSkills || "Motion Graphics, 3D Animation, Visual Effects",
-            ownerLocation: settings.about.ownerLocation || "Cairo, Egypt",
+            ownerName: dbAboutInfo.ownerName || aboutInfo.ownerName,
+            ownerTitle: dbAboutInfo.ownerTitle || aboutInfo.ownerTitle,
+            ownerBio: dbAboutInfo.ownerBio || aboutInfo.ownerBio,
+            ownerPhotoUrl: dbAboutInfo.ownerPhotoUrl || aboutInfo.ownerPhotoUrl,
+            ownerSkills: dbAboutInfo.ownerSkills || aboutInfo.ownerSkills,
+            ownerLocation: dbAboutInfo.ownerLocation || aboutInfo.ownerLocation,
           });
+          console.log('Loaded settings from database:', dbAboutInfo);
+        } 
+        // As a fallback, try to load from localStorage
+        else {
+          const savedSettings = localStorage.getItem('siteSettings');
+          if (savedSettings) {
+            try {
+              const settings = JSON.parse(savedSettings);
+              if (settings.about) {
+                setAboutInfo({
+                  ownerName: settings.about.ownerName || aboutInfo.ownerName,
+                  ownerTitle: settings.about.ownerTitle || aboutInfo.ownerTitle,
+                  ownerBio: settings.about.ownerBio || aboutInfo.ownerBio,
+                  ownerPhotoUrl: settings.about.ownerPhotoUrl || aboutInfo.ownerPhotoUrl,
+                  ownerSkills: settings.about.ownerSkills || aboutInfo.ownerSkills,
+                  ownerLocation: settings.about.ownerLocation || aboutInfo.ownerLocation,
+                });
+                console.log('Loaded settings from localStorage:', settings.about);
+              }
+            } catch (error) {
+              console.error('Error parsing saved settings:', error);
+            }
+          }
         }
       } catch (error) {
-        console.error('Error parsing saved settings:', error);
+        console.error('Error in fetchSettings:', error);
       }
-    }
+    };
+    
+    fetchSettings();
   }, []);
 
   // Split skills into array

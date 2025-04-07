@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,8 @@ const AdminSettings = () => {
       }
     },
     onSuccess: () => {
+      // Update localStorage after successful save
+      localStorage.setItem('siteSettings', JSON.stringify(settings));
       toast.success("Settings saved successfully");
       refetchSettings();
       setIsLoading(false);
@@ -148,7 +151,7 @@ const AdminSettings = () => {
         
         // Update with database settings
         for (const sectionKey in dbSettings) {
-          if (updatedSettings[sectionKey]) {
+          if (typeof sectionKey === 'string' && updatedSettings[sectionKey]) {
             updatedSettings[sectionKey] = {
               ...updatedSettings[sectionKey],
               ...dbSettings[sectionKey]
