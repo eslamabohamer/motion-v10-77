@@ -149,12 +149,14 @@ const AdminSettings = () => {
         // Create a deep copy of the previous settings
         const updatedSettings = JSON.parse(JSON.stringify(prevSettings));
         
-        // Update with database settings
-        for (const sectionKey in dbSettings) {
-          if (typeof sectionKey === 'string' && updatedSettings[sectionKey]) {
-            updatedSettings[sectionKey] = {
-              ...updatedSettings[sectionKey],
-              ...dbSettings[sectionKey]
+        // Update with database settings - fix the type issue
+        const dbSettingsObj = dbSettings as Record<string, any>;
+        
+        for (const sectionKey in dbSettingsObj) {
+          if (typeof sectionKey === 'string' && updatedSettings[sectionKey as keyof typeof updatedSettings]) {
+            updatedSettings[sectionKey as keyof typeof updatedSettings] = {
+              ...updatedSettings[sectionKey as keyof typeof updatedSettings],
+              ...dbSettingsObj[sectionKey]
             };
           }
         }

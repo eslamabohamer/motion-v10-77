@@ -8,34 +8,76 @@ import { Testimonials } from '@/components/Testimonials';
 import { ContactCta } from '@/components/ContactCta';
 import { Footer } from '@/components/Footer';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
 
   useEffect(() => {
-    // Load animation settings from localStorage
-    const savedSettings = localStorage.getItem('siteSettings');
-    if (savedSettings) {
+    // Load animation settings directly from the database
+    const fetchSettings = async () => {
       try {
-        const settings = JSON.parse(savedSettings);
-        if (settings.animation && settings.animation.enable3DEffects !== undefined) {
-          setAnimations3DEnabled(settings.animation.enable3DEffects);
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('settings')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (error) {
+          console.error('Error fetching animation settings:', error);
+          return;
+        }
+        
+        // If we have settings in the database, use them
+        if (data && data.length > 0 && data[0].settings) {
+          const dbSettings = data[0].settings as Record<string, any>;
           
-          // Show toast notification about 3D effects status
-          if (!settings.animation.enable3DEffects) {
-            toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
-              duration: 5000,
-              action: {
-                label: 'Settings',
-                onClick: () => window.location.href = '/admin/settings'
+          if (dbSettings.animation && dbSettings.animation.enable3DEffects !== undefined) {
+            setAnimations3DEnabled(dbSettings.animation.enable3DEffects);
+            
+            // Show toast notification about 3D effects status
+            if (!dbSettings.animation.enable3DEffects) {
+              toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
+                duration: 5000,
+                action: {
+                  label: 'Settings',
+                  onClick: () => window.location.href = '/admin/settings'
+                }
+              });
+            }
+          }
+        } 
+        // As a fallback, try to load from localStorage
+        else {
+          const savedSettings = localStorage.getItem('siteSettings');
+          if (savedSettings) {
+            try {
+              const settings = JSON.parse(savedSettings);
+              if (settings.animation && settings.animation.enable3DEffects !== undefined) {
+                setAnimations3DEnabled(settings.animation.enable3DEffects);
+                
+                // Show toast notification about 3D effects status
+                if (!settings.animation.enable3DEffects) {
+                  toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
+                    duration: 5000,
+                    action: {
+                      label: 'Settings',
+                      onClick: () => window.location.href = '/admin/settings'
+                    }
+                  });
+                }
               }
-            });
+            } catch (error) {
+              console.error('Error parsing saved settings:', error);
+            }
           }
         }
       } catch (error) {
-        console.error('Error parsing saved settings:', error);
+        console.error('Error in fetchSettings:', error);
       }
-    }
+    };
+    
+    fetchSettings();
   }, []);
 
   return (

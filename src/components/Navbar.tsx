@@ -1,14 +1,18 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, HomeIcon, Briefcase, Settings, User, Mail, ShieldIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [siteName, setSiteName] = useState("MUHAMMAD ALI");
   const [logoUrl, setLogoUrl] = useState("");
   const navigate = useNavigate();
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 20) {
@@ -20,34 +24,73 @@ export const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
   useEffect(() => {
-    // Load site name and logo from localStorage
-    const savedSettings = localStorage.getItem('siteSettings');
-    if (savedSettings) {
+    // Load site name and logo directly from the database
+    const fetchSettings = async () => {
       try {
-        const settings = JSON.parse(savedSettings);
-        if (settings.general) {
-          setSiteName(settings.general.siteName || "MUHAMMAD ALI");
-          setLogoUrl(settings.general.logoUrl || "");
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('settings')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (error) {
+          console.error('Error fetching settings:', error);
+          return;
+        }
+        
+        // If we have settings in the database, use them
+        if (data && data.length > 0 && data[0].settings) {
+          const dbSettings = data[0].settings as Record<string, any>;
+          
+          if (dbSettings.general) {
+            const general = dbSettings.general as Record<string, string>;
+            setSiteName(general.siteName || "MUHAMMAD ALI");
+            setLogoUrl(general.logoUrl || "");
+            console.log('Loaded navbar settings from database:', general);
+          }
+        } 
+        // As a fallback, try to load from localStorage
+        else {
+          const savedSettings = localStorage.getItem('siteSettings');
+          if (savedSettings) {
+            try {
+              const settings = JSON.parse(savedSettings);
+              if (settings.general) {
+                setSiteName(settings.general.siteName || "MUHAMMAD ALI");
+                setLogoUrl(settings.general.logoUrl || "");
+                console.log('Loaded navbar settings from localStorage');
+              }
+            } catch (error) {
+              console.error('Error parsing saved settings:', error);
+            }
+          }
         }
       } catch (error) {
-        console.error('Error parsing saved settings:', error);
+        console.error('Error in fetchSettings:', error);
       }
-    }
+    };
+    
+    fetchSettings();
   }, []);
+
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
+  
   const handleAdminArea = () => {
     navigate('/admin/login');
     closeMenu();
   };
+  
   const handleGetInTouch = () => {
     navigate('/contact');
     closeMenu();
   };
+
   return <nav className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20",
-  // Increased height from h-16 to h-20
-  scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]")}>
+    // Increased height from h-16 to h-20
+    scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]")}>
       <div className="h-full max-w-7xl mx-auto flex items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
@@ -99,11 +142,13 @@ export const Navbar = () => {
       </div>
     </nav>;
 };
+
 interface NavLinkProps {
   to: string;
   icon: React.ReactNode;
   label: string;
 }
+
 const NavLink = ({
   to,
   icon,
@@ -116,11 +161,13 @@ const NavLink = ({
       <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-[#4a6cf7]"></span>
     </Link>;
 };
+
 interface MobileNavLinkProps {
   to: string;
   label: string;
   onClick: () => void;
 }
+
 const MobileNavLink = ({
   to,
   label,

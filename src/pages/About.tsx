@@ -35,17 +35,21 @@ const About = () => {
         }
         
         // If we have settings in the database, use them
-        if (data && data.length > 0 && data[0].settings?.about) {
-          const dbAboutInfo = data[0].settings.about;
-          setAboutInfo({
-            ownerName: dbAboutInfo.ownerName || aboutInfo.ownerName,
-            ownerTitle: dbAboutInfo.ownerTitle || aboutInfo.ownerTitle,
-            ownerBio: dbAboutInfo.ownerBio || aboutInfo.ownerBio,
-            ownerPhotoUrl: dbAboutInfo.ownerPhotoUrl || aboutInfo.ownerPhotoUrl,
-            ownerSkills: dbAboutInfo.ownerSkills || aboutInfo.ownerSkills,
-            ownerLocation: dbAboutInfo.ownerLocation || aboutInfo.ownerLocation,
-          });
-          console.log('Loaded settings from database:', dbAboutInfo);
+        if (data && data.length > 0 && data[0].settings) {
+          const dbSettings = data[0].settings as Record<string, any>;
+          
+          if (dbSettings.about) {
+            const dbAboutInfo = dbSettings.about as Record<string, string>;
+            setAboutInfo({
+              ownerName: dbAboutInfo.ownerName || aboutInfo.ownerName,
+              ownerTitle: dbAboutInfo.ownerTitle || aboutInfo.ownerTitle,
+              ownerBio: dbAboutInfo.ownerBio || aboutInfo.ownerBio,
+              ownerPhotoUrl: dbAboutInfo.ownerPhotoUrl || aboutInfo.ownerPhotoUrl,
+              ownerSkills: dbAboutInfo.ownerSkills || aboutInfo.ownerSkills,
+              ownerLocation: dbAboutInfo.ownerLocation || aboutInfo.ownerLocation,
+            });
+            console.log('Loaded settings from database:', dbAboutInfo);
+          }
         } 
         // As a fallback, try to load from localStorage
         else {
