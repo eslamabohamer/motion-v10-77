@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Fix for the UserRating component error - ensure we return a success boolean
@@ -10,22 +9,15 @@ export async function addUserRating(data: {
   photo_url?: string | null;
 }) {
   try {
-    // Ensure the storage bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some(bucket => bucket.name === 'user-photos');
-    
-    if (!bucketExists) {
-      // Create user-photos bucket if it doesn't exist
-      console.log('Creating user-photos bucket');
-      await supabase.storage.createBucket('user-photos', {
-        public: true, // Make bucket public
-        fileSizeLimit: 5242880 // 5MB in bytes
-      });
-    }
+    // Check if the user_id is present, and if not, set it to null explicitly
+    const ratingData = {
+      ...data,
+      user_id: data.user_id || null
+    };
     
     const { error } = await supabase
       .from('user_ratings')
-      .insert([data]);
+      .insert([ratingData]);
       
     return { error, success: !error };
   } catch (error) {

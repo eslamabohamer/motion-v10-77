@@ -29,7 +29,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
     setRating(newRating);
   };
 
-  // Fetch the current user
+  // Fetch the current user if they are logged in
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -121,9 +121,8 @@ export default function UserRating({ projectId }: UserRatingProps) {
       setImagePreview(objectUrl);
       
       // Create a unique filename for storage
-      const userId = userProfile?.id || 'anonymous';
       const timestamp = new Date().getTime();
-      const filePath = `${userId}/${timestamp}-${file.name}`;
+      const filePath = `anonymous/${timestamp}-${file.name}`;
       
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -164,8 +163,17 @@ export default function UserRating({ projectId }: UserRatingProps) {
     setSubmitting(true);
     
     try {
+      // Get user ID if authenticated, otherwise null
       const userId = userProfile?.id || null;
-      const photoUrl = imagePreview || userProfile?.avatar_url || null;
+      const photoUrl = imagePreview;
+      
+      console.log('Submitting rating with data:', {
+        project_id: projectId,
+        rating,
+        comment,
+        user_id: userId,
+        photo_url: photoUrl
+      });
       
       const { success, error } = await addUserRating({
         project_id: projectId,
@@ -176,6 +184,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
       });
       
       if (error) {
+        console.error('Error response:', error);
         throw error;
       }
       
