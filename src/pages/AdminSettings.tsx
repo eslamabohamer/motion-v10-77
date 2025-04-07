@@ -106,6 +106,26 @@ const AdminSettings = () => {
     retry: 1
   });
 
+  // Fetch about me data
+  const { data: aboutData, isLoading: isLoadingAbout, refetch: refetchAbout } = useQuery({
+    queryKey: ['aboutMe'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('about_me')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Error fetching about me data:', error);
+        throw error;
+      }
+      
+      return data?.length > 0 ? data[0] : null;
+    },
+    retry: 1
+  });
+
   // Fetch company logos
   const { data: companyLogos, isLoading: isLoadingLogos, refetch: refetchLogos } = useQuery({
     queryKey: ['companyLogos'],
@@ -113,14 +133,17 @@ const AdminSettings = () => {
       const { data, error } = await supabase
         .from('company_logos')
         .select('*')
-        .order('display_order', { ascending: true });
+        .order('display_order', { ascending: true }) as {
+          data: CompanyLogo[] | null;
+          error: Error | null;
+        };
       
       if (error) {
         console.error('Error fetching company logos:', error);
         throw error;
       }
       
-      return data as CompanyLogo[];
+      return data || [];
     },
     retry: 1
   });
@@ -139,7 +162,6 @@ const AdminSettings = () => {
       }
 
       if (existingData && existingData.length > 0) {
-        // Update existing settings
         const { error } = await supabase
           .from('site_settings')
           .update({ settings: settingsData })
@@ -149,7 +171,6 @@ const AdminSettings = () => {
         
         return existingData[0].id;
       } else {
-        // Insert new settings
         const { data, error } = await supabase
           .from('site_settings')
           .insert({ settings: settingsData })
@@ -161,7 +182,6 @@ const AdminSettings = () => {
       }
     },
     onSuccess: () => {
-      // Update localStorage after successful save
       localStorage.setItem('siteSettings', JSON.stringify(settings));
       toast.success("Settings saved successfully");
       refetchSettings();
@@ -188,7 +208,6 @@ const AdminSettings = () => {
       }
 
       if (existingData && existingData.length > 0) {
-        // Update existing settings
         const { error } = await supabase
           .from('about_me')
           .update({
@@ -207,7 +226,6 @@ const AdminSettings = () => {
         
         return existingData[0].id;
       } else {
-        // Insert new settings
         const { data, error } = await supabase
           .from('about_me')
           .insert({
@@ -242,18 +260,19 @@ const AdminSettings = () => {
   // Save company logo mutation
   const { mutate: saveLogoMutation } = useMutation({
     mutationFn: async (logoData: Omit<CompanyLogo, 'id' | 'display_order'>) => {
-      // Get the max display order
       const { data: maxOrderData, error: maxOrderError } = await supabase
         .from('company_logos')
         .select('display_order')
         .order('display_order', { ascending: false })
-        .limit(1);
+        .limit(1) as {
+          data: { display_order: number }[] | null;
+          error: Error | null;
+        };
       
       const nextDisplayOrder = maxOrderData && maxOrderData.length > 0 
         ? (maxOrderData[0].display_order + 1) 
         : 1;
       
-      // Insert the new logo
       const { data, error } = await supabase
         .from('company_logos')
         .insert({
@@ -262,7 +281,10 @@ const AdminSettings = () => {
           website: logoData.website || null,
           display_order: nextDisplayOrder
         })
-        .select('id');
+        .select('id') as {
+          data: { id: string }[] | null;
+          error: Error | null;
+        };
         
       if (error) throw error;
       
@@ -295,7 +317,9 @@ const AdminSettings = () => {
           logo_url: data.logo_url,
           website: data.website || null
         })
-        .eq('id', id);
+        .eq('id', id) as {
+          error: Error | null;
+        };
         
       if (error) throw error;
       
@@ -319,7 +343,9 @@ const AdminSettings = () => {
       const { error } = await supabase
         .from('company_logos')
         .delete()
-        .eq('id', id);
+        .eq('id', id) as {
+          error: Error | null;
+        };
         
       if (error) throw error;
       
@@ -344,10 +370,8 @@ const AdminSettings = () => {
   useEffect(() => {
     if (dbSettings) {
       setSettings(prevSettings => {
-        // Create a deep copy of the previous settings
         const updatedSettings = JSON.parse(JSON.stringify(prevSettings));
         
-        // Update with database settings - fix the type issue
         const dbSettingsObj = dbSettings as Record<string, any>;
         
         for (const sectionKey in dbSettingsObj) {
@@ -398,7 +422,6 @@ const AdminSettings = () => {
     setIsLoading(true);
     
     if (activeTab === 'about') {
-      // Save about data to the about_me table
       saveAboutDataMutation({
         ownerName: settings.about.ownerName,
         ownerTitle: settings.about.ownerTitle,
@@ -410,7 +433,6 @@ const AdminSettings = () => {
         qualityFirstText: "Every project receives my full attention to detail, ensuring premium quality results."
       });
     } else {
-      // Save other settings to the site_settings table
       saveSettingsMutation(settings);
     }
   };

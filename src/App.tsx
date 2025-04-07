@@ -1,69 +1,70 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import Portfolio from "./pages/Portfolio";
-import PortfolioDetail from "./pages/PortfolioDetail";
-import Services from "./pages/Services";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import NotFound from "./pages/NotFound";
-import AdminProjects from "./pages/AdminProjects";
-import AdminMessage from "./pages/AdminMessage";
-import AdminLogin from "./pages/AdminLogin";
-import AdminLayout from "./components/AdminLayout";
-import AdminCategories from "./pages/AdminCategories";
-import AdminSettings from "./pages/AdminSettings";
-import AdminUsers from "./pages/AdminUsers";
-import Register from "./pages/Register";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from 'next-themes';
+import { Toaster } from '@/components/ui/sonner';
+import "./App.css";
 
+// Pages
+import IndexPage from '@/pages/Index';
+import AboutPage from '@/pages/About';
+import ServicesPage from '@/pages/Services';
+import PortfolioPage from '@/pages/Portfolio';
+import PortfolioDetailPage from '@/pages/PortfolioDetail';
+import ContactPage from '@/pages/Contact';
+import NotFoundPage from '@/pages/NotFound';
+import RegisterPage from '@/pages/Register';
+
+// Admin pages
+import AdminLayout from '@/components/AdminLayout';
+import AdminLoginPage from '@/pages/AdminLogin';
+import AdminProjects from '@/pages/AdminProjects';
+import AdminCategories from '@/pages/AdminCategories';
+import AdminSettings from '@/pages/AdminSettings';
+import AdminUsers from '@/pages/AdminUsers';
+import AdminMessage from '@/pages/AdminMessage';
+
+// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
-      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
     },
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/portfolio/:id" element={<PortfolioDetail />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<Navigate to="/admin/projects" replace />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-
-          {/* Protected Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="projects" element={<AdminProjects />} />
-            <Route path="messages" element={<AdminMessage />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="users" element={<AdminUsers />} />
-          </Route>
-          
-          {/* Not Found Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system">
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Routes>
+            <Route path="/" element={<IndexPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminProjects />} />
+              <Route path="projects" element={<AdminProjects />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="messages" element={<AdminMessage />} />
+            </Route>
+            
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Router>
+        <Toaster position="bottom-right" />
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
 
 export default App;

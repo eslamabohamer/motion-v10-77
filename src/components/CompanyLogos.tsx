@@ -8,6 +8,7 @@ interface CompanyLogo {
   name: string;
   logo_url: string;
   website?: string;
+  display_order: number;
 }
 
 export const CompanyLogos = () => {
@@ -17,10 +18,14 @@ export const CompanyLogos = () => {
   useEffect(() => {
     const fetchLogos = async () => {
       try {
+        // We need to cast the response since we can't update the types.ts file
         const { data, error } = await supabase
           .from('company_logos')
           .select('*')
-          .order('display_order', { ascending: true });
+          .order('display_order', { ascending: true }) as { 
+            data: CompanyLogo[] | null; 
+            error: Error | null 
+          };
           
         if (error) {
           throw error;
