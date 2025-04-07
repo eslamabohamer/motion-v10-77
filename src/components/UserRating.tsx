@@ -1,240 +1,253 @@
+
 import React, { useState, useEffect } from 'react';
+import { Rating } from 'react-simple-star-rating';
 import { supabase } from '@/integrations/supabase/client';
-import { StarRating } from '@/components/StarRating';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
-
-// Define the Rating type
-type RatingType = {
-  id: string;
-  comment: string;
-  rating: number;
-  created_at: string;
-  photo_url: string | null;
-  user_id: string | null;
-  project_id: string;
-  profiles?: {
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null;
-};
-
-// Define the profiles type for error handling
-type ProfilesData = {
-  display_name: string | null;
-  avatar_url: string | null;
-} | null;
+import { addUserRating } from '@/utils/supabaseUtils';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from 'sonner';
 
 interface UserRatingProps {
   projectId: string;
 }
 
-const UserRating: React.FC<UserRatingProps> = ({ projectId }) => {
-  const [ratings, setRatings] = useState<RatingType[]>([]);
-  const [loading, setLoading] = useState(false);
+export default function UserRating({ projectId }: UserRatingProps) {
+  const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [rating, setRating] = useState(0); // initial rating value
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [userRatings, setUserRatings] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is logged in
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-      
-      if (data.user) {
-        // Get user profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        
-        setProfile(profileData);
-      }
-    };
-    
-    getUser();
-    fetchRatings();
-  }, [projectId]);
-
+  // Handling rating change
   const handleRating = (rate: number) => {
     setRating(rate);
   };
 
-  const fetchRatings = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('user_ratings')
-        .select('*, profiles(*)')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      // Transform the data to ensure it matches the Rating type
-      const formattedRatings: RatingType[] = data.map(item => {
-        let profileData: ProfilesData = null;
+  // Fetch the current user
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Check if profiles is an error or valid data
-        if (item.profiles && typeof item.profiles === 'object' && !('error' in item.profiles)) {
-          profileData = {
-            display_name: item.profiles.display_name || 'Anonymous User',
-            avatar_url: item.profiles.avatar_url || ''
-          };
-        } else {
-          profileData = {
-            display_name: 'Anonymous User',
-            avatar_url: ''
-          };
+        if (session?.user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching profile:', error);
+          } else {
+            setUserProfile(data);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+      }
+    };
+    
+    fetchUserProfile();
+  }, []);
+
+  // Fetch ratings for this project
+  useEffect(() => {
+    const fetchRatings = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_ratings')
+          .select(`
+            id,
+            comment,
+            rating,
+            created_at,
+            user_id,
+            photo_url,
+            profiles:user_id (
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
         }
         
-        return {
-          id: item.id,
-          comment: item.comment,
-          rating: item.rating,
-          created_at: item.created_at,
-          photo_url: item.photo_url || '',
-          user_id: item.user_id,
-          project_id: item.project_id,
-          profiles: profileData
-        };
-      });
-
-      setRatings(formattedRatings);
-    } catch (error: any) {
-      console.error('Error fetching ratings:', error.message);
-      toast({
-        title: "Uh oh! Something went wrong.",
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
+        setUserRatings(data || []);
+      } catch (error) {
+        console.error('Error fetching ratings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (projectId) {
+      fetchRatings();
     }
-  };
+  }, [projectId]);
 
-  const submitRating = async () => {
-    if (!user) {
-      toast({
-        title: "Uh oh! Something went wrong.",
-        description: 'You must be logged in to submit a rating.',
-      });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (rating === 0) {
+      toast.error('Please select a rating');
       return;
     }
-
+    
+    if (!comment.trim()) {
+      toast.error('Please enter a comment');
+      return;
+    }
+    
+    setSubmitting(true);
+    
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('user_ratings')
-        .insert([
-          {
-            comment: comment,
-            rating: rating,
-            user_id: user.id,
-            photo_url: profile?.avatar_url || '',
-            project_id: projectId
-          }
-        ])
-        .select();
-
+      const userId = userProfile?.id || null;
+      const photoUrl = userProfile?.avatar_url || null;
+      
+      const { success, error } = await addUserRating({
+        project_id: projectId,
+        rating: rating,
+        comment: comment,
+        user_id: userId,
+        photo_url: photoUrl
+      });
+      
       if (error) {
         throw error;
       }
-
-      setComment('');
-      setRating(0);
-      fetchRatings();
-      toast({
-        title: "Success!",
-        description: "Your rating has been submitted.",
-      });
-    } catch (error: any) {
-      console.error('Error submitting rating:', error.message);
-      toast({
-        title: "Uh oh! Something went wrong.",
-        description: error.message,
-      });
+      
+      if (success) {
+        toast.success('Thank you for your rating!');
+        setRating(0);
+        setComment('');
+        
+        // Refresh ratings
+        const { data, error: refreshError } = await supabase
+          .from('user_ratings')
+          .select(`
+            id,
+            comment,
+            rating,
+            created_at,
+            user_id,
+            photo_url,
+            profiles:user_id (
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+          
+        if (refreshError) {
+          console.error('Error refreshing ratings:', refreshError);
+        } else {
+          setUserRatings(data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      toast.error('Failed to submit your rating. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">User Ratings</h1>
-
-      {/* Rating Form */}
-      <Card className="w-full max-w-md mx-auto mb-8">
-        <CardHeader>
-          <CardTitle>Submit Your Rating</CardTitle>
-          <CardDescription>Share your thoughts with others.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="flex items-center space-x-2">
-            <label htmlFor="rating">Rating:</label>
-            <StarRating
-              value={rating}
-              onChange={handleRating}
-              readOnly={false}
-              size="medium"
+    <div className="space-y-8">
+      <div className="bg-card rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold mb-4">Leave a Review</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Your Rating</label>
+            <Rating
+              onClick={handleRating}
+              initialValue={rating}
+              size={24}
+              fillColor="#4a6cf7"
+              emptyColor="#e2e8f0"
+              className="mb-2"
             />
           </div>
-          <div className="grid gap-2">
-            <label htmlFor="comment">Comment</label>
+          <div>
+            <label htmlFor="comment" className="block text-sm font-medium mb-2">
+              Your Review
+            </label>
             <Textarea
               id="comment"
-              placeholder="Write your comment here"
+              placeholder="Share your thoughts about this project..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              className="min-h-[100px]"
             />
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={submitRating} disabled={loading}>
-            {loading ? 'Submitting...' : 'Submit Rating'}
+          <Button 
+            type="submit" 
+            disabled={submitting}
+            className="w-full sm:w-auto"
+          >
+            {submitting ? 'Submitting...' : 'Submit Review'}
           </Button>
-        </CardFooter>
-      </Card>
+        </form>
+      </div>
 
-      {/* Display Ratings */}
-      <div className="grid gap-4">
-        {ratings.map((item) => (
-          <Card key={item.id}>
-            <CardHeader>
-              <CardTitle>{item.profiles?.display_name || 'Anonymous User'}</CardTitle>
-              <CardDescription>
-                <StarRating
-                  value={item.rating}
-                  readOnly
-                  size="small"
-                />
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>{item.comment}</p>
-            </CardContent>
-            <CardFooter className="text-sm text-muted-foreground">
-              {new Date(item.created_at).toLocaleDateString()}
-            </CardFooter>
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold">
+          Reviews {userRatings.length > 0 && `(${userRatings.length})`}
+        </h3>
+        
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Loading reviews...</p>
+          </div>
+        ) : userRatings.length > 0 ? (
+          <div className="space-y-6">
+            {userRatings.map((item) => (
+              <div key={item.id} className="border-b pb-6 last:border-0">
+                <div className="flex items-start">
+                  <Avatar className="h-10 w-10 mr-4">
+                    <AvatarImage src={item.photo_url || (item.profiles?.avatar_url || '')} />
+                    <AvatarFallback>
+                      {item.profiles?.display_name ? item.profiles.display_name.charAt(0) : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-medium">{item.profiles?.display_name || 'Anonymous User'}</p>
+                        <div className="mt-1">
+                          <Rating
+                            initialValue={item.rating}
+                            readonly
+                            size={16}
+                            fillColor="#4a6cf7"
+                            emptyColor="#e2e8f0"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-muted-foreground">{item.comment}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-muted/50 rounded-lg">
+            <p className="text-muted-foreground">No reviews yet. Be the first to share your thoughts!</p>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default UserRating;
+}

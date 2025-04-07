@@ -7,9 +7,8 @@ import "./App.css";
 
 // Pages
 import IndexPage from '@/pages/Index';
-import AboutPage from '@/pages/About';
-import ServicesPage from '@/pages/Services';
 import TeamPage from '@/pages/Team';
+import ServicesPage from '@/pages/Services';
 import PortfolioPage from '@/pages/Portfolio';
 import PortfolioDetailPage from '@/pages/PortfolioDetail';
 import ContactPage from '@/pages/Contact';
@@ -44,9 +43,8 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<IndexPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/services" element={<ServicesPage />} />
             <Route path="/team" element={<TeamPage />} />
+            <Route path="/services" element={<ServicesPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
