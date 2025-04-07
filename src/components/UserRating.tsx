@@ -224,6 +224,20 @@ export default function UserRating({ projectId }: UserRatingProps) {
         if (error) throw error;
         
         toast.success('Your review has been updated!');
+        
+        const updatedRatings = userRatings.map(item => 
+          item.id === editingRating.id 
+            ? {
+                ...item,
+                rating: rating,
+                comment: comment,
+                photo_url: imagePreview,
+                updated_at: new Date().toISOString()
+              } 
+            : item
+        );
+        
+        setUserRatings(updatedRatings);
         setEditingRating(null);
       } else {
         const userId = userProfile?.id || null;
