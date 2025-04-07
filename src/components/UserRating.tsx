@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Rating } from 'react-simple-star-rating';
-import { useUser } from '@/components/providers/UserProvider';
+import { StarRating } from '@/components/StarRating';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,35 +21,60 @@ type RatingType = {
   comment: string;
   rating: number;
   created_at: string;
-  photo_url: string;
-  user_id: string;
-  profiles: {
-    display_name: string;
-    avatar_url: string;
-  };
+  photo_url: string | null;
+  user_id: string | null;
+  project_id: string;
+  profiles?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
-const UserRating: React.FC = () => {
+interface UserRatingProps {
+  projectId: string;
+}
+
+const UserRating: React.FC<UserRatingProps> = ({ projectId }) => {
   const [ratings, setRatings] = useState<RatingType[]>([]);
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(0); // initial rating value
-  const { user, profile } = useUser();
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
+    // Check if user is logged in
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+      
+      if (data.user) {
+        // Get user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        setProfile(profileData);
+      }
+    };
+    
+    getUser();
     fetchRatings();
-  }, []);
+  }, [projectId]);
 
   const handleRating = (rate: number) => {
-    setRating(rate)
-  }
+    setRating(rate);
+  };
 
   const fetchRatings = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('user_ratings')
-        .select('*')
+        .select('*, profiles(*)')
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -64,8 +89,9 @@ const UserRating: React.FC = () => {
         created_at: item.created_at,
         photo_url: item.photo_url || '',
         user_id: item.user_id,
-        profiles: {
-          display_name: 'Anonymous User', // Default values
+        project_id: item.project_id,
+        profiles: item.profiles || {
+          display_name: 'Anonymous User',
           avatar_url: ''
         }
       }));
@@ -76,7 +102,7 @@ const UserRating: React.FC = () => {
       toast({
         title: "Uh oh! Something went wrong.",
         description: error.message,
-      })
+      });
     } finally {
       setLoading(false);
     }
@@ -87,7 +113,7 @@ const UserRating: React.FC = () => {
       toast({
         title: "Uh oh! Something went wrong.",
         description: 'You must be logged in to submit a rating.',
-      })
+      });
       return;
     }
 
@@ -101,9 +127,10 @@ const UserRating: React.FC = () => {
             rating: rating,
             user_id: user.id,
             photo_url: profile?.avatar_url || '',
-          },
+            project_id: projectId
+          }
         ])
-        .select()
+        .select();
 
       if (error) {
         throw error;
@@ -115,13 +142,13 @@ const UserRating: React.FC = () => {
       toast({
         title: "Success!",
         description: "Your rating has been submitted.",
-      })
+      });
     } catch (error: any) {
       console.error('Error submitting rating:', error.message);
       toast({
         title: "Uh oh! Something went wrong.",
         description: error.message,
-      })
+      });
     } finally {
       setLoading(false);
     }
@@ -140,21 +167,11 @@ const UserRating: React.FC = () => {
         <CardContent className="grid gap-4">
           <div className="flex items-center space-x-2">
             <label htmlFor="rating">Rating:</label>
-            <Rating
-              onClick={handleRating}
-              ratingValue={rating}
-              size={24}
-              label
-              transition
-              allowHalfIcon
-              showTooltip
-              tooltipArray={[
-                'Terrible',
-                'Bad',
-                'Average',
-                'Great',
-                'Excellent',
-              ]}
+            <StarRating
+              value={rating}
+              onChange={handleRating}
+              readOnly={false}
+              size="medium"
             />
           </div>
           <div className="grid gap-2">
@@ -181,10 +198,10 @@ const UserRating: React.FC = () => {
             <CardHeader>
               <CardTitle>{item.profiles?.display_name || 'Anonymous User'}</CardTitle>
               <CardDescription>
-                <Rating
-                  ratingValue={item.rating}
-                  size={18}
-                  readonly // important: true to make the rating unchangeable
+                <StarRating
+                  value={item.rating}
+                  readOnly
+                  size="small"
                 />
               </CardDescription>
             </CardHeader>
