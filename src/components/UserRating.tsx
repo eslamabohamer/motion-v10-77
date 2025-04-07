@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -291,16 +292,31 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
 
     setIsSubmitting(true);
     try {
+      // Log the rating ID we're trying to delete
+      console.log('Attempting to delete rating with ID:', activeRating.id);
+      
       const { error } = await supabase
         .from('user_ratings')
         .delete()
         .eq('id', activeRating.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
 
-      toast.success('Your review has been deleted.');
+      // Close the dialog first
       setDeleteDialogOpen(false);
-      await fetchRatings();
+      
+      // Update local state by removing the deleted rating
+      setExistingRatings(prevRatings => 
+        prevRatings.filter(rating => rating.id !== activeRating.id)
+      );
+      
+      toast.success('Your review has been deleted.');
+      
+      // Optionally refetch to ensure data consistency
+      // await fetchRatings();
     } catch (error: any) {
       console.error('Error deleting rating:', error);
       toast.error(`Failed to delete review: ${error.message || 'Please try again.'}`);
