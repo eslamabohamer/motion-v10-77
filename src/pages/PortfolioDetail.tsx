@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
@@ -8,6 +9,7 @@ import { UserRating } from '@/components/UserRating';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
+
 interface Project {
   id: string;
   title: string;
@@ -17,6 +19,7 @@ interface Project {
   video_url: string | null;
   created_at: string;
 }
+
 const PortfolioDetail = () => {
   const {
     id
@@ -110,6 +113,7 @@ const PortfolioDetail = () => {
     };
     fetchColorSettings();
   }, []);
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{
       backgroundColor: colorSettings.backgroundColor
@@ -117,6 +121,7 @@ const PortfolioDetail = () => {
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
       </div>;
   }
+
   if (!project) {
     return <div className="min-h-screen" style={{
       backgroundColor: colorSettings.backgroundColor
@@ -139,13 +144,15 @@ const PortfolioDetail = () => {
         <Footer />
       </div>;
   }
+
   const rtlClass = isRTL ? 'rtl text-right' : '';
+  
   return <div className="min-h-screen text-white" style={{
     backgroundColor: colorSettings.backgroundColor
   }}>
       <Navbar />
       <div className="container mx-auto px-4 py-8 md:py-16">
-        {/* Page Header Section */}
+        {/* Page Header Section - Updated to match reference image */}
         <motion.div initial={{
         opacity: 0,
         y: 20
@@ -154,9 +161,9 @@ const PortfolioDetail = () => {
         y: 0
       }} transition={{
         duration: 0.4
-      }} className="mb-8">
-          <h1 className="text-right mx-0 px-[16px] py-[16px] text-2xl my-[6px] font-normal">{project.title}</h1>
-          <div className={`flex items-center text-sm text-gray-300 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      }} className={`mb-8 ${isRTL ? 'text-right' : 'text-left'}`}>
+          <h1 className={`text-3xl font-bold mb-2 ${rtlClass}`}>{project.title}</h1>
+          <div className={`flex items-center text-sm text-gray-300 ${isRTL ? 'justify-end' : 'justify-start'}`}>
             <span className={`inline-flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
               <Calendar className={`h-4 w-4 ${isRTL ? 'ml-1 mr-0' : 'mr-1'}`} />
               {project.created_at && format(new Date(project.created_at), 'MMMM yyyy')}
@@ -166,7 +173,7 @@ const PortfolioDetail = () => {
           </div>
         </motion.div>
         
-        {/* Video/Image Section */}
+        {/* Video/Image Section - Fixed to properly display videos */}
         <motion.div initial={{
         opacity: 0,
         y: 30
@@ -177,19 +184,30 @@ const PortfolioDetail = () => {
         duration: 0.5,
         delay: 0.1
       }} className="mb-10">
-          {project.video_url ? <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-black relative">
-              <iframe src={project.video_url} title={project.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full absolute inset-0"></iframe>
-            </div> : <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
+          {project.video_url ? (
+            <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-black relative">
+              <iframe 
+                src={project.video_url} 
+                title={project.title} 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen 
+                className="w-full h-full absolute inset-0"
+                style={{ aspectRatio: '16/9' }}
+              ></iframe>
+            </div>
+          ) : (
+            <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
               <img src={project.image_url} alt={project.title} className="w-full h-full object-cover" />
               {project.video_url && <div className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/30" onClick={() => setShowVideo(true)}>
                   <div className="w-16 h-16 bg-primary/90 rounded-full flex items-center justify-center">
                     <Play className="h-8 w-8 text-white" />
                   </div>
                 </div>}
-            </div>}
+            </div>
+          )}
         </motion.div>
 
-        {/* Project Details */}
+        {/* Project Details Section - Updated to match reference image */}
         <motion.section initial={{
         opacity: 0,
         y: 30
@@ -205,7 +223,7 @@ const PortfolioDetail = () => {
             {project.description}
           </p>
           
-          {/* Back button moved to bottom of content */}
+          {/* Back button */}
           <div className="mt-8">
             <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
               <Link to="/portfolio">
@@ -266,10 +284,11 @@ const PortfolioDetail = () => {
               <X className="h-6 w-6" />
             </button>
             <div className="aspect-w-16 aspect-h-9">
-              <iframe src={project.video_url} title="Project Video" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
+              <iframe src={project.video_url} title="Project Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
             </div>
           </div>
         </div>}
     </div>;
 };
+
 export default PortfolioDetail;
