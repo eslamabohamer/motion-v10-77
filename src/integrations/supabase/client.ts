@@ -10,14 +10,36 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 // Default avatar URLs for users without profile pictures
-export const DEFAULT_AVATARS = [
-  '/lovable-uploads/1060b64d-0acf-4337-bd99-60c3c328827f.png',
-  '/placeholder.svg'
-];
+export const DEFAULT_AVATARS = {
+  male: [
+    'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952',
+    'https://images.unsplash.com/photo-1568602471122-7832951cc4c5',
+    'https://images.unsplash.com/photo-1600486913747-55e5470d6f40'
+  ],
+  female: [
+    'https://images.unsplash.com/photo-1649972904349-6e44c42644a7',
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158',
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2'
+  ],
+  default: [
+    '/lovable-uploads/54b2b469-63a5-4082-82dd-69b5aba85115.png',
+    '/placeholder.svg'
+  ]
+};
 
-// Helper function to get a random default avatar
-export const getDefaultAvatar = () => {
-  return DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)];
+// Helper function to get a default avatar based on gender
+export const getDefaultAvatar = (gender?: string): string => {
+  let avatarArray;
+  
+  if (gender === 'male') {
+    avatarArray = DEFAULT_AVATARS.male;
+  } else if (gender === 'female') {
+    avatarArray = DEFAULT_AVATARS.female;
+  } else {
+    avatarArray = DEFAULT_AVATARS.default;
+  }
+  
+  return avatarArray[Math.floor(Math.random() * avatarArray.length)];
 };
 
 // Helper function to get display name or fallback to username/email
