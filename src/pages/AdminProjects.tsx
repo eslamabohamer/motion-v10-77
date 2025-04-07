@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -293,31 +292,69 @@ const AdminProjects = () => {
     }
   };
 
+  // Fix for the handling of image form changes
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const { name, value } = e.target;
     
     if (index !== undefined) {
       // Updating an existing image
       const updatedImages = [...projectImages];
-      updatedImages[index] = { ...updatedImages[index], [name]: value };
+      
+      if (name === 'display_order') {
+        // Convert string to number for display_order
+        updatedImages[index] = { 
+          ...updatedImages[index], 
+          [name]: parseInt(value, 10) || 0 
+        };
+      } else {
+        updatedImages[index] = { ...updatedImages[index], [name]: value };
+      }
+      
       setProjectImages(updatedImages);
     } else {
       // Updating the new image form
-      setNewImage(prev => ({ ...prev, [name]: value }));
+      if (name === 'display_order') {
+        // Convert string to number for display_order
+        setNewImage(prev => ({ 
+          ...prev, 
+          [name]: parseInt(value, 10) || 0 
+        }));
+      } else {
+        setNewImage(prev => ({ ...prev, [name]: value }));
+      }
     }
   };
 
+  // Fix for the handling of link form changes
   const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const { name, value } = e.target;
     
     if (index !== undefined) {
       // Updating an existing link
       const updatedLinks = [...projectLinks];
-      updatedLinks[index] = { ...updatedLinks[index], [name]: value };
+      
+      if (name === 'display_order') {
+        // Convert string to number for display_order
+        updatedLinks[index] = { 
+          ...updatedLinks[index], 
+          [name]: parseInt(value, 10) || 0 
+        };
+      } else {
+        updatedLinks[index] = { ...updatedLinks[index], [name]: value };
+      }
+      
       setProjectLinks(updatedLinks);
     } else {
       // Updating the new link form
-      setNewLink(prev => ({ ...prev, [name]: value }));
+      if (name === 'display_order') {
+        // Convert string to number for display_order
+        setNewLink(prev => ({ 
+          ...prev, 
+          [name]: parseInt(value, 10) || 0 
+        }));
+      } else {
+        setNewLink(prev => ({ ...prev, [name]: value }));
+      }
     }
   };
 
@@ -642,10 +679,9 @@ const AdminProjects = () => {
           project_id: projectId,
           image_url: img.image_url,
           caption: img.caption || null,
-          display_order: index
+          display_order: index // Make sure display_order is a number
         }));
         
-        // Use .from() with type assertion for custom table
         const { error: insertError } = await supabase
           .from('project_images')
           .insert(imagesToInsert);
@@ -682,10 +718,9 @@ const AdminProjects = () => {
           title: link.title,
           url: link.url,
           icon: link.icon || null,
-          display_order: index
+          display_order: index // Make sure display_order is a number
         }));
         
-        // Use .from() with type assertion for custom table
         const { error: insertError } = await supabase
           .from('project_links')
           .insert(linksToInsert);
@@ -927,474 +962,4 @@ const AdminProjects = () => {
                             name="website_url"
                             value={newProject.website_url}
                             onChange={handleInputChange}
-                            placeholder="https://example.com"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium block mb-1">Sections</label>
-                          <div className="border rounded-md p-3 flex flex-wrap gap-2">
-                            {sections.length === 0 ? (
-                              <p className="text-sm text-muted-foreground py-2">No sections available. <a href="/admin/sections" className="text-primary underline">Create sections</a></p>
-                            ) : (
-                              sections.map(section => (
-                                <div key={section.id} className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={`section-${section.id}`} 
-                                    checked={selectedSections.includes(section.id)}
-                                    onCheckedChange={(checked) => handleSectionChange(section.id, !!checked)}
-                                  />
-                                  <label 
-                                    htmlFor={`section-${section.id}`}
-                                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                  >
-                                    {section.name}
-                                  </label>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Select which sections this project should appear in
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="featured"
-                            checked={newProject.featured}
-                            onChange={handleFeaturedChange}
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                          />
-                          <label htmlFor="featured" className="text-sm font-medium">
-                            Feature this project on the homepage
-                          </label>
-                        </div>
-                      </form>
-                    </TabsContent>
-                    
-                    <TabsContent value="images">
-                      <div className="space-y-6">
-                        <div className="bg-muted/20 rounded-lg p-4">
-                          <h3 className="text-lg font-medium mb-2">Add Additional Images</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Add multiple images to create a gallery for this project
-                          </p>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label htmlFor="new_image_url" className="text-sm font-medium">Image URL</label>
-                              <Input
-                                id="new_image_url"
-                                name="image_url"
-                                value={newImage.image_url}
-                                onChange={(e) => handleImageChange(e)}
-                                placeholder="https://example.com/image.jpg"
-                              />
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <label htmlFor="new_image_caption" className="text-sm font-medium">Caption (optional)</label>
-                              <Input
-                                id="new_image_caption"
-                                name="caption"
-                                value={newImage.caption}
-                                onChange={(e) => handleImageChange(e)}
-                                placeholder="Image description"
-                              />
-                            </div>
-                          </div>
-                          
-                          <Button 
-                            onClick={addNewImage} 
-                            className="mt-4" 
-                            variant="outline"
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Image
-                          </Button>
-                        </div>
-                        
-                        {projectImages.length > 0 ? (
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-medium">Project Images</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Images will be displayed in this order in the gallery. Drag to reorder.
-                            </p>
-                            
-                            <div className="space-y-4">
-                              {projectImages.map((image, index) => (
-                                <div key={index} className="flex flex-col md:flex-row gap-4 border rounded-lg p-4 bg-muted/10">
-                                  <div className="w-full md:w-1/4">
-                                    <img 
-                                      src={image.image_url} 
-                                      alt={image.caption || `Image ${index + 1}`}
-                                      className="w-full h-24 object-cover rounded-md"
-                                      onError={addDefaultSrc}
-                                    />
-                                  </div>
-                                  
-                                  <div className="w-full md:w-3/4 space-y-3">
-                                    <div className="space-y-2">
-                                      <label className="text-xs font-medium">Image URL</label>
-                                      <Input
-                                        name="image_url"
-                                        value={image.image_url}
-                                        onChange={(e) => handleImageChange(e, index)}
-                                        placeholder="https://example.com/image.jpg"
-                                        size="sm"
-                                      />
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      <label className="text-xs font-medium">Caption</label>
-                                      <Input
-                                        name="caption"
-                                        value={image.caption}
-                                        onChange={(e) => handleImageChange(e, index)}
-                                        placeholder="Image description"
-                                        size="sm"
-                                      />
-                                    </div>
-                                    
-                                    <div className="flex items-center justify-end space-x-2">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-xs" 
-                                        onClick={() => moveImage(index, 'up')}
-                                        disabled={index === 0}
-                                      >
-                                        <ArrowUp className="h-3 w-3" />
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-xs" 
-                                        onClick={() => moveImage(index, 'down')}
-                                        disabled={index === projectImages.length - 1}
-                                      >
-                                        <ArrowDown className="h-3 w-3" />
-                                      </Button>
-                                      <Button 
-                                        variant="destructive" 
-                                        size="sm" 
-                                        className="text-xs" 
-                                        onClick={() => removeImage(index)}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center p-8 border border-dashed rounded-lg">
-                            <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                            <p className="text-muted-foreground">
-                              No additional images added yet
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="links">
-                      <div className="space-y-6">
-                        <div className="bg-muted/20 rounded-lg p-4">
-                          <h3 className="text-lg font-medium mb-2">Add Project Links</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Add links to resources related to this project
-                          </p>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                              <label htmlFor="new_link_title" className="text-sm font-medium">Link Title</label>
-                              <Input
-                                id="new_link_title"
-                                name="title"
-                                value={newLink.title}
-                                onChange={(e) => handleLinkChange(e)}
-                                placeholder="GitHub Repository"
-                              />
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <label htmlFor="new_link_url" className="text-sm font-medium">URL</label>
-                              <Input
-                                id="new_link_url"
-                                name="url"
-                                value={newLink.url}
-                                onChange={(e) => handleLinkChange(e)}
-                                placeholder="https://github.com/username/repo"
-                              />
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <label htmlFor="new_link_icon" className="text-sm font-medium">Icon (optional)</label>
-                              <Input
-                                id="new_link_icon"
-                                name="icon"
-                                value={newLink.icon}
-                                onChange={(e) => handleLinkChange(e)}
-                                placeholder="github"
-                              />
-                              <p className="text-xs text-muted-foreground">
-                                Use Lucide icon names like "github", "dribbble", etc.
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <Button 
-                            onClick={addNewLink} 
-                            className="mt-4" 
-                            variant="outline"
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Link
-                          </Button>
-                        </div>
-                        
-                        {projectLinks.length > 0 ? (
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-medium">Project Links</h3>
-                            
-                            <div className="space-y-4">
-                              {projectLinks.map((link, index) => (
-                                <div key={index} className="flex flex-col md:flex-row gap-4 border rounded-lg p-4 bg-muted/10">
-                                  <div className="w-full md:w-full space-y-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                      <div className="space-y-2">
-                                        <label className="text-xs font-medium">Link Title</label>
-                                        <Input
-                                          name="title"
-                                          value={link.title}
-                                          onChange={(e) => handleLinkChange(e, index)}
-                                          placeholder="GitHub Repository"
-                                          size="sm"
-                                        />
-                                      </div>
-                                      
-                                      <div className="space-y-2">
-                                        <label className="text-xs font-medium">URL</label>
-                                        <Input
-                                          name="url"
-                                          value={link.url}
-                                          onChange={(e) => handleLinkChange(e, index)}
-                                          placeholder="https://github.com/username/repo"
-                                          size="sm"
-                                        />
-                                      </div>
-                                      
-                                      <div className="space-y-2">
-                                        <label className="text-xs font-medium">Icon</label>
-                                        <Input
-                                          name="icon"
-                                          value={link.icon}
-                                          onChange={(e) => handleLinkChange(e, index)}
-                                          placeholder="github"
-                                          size="sm"
-                                        />
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center justify-end space-x-2">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-xs" 
-                                        onClick={() => moveLink(index, 'up')}
-                                        disabled={index === 0}
-                                      >
-                                        <ArrowUp className="h-3 w-3" />
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-xs" 
-                                        onClick={() => moveLink(index, 'down')}
-                                        disabled={index === projectLinks.length - 1}
-                                      >
-                                        <ArrowDown className="h-3 w-3" />
-                                      </Button>
-                                      <Button 
-                                        variant="destructive" 
-                                        size="sm" 
-                                        className="text-xs" 
-                                        onClick={() => removeLink(index)}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center p-8 border border-dashed rounded-lg">
-                            <Link className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                            <p className="text-muted-foreground">
-                              No project links added yet
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-                <CardFooter className="flex space-x-2 pt-2">
-                  <Button type="button" onClick={handleSubmit} className="w-full md:w-auto">
-                    <Save className="mr-2 h-4 w-4" /> {editingProjectId ? 'Update Project' : 'Save Project'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={cancelForm} className="w-full md:w-auto">
-                    Cancel
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            {isLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading projects...</p>
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="p-12 text-center bg-card rounded-lg shadow border">
-                <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-medium mb-2">No projects yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Add your first project to get started with your portfolio.
-                </p>
-                <Button onClick={() => {
-                  resetForm();
-                  setFormOpen(true);
-                }}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add First Project
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project, index) => (
-                  <motion.div
-                    key={project.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 + (index * 0.05) }}
-                    className="group"
-                  >
-                    <Card className="h-full overflow-hidden border hover:shadow-xl transition-shadow duration-300">
-                      <div className="relative aspect-video overflow-hidden">
-                        <img 
-                          src={project.image_url} 
-                          alt={project.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onError={addDefaultSrc}
-                        />
-                        {project.featured && (
-                          <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 text-xs rounded">
-                            Featured
-                          </div>
-                        )}
-                        {project.video_url && (
-                          <div className="absolute top-2 left-2 bg-black/50 text-white px-2 py-1 text-xs rounded-full backdrop-blur-sm">
-                            <Film className="h-3 w-3" />
-                          </div>
-                        )}
-                        {project.images && project.images.length > 0 && (
-                          <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 text-xs rounded-full backdrop-blur-sm">
-                            <span className="flex items-center">
-                              <Image className="h-3 w-3 mr-1" />
-                              {project.images.length}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-xl">{project.title}</CardTitle>
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                            {project.category}
-                          </span>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="py-2">
-                        <p className="text-muted-foreground text-sm line-clamp-2 mb-2">
-                          {project.description}
-                        </p>
-                        
-                        {project.sections && project.sections.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {project.sections.map(section => (
-                              <span key={section.id} className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-0.5 rounded-full">
-                                {section.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                      <CardFooter className="pt-2 flex justify-between">
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => openEditForm(project)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" /> Edit
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <a href={`/portfolio/project/${project.id}`} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-4 w-4 mr-1" /> View
-                            </a>
-                          </Button>
-                        </div>
-                        <AlertDialog open={projectToDelete === project.id} onOpenChange={(open) => !open && setProjectToDelete(null)}>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              onClick={() => setProjectToDelete(project.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the project "{project.title}" from your portfolio.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteProject(project.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </CardFooter>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default AdminProjects;
+                            placeholder="https://example.com
