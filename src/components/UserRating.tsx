@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, Upload, Pencil, Trash2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { supabase, getDefaultAvatar, getDisplayNameOrEmail } from '@/integrations/supabase/client';
+import { supabase, getDefaultAvatar, getDisplayNameOrEmail, deleteUserRating } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -291,30 +291,25 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
 
     setIsSubmitting(true);
     try {
-      // Log the rating ID we're trying to delete
-      console.log('Attempting to delete rating with ID:', activeRating.id);
+      console.log('Starting delete operation for rating ID:', activeRating.id);
       
-      const { error } = await supabase
-        .from('user_ratings')
-        .delete()
-        .eq('id', activeRating.id);
-
-      if (error) {
-        console.error('Supabase delete error:', error);
-        throw error;
+      const { success } = await deleteUserRating(activeRating.id);
+      
+      if (!success) {
+        throw new Error('Failed to delete review');
       }
-
-      // Close the dialog first
-      setDeleteDialogOpen(false);
       
-      // Update local state by removing the deleted rating
+      setDeleteDialogOpen(false);
+      toast.success('Your review has been deleted.');
+      
       setExistingRatings(prevRatings => 
         prevRatings.filter(rating => rating.id !== activeRating.id)
       );
       
-      toast.success('Your review has been deleted.');
+      await fetchRatings();
+      
     } catch (error: any) {
-      console.error('Error deleting rating:', error);
+      console.error('Error in handleConfirmDelete:', error);
       toast.error(`Failed to delete review: ${error.message || 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);

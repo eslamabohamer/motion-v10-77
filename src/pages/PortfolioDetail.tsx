@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
@@ -21,7 +20,6 @@ interface Project {
   created_at: string;
   updated_at: string;
   featured: boolean | null;
-  // Extended properties that may come from joins or be added client-side
   long_description?: string;
   client_name?: string;
   completed_date?: string;
@@ -41,7 +39,6 @@ const PortfolioDetail = () => {
     secondaryAccentColor: "#9b87f5"
   });
 
-  // Fetch project data
   useEffect(() => {
     const fetchProject = async () => {
       if (!id) return;
@@ -57,7 +54,6 @@ const PortfolioDetail = () => {
           throw error;
         }
 
-        // We can safely cast the data because we've updated our Project interface
         setProject(data as Project);
       } catch (error) {
         console.error('Error fetching project:', error);
@@ -69,7 +65,6 @@ const PortfolioDetail = () => {
     fetchProject();
   }, [id]);
 
-  // Fetch color settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -84,11 +79,9 @@ const PortfolioDetail = () => {
           return;
         }
         
-        // If we have settings in the database, use them
         if (data && data.length > 0 && data[0].settings) {
           const dbSettings = data[0].settings as Record<string, any>;
           
-          // Extract color settings
           if (dbSettings.animation) {
             setColorSettings({
               backgroundColor: dbSettings.animation.backgroundColor || "#1A1F2C",
@@ -97,7 +90,6 @@ const PortfolioDetail = () => {
             });
           }
         } 
-        // As a fallback, try to load from localStorage
         else {
           const savedSettings = localStorage.getItem('siteSettings');
           if (savedSettings) {
@@ -123,7 +115,6 @@ const PortfolioDetail = () => {
     fetchSettings();
   }, []);
 
-  // Format date for display
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Unknown date';
     
@@ -135,12 +126,10 @@ const PortfolioDetail = () => {
     }).format(date);
   };
 
-  // Helper to safely parse YouTube/Vimeo URLs
   const getEmbedUrl = (videoUrl: string | null): string | null => {
     if (!videoUrl) return null;
     
     try {
-      // Handle YouTube URLs
       if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
         let videoId = '';
         
@@ -156,7 +145,6 @@ const PortfolioDetail = () => {
         }
       }
       
-      // Handle Vimeo URLs
       if (videoUrl.includes('vimeo.com')) {
         const vimeoId = videoUrl.split('vimeo.com/')[1]?.split('?')[0] || '';
         if (vimeoId) {
@@ -164,7 +152,6 @@ const PortfolioDetail = () => {
         }
       }
       
-      // If we can't parse it, return the original URL
       return videoUrl;
     } catch (error) {
       console.error('Error parsing video URL:', error);
@@ -206,7 +193,6 @@ const PortfolioDetail = () => {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
       <main className="flex-grow pt-16 pb-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        {/* Back button */}
         <div className="mb-6 mt-8">
           <Button variant="outline" asChild className="group">
             <Link to="/portfolio" className="flex items-center">
@@ -216,7 +202,6 @@ const PortfolioDetail = () => {
           </Button>
         </div>
         
-        {/* Project Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -230,7 +215,6 @@ const PortfolioDetail = () => {
         </motion.div>
         
         <div className="grid grid-cols-1 gap-8 mb-12">
-          {/* Only show video if available, otherwise fall back to image */}
           {embedUrl ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -266,7 +250,6 @@ const PortfolioDetail = () => {
           )}
         </div>
         
-        {/* Project Details Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -353,7 +336,6 @@ const PortfolioDetail = () => {
           </motion.div>
         </div>
         
-        {/* Gallery section - only show if there are gallery images and no video */}
         {!embedUrl && project.gallery_images && project.gallery_images.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -375,14 +357,12 @@ const PortfolioDetail = () => {
           </motion.div>
         )}
         
-        {/* User Ratings */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.7 }}
           className="mb-12"
         >
-          <h2 className="text-2xl font-bold mb-6">User Reviews</h2>
           <UserRating projectId={project.id} />
         </motion.div>
       </main>

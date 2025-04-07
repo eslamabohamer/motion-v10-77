@@ -35,6 +35,30 @@ export const getDisplayNameOrEmail = (profile: any) => {
   return 'Anonymous User';
 };
 
+// Helper function to delete a rating from the database
+export const deleteUserRating = async (ratingId: string) => {
+  console.log('Attempting to delete rating ID:', ratingId);
+  
+  try {
+    const { data, error } = await supabase
+      .from('user_ratings')
+      .delete()
+      .eq('id', ratingId)
+      .select(); // Add select() to return the deleted row
+      
+    if (error) {
+      console.error('Delete error:', error);
+      throw error;
+    }
+    
+    console.log('Successfully deleted rating:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error in deleteUserRating:', error);
+    throw error;
+  }
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     persistSession: true,
