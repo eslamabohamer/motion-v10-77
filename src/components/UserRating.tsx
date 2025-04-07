@@ -1,13 +1,30 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Upload } from 'lucide-react';
+import { Star, Upload, Pencil, Trash2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface UserRatingProps {
   projectId?: string;
@@ -40,6 +57,12 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
   const [existingRatings, setExistingRatings] = useState<UserRatingData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activeRating, setActiveRating] = useState<UserRatingData | null>(null);
+  const [editedRating, setEditedRating] = useState(0);
+  const [editedComment, setEditedComment] = useState('');
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
@@ -69,12 +92,10 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     };
   }, []);
 
-  // Function to fetch ratings
   const fetchRatings = async () => {
     if (!projectId) return;
     
     try {
-      // Use a simplified query that doesn't join with profiles
       const { data, error } = await supabase
         .from('user_ratings')
         .select('*')
@@ -88,7 +109,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       
       console.log('Fetched ratings:', data);
       
-      // Get user profiles for these ratings
       if (data && data.length > 0) {
         const userIds = data.map(rating => rating.user_id).filter(Boolean);
         
@@ -99,7 +119,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
             .in('id', userIds);
             
           if (!profilesError && profilesData) {
-            // Map profiles to ratings
             const ratingsWithProfiles = data.map(rating => {
               const userProfile = profilesData.find(p => p.id === rating.user_id);
               return {
@@ -123,7 +142,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     }
   };
 
-  // Fetch ratings on component mount and when projectId changes
   useEffect(() => {
     if (projectId) {
       setIsLoading(true);
@@ -219,12 +237,73 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       setUserPhoto(null);
       setPhotoPreview(null);
       
-      // Refresh ratings immediately after submission
       await fetchRatings();
       
     } catch (error: any) {
       console.error('Error submitting rating:', error);
       toast.error(`Failed to submit rating: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (rating: UserRatingData) => {
+    setActiveRating(rating);
+    setEditedRating(rating.rating);
+    setEditedComment(rating.comment);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (rating: UserRatingData) => {
+    setActiveRating(rating);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!activeRating) return;
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('user_ratings')
+        .update({
+          rating: editedRating,
+          comment: editedComment,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', activeRating.id);
+
+      if (error) throw error;
+
+      toast.success('Your review has been updated.');
+      setEditDialogOpen(false);
+      await fetchRatings();
+    } catch (error: any) {
+      console.error('Error updating rating:', error);
+      toast.error(`Failed to update review: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!activeRating) return;
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('user_ratings')
+        .delete()
+        .eq('id', activeRating.id);
+
+      if (error) throw error;
+
+      toast.success('Your review has been deleted.');
+      setDeleteDialogOpen(false);
+      await fetchRatings();
+    } catch (error: any) {
+      console.error('Error deleting rating:', error);
+      toast.error(`Failed to delete review: ${error.message || 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -237,6 +316,10 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       month: 'short',
       day: 'numeric'
     }).format(date);
+  };
+
+  const isUserRating = (rating: UserRatingData) => {
+    return isLoggedIn && user && rating.user_id === user.id;
   };
 
   if (isLoading) {
@@ -376,6 +459,9 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
                   <div>
                     <p className="font-medium">{review.profiles?.display_name || 'Anonymous'}</p>
                     <p className="text-xs text-muted-foreground">{formatDate(review.created_at)}</p>
+                    {review.updated_at !== review.created_at && (
+                      <p className="text-xs text-muted-foreground italic">(Edited)</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-0.5">
@@ -404,10 +490,114 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
                   />
                 </div>
               )}
+
+              {isUserRating(review) && (
+                <div className="mt-4 flex gap-2 justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                    onClick={() => handleEditClick(review)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                    onClick={() => handleDeleteClick(review)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </Button>
+                </div>
+              )}
             </div>
           ))
         )}
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Your Review</DialogTitle>
+            <DialogDescription>
+              Make changes to your review below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Rating</label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setEditedRating(star)}
+                    className="focus:outline-none"
+                  >
+                    <Star
+                      className={cn(
+                        "h-8 w-8",
+                        editedRating >= star
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-gray-300"
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="editComment" className="text-sm font-medium">Comment</label>
+              <Textarea
+                id="editComment"
+                value={editedComment}
+                onChange={(e) => setEditedComment(e.target.value)}
+                rows={4}
+                placeholder="Update your thoughts about this work..."
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSaveEdit}
+              disabled={isSubmitting || !editedComment.trim()}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Saving...
+                </>
+              ) : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Review</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete your review? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
