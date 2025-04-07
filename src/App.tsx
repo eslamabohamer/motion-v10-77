@@ -14,6 +14,7 @@ import PortfolioDetailPage from '@/pages/PortfolioDetail';
 import ContactPage from '@/pages/Contact';
 import NotFoundPage from '@/pages/NotFound';
 import RegisterPage from '@/pages/Register';
+import ProfilePage from '@/pages/Profile';
 
 // Admin pages
 import AdminLayout from '@/components/AdminLayout';
@@ -47,6 +48,7 @@ function App() {
             <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route path="/admin" element={<AdminLayout />}>
