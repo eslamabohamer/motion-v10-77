@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -958,4 +959,322 @@ const AdminSettings = () => {
                           onValueChange={([value]) => 
                             setAnimationSettings(prev => prev ? {...prev, animation_intensity: value} : null)
                           }
-                          className="w
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Colors</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="backgroundColor">Background Color</Label>
+                        <ColorPicker
+                          id="backgroundColor"
+                          color={animationSettings?.background_color || '#1A1F2C'}
+                          onChange={(color) => 
+                            setAnimationSettings(prev => prev ? {...prev, background_color: color} : null)
+                          }
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="accentColor">Primary Accent</Label>
+                        <ColorPicker
+                          id="accentColor"
+                          color={animationSettings?.accent_color || '#4a6cf7'}
+                          onChange={(color) => 
+                            setAnimationSettings(prev => prev ? {...prev, accent_color: color} : null)
+                          }
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="secondaryAccentColor">Secondary Accent</Label>
+                        <ColorPicker
+                          id="secondaryAccentColor"
+                          color={animationSettings?.secondary_accent_color || '#9b87f5'}
+                          onChange={(color) => 
+                            setAnimationSettings(prev => prev ? {...prev, secondary_accent_color: color} : null)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+                    
+        {/* Design Tab Content */}
+        <TabsContent value="design">
+          {isLoadingDesign ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Design Settings</CardTitle>
+                  <CardDescription>Customize the visual appearance of your website</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Background Settings</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block">Background Type</Label>
+                        <ToggleGroup 
+                          type="single" 
+                          value={designSettings?.background?.type || 'gradient'}
+                          onValueChange={(value) => {
+                            if (value) {
+                              setDesignSettings(prev => {
+                                const updatedBackground = {
+                                  ...prev?.background,
+                                  type: value as 'gradient' | 'image' | 'video'
+                                };
+                                return prev ? {...prev, background: updatedBackground} : {
+                                  id: '',
+                                  background: updatedBackground,
+                                  created_at: null,
+                                  updated_at: null
+                                };
+                              });
+                            }
+                          }}
+                          className="justify-start mb-4"
+                        >
+                          <ToggleGroupItem value="gradient" aria-label="Gradient background">
+                            Gradient
+                          </ToggleGroupItem>
+                          <ToggleGroupItem value="image" aria-label="Image background">
+                            Image
+                          </ToggleGroupItem>
+                          <ToggleGroupItem value="video" aria-label="Video background">
+                            Video
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                      </div>
+                      
+                      {(designSettings?.background?.type === 'gradient' || !designSettings?.background?.type) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="gradientFrom">Gradient Start</Label>
+                            <ColorPicker
+                              id="gradientFrom"
+                              color={designSettings?.background?.gradientFrom || '#1A1F2C'}
+                              onChange={(color) => 
+                                setDesignSettings(prev => {
+                                  const updatedBackground = {
+                                    ...prev?.background,
+                                    gradientFrom: color
+                                  };
+                                  return prev ? {...prev, background: updatedBackground} : {
+                                    id: '',
+                                    background: updatedBackground,
+                                    created_at: null,
+                                    updated_at: null
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="gradientTo">Gradient End</Label>
+                            <ColorPicker
+                              id="gradientTo"
+                              color={designSettings?.background?.gradientTo || '#262b38'}
+                              onChange={(color) => 
+                                setDesignSettings(prev => {
+                                  const updatedBackground = {
+                                    ...prev?.background,
+                                    gradientTo: color
+                                  };
+                                  return prev ? {...prev, background: updatedBackground} : {
+                                    id: '',
+                                    background: updatedBackground,
+                                    created_at: null,
+                                    updated_at: null
+                                  };
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {designSettings?.background?.type === 'image' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="backgroundImage">Background Image URL</Label>
+                          <Input
+                            id="backgroundImage"
+                            placeholder="https://example.com/background.jpg"
+                            value={designSettings?.background?.imageUrl || ''}
+                            onChange={(e) => 
+                              setDesignSettings(prev => {
+                                const updatedBackground = {
+                                  ...prev?.background,
+                                  imageUrl: e.target.value
+                                };
+                                return prev ? {...prev, background: updatedBackground} : {
+                                  id: '',
+                                  background: updatedBackground,
+                                  created_at: null,
+                                  updated_at: null
+                                };
+                              })
+                            }
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Enter the URL of a high-resolution image
+                          </p>
+                        </div>
+                      )}
+                      
+                      {designSettings?.background?.type === 'video' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="backgroundVideo">Background Video URL</Label>
+                          <Input
+                            id="backgroundVideo"
+                            placeholder="https://example.com/background-video.mp4"
+                            value={designSettings?.background?.videoUrl || ''}
+                            onChange={(e) => 
+                              setDesignSettings(prev => {
+                                const updatedBackground = {
+                                  ...prev?.background,
+                                  videoUrl: e.target.value
+                                };
+                                return prev ? {...prev, background: updatedBackground} : {
+                                  id: '',
+                                  background: updatedBackground,
+                                  created_at: null,
+                                  updated_at: null
+                                };
+                              })
+                            }
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Use a short, looping MP4 video file (recommended 10-15 seconds)
+                          </p>
+                        </div>
+                      )}
+                      
+                      {(designSettings?.background?.type === 'image' || designSettings?.background?.type === 'video') && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="overlayOpacity">Overlay Opacity</Label>
+                            <span className="text-sm">{Math.round((designSettings?.background?.opacity || 0.7) * 100)}%</span>
+                          </div>
+                          <Slider
+                            id="overlayOpacity"
+                            defaultValue={[(designSettings?.background?.opacity || 0.7) * 100]}
+                            min={0}
+                            max={100}
+                            step={1}
+                            onValueChange={([value]) => 
+                              setDesignSettings(prev => {
+                                const updatedBackground = {
+                                  ...prev?.background,
+                                  opacity: value / 100
+                                };
+                                return prev ? {...prev, background: updatedBackground} : {
+                                  id: '',
+                                  background: updatedBackground,
+                                  created_at: null,
+                                  updated_at: null
+                                };
+                              })
+                            }
+                            className="w-full"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Control the darkness of the overlay on top of the background
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+        
+        {/* Add other TabsContent components for remaining tabs */}
+        <TabsContent value="performance">
+          {/* Performance settings content */}
+          <p>Performance settings coming soon</p>
+        </TabsContent>
+        
+        <TabsContent value="seo">
+          {/* SEO settings content */}
+          <p>SEO settings coming soon</p>
+        </TabsContent>
+        
+        <TabsContent value="social">
+          {/* Social media settings content */}
+          <p>Social media settings coming soon</p>
+        </TabsContent>
+        
+        <TabsContent value="logos">
+          {/* Company logos settings content */}
+          <p>Company logos settings coming soon</p>
+        </TabsContent>
+        
+        <TabsContent value="about">
+          {/* About me settings content */}
+          <p>About me settings coming soon</p>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AdminSettings;
