@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -89,7 +88,6 @@ interface AboutMeData {
   quality_first_text: string | null;
 }
 
-// Add the new interface for design settings
 interface DesignSettings {
   id: string;
   background: {
@@ -120,7 +118,6 @@ const AdminSettings = () => {
   const [seoSettings, setSeoSettings] = useState<SeoSettings | null>(null);
   const [socialSettings, setSocialSettings] = useState<SocialSettings | null>(null);
   const [aboutMe, setAboutMe] = useState<AboutMeData | null>(null);
-  // Add new state for design settings
   const [designSettings, setDesignSettings] = useState<DesignSettings | null>(null);
 
   const { data: generalData, isLoading: isLoadingGeneral, refetch: refetchGeneral } = useQuery({
@@ -268,17 +265,13 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Add the new query for design settings
   const { data: designData, isLoading: isLoadingDesign, refetch: refetchDesign } = useQuery({
     queryKey: ['designSettings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('design_settings')
+        .from('design_settings' as any)
         .select('*')
-        .limit(1) as unknown as {
-          data: DesignSettings[] | null;
-          error: Error | null;
-        };
+        .limit(1);
       
       if (error) {
         console.error('Error fetching design settings:', error);
@@ -633,27 +626,21 @@ const AdminSettings = () => {
     }
   });
 
-  // Add the new mutation for design settings
   const { mutate: saveDesignSettings } = useMutation({
     mutationFn: async (data: Partial<DesignSettings>) => {
       if (designSettings?.id) {
         const { error } = await supabase
-          .from('design_settings')
+          .from('design_settings' as any)
           .update(data)
-          .eq('id', designSettings.id) as unknown as {
-            error: Error | null;
-          };
+          .eq('id', designSettings.id);
           
         if (error) throw error;
         return designSettings.id;
       } else {
         const { data: insertData, error } = await supabase
-          .from('design_settings')
+          .from('design_settings' as any)
           .insert(data)
-          .select('id') as unknown as {
-            data: { id: string }[] | null;
-            error: Error | null;
-          };
+          .select('id');
           
         if (error) throw error;
         return insertData?.[0]?.id;
@@ -971,8 +958,7 @@ const AdminSettings = () => {
                       <div className="space-y-2">
                         <Label htmlFor="backgroundColor">Background Color</Label>
                         <ColorPicker
-                          id="backgroundColor"
-                          color={animationSettings?.background_color || '#1A1F2C'}
+                          value={animationSettings?.background_color || '#1A1F2C'}
                           onChange={(color) => 
                             setAnimationSettings(prev => prev ? {...prev, background_color: color} : null)
                           }
@@ -982,8 +968,7 @@ const AdminSettings = () => {
                       <div className="space-y-2">
                         <Label htmlFor="accentColor">Primary Accent</Label>
                         <ColorPicker
-                          id="accentColor"
-                          color={animationSettings?.accent_color || '#4a6cf7'}
+                          value={animationSettings?.accent_color || '#4a6cf7'}
                           onChange={(color) => 
                             setAnimationSettings(prev => prev ? {...prev, accent_color: color} : null)
                           }
@@ -993,8 +978,7 @@ const AdminSettings = () => {
                       <div className="space-y-2">
                         <Label htmlFor="secondaryAccentColor">Secondary Accent</Label>
                         <ColorPicker
-                          id="secondaryAccentColor"
-                          color={animationSettings?.secondary_accent_color || '#9b87f5'}
+                          value={animationSettings?.secondary_accent_color || '#9b87f5'}
                           onChange={(color) => 
                             setAnimationSettings(prev => prev ? {...prev, secondary_accent_color: color} : null)
                           }
@@ -1027,7 +1011,6 @@ const AdminSettings = () => {
           )}
         </TabsContent>
                     
-        {/* Design Tab Content */}
         <TabsContent value="design">
           {isLoadingDesign ? (
             <div className="p-8 flex justify-center">
@@ -1088,8 +1071,7 @@ const AdminSettings = () => {
                           <div className="space-y-2">
                             <Label htmlFor="gradientFrom">Gradient Start</Label>
                             <ColorPicker
-                              id="gradientFrom"
-                              color={designSettings?.background?.gradientFrom || '#1A1F2C'}
+                              value={designSettings?.background?.gradientFrom || '#1A1F2C'}
                               onChange={(color) => 
                                 setDesignSettings(prev => {
                                   const updatedBackground = {
@@ -1110,8 +1092,7 @@ const AdminSettings = () => {
                           <div className="space-y-2">
                             <Label htmlFor="gradientTo">Gradient End</Label>
                             <ColorPicker
-                              id="gradientTo"
-                              color={designSettings?.background?.gradientTo || '#262b38'}
+                              value={designSettings?.background?.gradientTo || '#262b38'}
                               onChange={(color) => 
                                 setDesignSettings(prev => {
                                   const updatedBackground = {
@@ -1247,29 +1228,23 @@ const AdminSettings = () => {
           )}
         </TabsContent>
         
-        {/* Add other TabsContent components for remaining tabs */}
         <TabsContent value="performance">
-          {/* Performance settings content */}
           <p>Performance settings coming soon</p>
         </TabsContent>
         
         <TabsContent value="seo">
-          {/* SEO settings content */}
           <p>SEO settings coming soon</p>
         </TabsContent>
         
         <TabsContent value="social">
-          {/* Social media settings content */}
           <p>Social media settings coming soon</p>
         </TabsContent>
         
         <TabsContent value="logos">
-          {/* Company logos settings content */}
           <p>Company logos settings coming soon</p>
         </TabsContent>
         
         <TabsContent value="about">
-          {/* About me settings content */}
           <p>About me settings coming soon</p>
         </TabsContent>
       </Tabs>

@@ -82,6 +82,7 @@ const AdminLayout = () => {
             { data: animationData, error: animationError },
             { data: seoData, error: seoError },
             { data: socialData, error: socialError },
+            // Use type assertion to work around the missing table in types
             { data: designData, error: designError }
           ] = await Promise.all([
             supabase.from('general_settings').select('*').limit(1),
@@ -89,7 +90,8 @@ const AdminLayout = () => {
             supabase.from('animation_settings').select('*').limit(1),
             supabase.from('seo_settings').select('*').limit(1),
             supabase.from('social_settings').select('*').limit(1),
-            supabase.from('design_settings').select('*').limit(1)
+            // Use type assertion for design_settings
+            supabase.from('design_settings' as any).select('*').limit(1)
           ]);
           
           if (generalError || performanceError || animationError || seoError || socialError || designError) {

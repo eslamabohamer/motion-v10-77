@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
+  id?: string; // Make id optional to fix type errors
 }
 
-export function ColorPicker({ value, onChange }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, id }: ColorPickerProps) {
   const [color, setColor] = useState(value || '#000000');
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +42,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
             value={color}
             onChange={handleChange}
             className="w-full h-10 cursor-pointer" 
+            id={id}
           />
         </div>
       </DialogContent>
