@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { addUserRating, deleteUserRating } from '@/utils/supabaseUtils';
@@ -13,7 +12,9 @@ import {
   Loader2, 
   Camera,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Edit,
+  MoreHorizontal
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -32,6 +33,12 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface UserRatingProps {
   projectId: string;
@@ -49,20 +56,18 @@ export default function UserRating({ projectId }: UserRatingProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [ratingToDelete, setRatingToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editingRating, setEditingRating] = useState<any>(null);
 
-  // Handling rating change
   const handleRating = (newRating: number) => {
     setRating(newRating);
   };
 
-  // Fetch the current user if they are logged in
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Fetch user profile
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -75,7 +80,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
             setUserProfile(data);
           }
           
-          // Check if user is admin using user_roles table
           const { data: roleData, error: roleError } = await supabase
             .from('user_roles')
             .select('role')
@@ -96,7 +100,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
     fetchUserProfile();
   }, []);
 
-  // Fetch ratings for this project
   useEffect(() => {
     const fetchRatings = async () => {
       setLoading(true);
@@ -151,13 +154,11 @@ export default function UserRating({ projectId }: UserRatingProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image too large. Maximum size is 5MB.');
       return;
     }
 
-    // Check file type
     if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
       toast.error('Unsupported file type. Please upload a JPEG, PNG, GIF, or WEBP image.');
       return;
@@ -166,22 +167,18 @@ export default function UserRating({ projectId }: UserRatingProps) {
     setUploadingImage(true);
     
     try {
-      // Create a preview
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
       
-      // Create a unique filename for storage
       const timestamp = new Date().getTime();
       const filePath = `anonymous/${timestamp}-${file.name}`;
       
-      // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('user-photos')
         .upload(filePath, file);
         
       if (error) throw error;
       
-      // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from('user-photos')
         .getPublicUrl(filePath);
@@ -213,71 +210,86 @@ export default function UserRating({ projectId }: UserRatingProps) {
     setSubmitting(true);
     
     try {
-      // Get user ID if authenticated, otherwise null
-      const userId = userProfile?.id || null;
-      const photoUrl = imagePreview;
-      
-      console.log('Submitting rating with data:', {
-        project_id: projectId,
-        rating,
-        comment,
-        user_id: userId,
-        photo_url: photoUrl
-      });
-      
-      const { success, error } = await addUserRating({
-        project_id: projectId,
-        rating: rating,
-        comment: comment,
-        user_id: userId,
-        photo_url: photoUrl
-      });
-      
-      if (error) {
-        console.error('Error response:', error);
-        throw error;
+      if (editingRating) {
+        const { data, error } = await supabase
+          .from('user_ratings')
+          .update({
+            rating: rating,
+            comment: comment,
+            photo_url: imagePreview,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingRating.id);
+          
+        if (error) throw error;
+        
+        toast.success('Your review has been updated!');
+        setEditingRating(null);
+      } else {
+        const userId = userProfile?.id || null;
+        const photoUrl = imagePreview;
+        
+        console.log('Submitting rating with data:', {
+          project_id: projectId,
+          rating,
+          comment,
+          user_id: userId,
+          photo_url: photoUrl
+        });
+        
+        const { success, error } = await addUserRating({
+          project_id: projectId,
+          rating: rating,
+          comment: comment,
+          user_id: userId,
+          photo_url: photoUrl
+        });
+        
+        if (error) {
+          console.error('Error response:', error);
+          throw error;
+        }
+        
+        if (success) {
+          toast.success('Thank you for your rating!');
+        }
       }
       
-      if (success) {
-        toast.success('Thank you for your rating!');
-        setRating(0);
-        setComment('');
-        setImagePreview(null);
+      setRating(0);
+      setComment('');
+      setImagePreview(null);
+      
+      const { data, error: refreshError } = await supabase
+        .from('user_ratings')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
         
-        // Refresh ratings - using the fixed query approach
-        const { data, error: refreshError } = await supabase
-          .from('user_ratings')
-          .select('*')
-          .eq('project_id', projectId)
-          .order('created_at', { ascending: false });
-          
-        if (refreshError) {
-          console.error('Error refreshing ratings:', refreshError);
-        } else {
-          // Process the fetched ratings to add profiles where needed
-          const ratingsWithProfiles = await Promise.all((data || []).map(async (rating) => {
-            if (rating.user_id) {
-              try {
-                const { data: profileData } = await supabase
-                  .from('profiles')
-                  .select('display_name, avatar_url')
-                  .eq('id', rating.user_id)
-                  .single();
-                  
-                return {
-                  ...rating,
-                  profiles: profileData
-                };
-              } catch (err) {
-                console.error('Error fetching profile for rating:', err);
-                return rating;
-              }
+      if (refreshError) {
+        console.error('Error refreshing ratings:', refreshError);
+      } else {
+        const ratingsWithProfiles = await Promise.all((data || []).map(async (rating) => {
+          if (rating.user_id) {
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('display_name, avatar_url')
+                .eq('id', rating.user_id)
+                .single();
+                
+              return {
+                ...rating,
+                profiles: profileData
+              };
+            } catch (err) {
+              console.error('Error fetching profile for rating:', err);
+              return rating;
             }
-            return rating;
-          }));
-          
-          setUserRatings(ratingsWithProfiles || []);
-        }
+          }
+          return rating;
+        }));
+        
+        setUserRatings(ratingsWithProfiles || []);
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -300,7 +312,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
       
       toast.success('Review deleted successfully');
       
-      // Remove the deleted rating from the state
       setUserRatings(userRatings.filter(item => item.id !== id));
     } catch (error) {
       console.error('Error deleting rating:', error);
@@ -308,9 +319,24 @@ export default function UserRating({ projectId }: UserRatingProps) {
     }
   };
 
+  const handleEditRating = (item: any) => {
+    setEditingRating(item);
+    setRating(item.rating);
+    setComment(item.comment);
+    setImagePreview(item.photo_url);
+    
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   const canUserDeleteRating = (rating: any) => {
-    // User can delete if they are the author or if they are an admin
     return (userProfile && rating.user_id === userProfile.id) || isAdmin;
+  };
+
+  const canUserEditRating = (rating: any) => {
+    return userProfile && rating.user_id === userProfile.id;
   };
 
   const formatDate = (dateString: string) => {
@@ -322,10 +348,19 @@ export default function UserRating({ projectId }: UserRatingProps) {
     });
   };
 
+  const cancelEditing = () => {
+    setEditingRating(null);
+    setRating(0);
+    setComment('');
+    setImagePreview(null);
+  };
+
   return (
     <div className="space-y-8">
       <div className="bg-card rounded-lg shadow-lg p-6 border border-border/30">
-        <h3 className="text-xl font-semibold mb-6 text-primary">Leave a Review</h3>
+        <h3 className="text-xl font-semibold mb-6 text-primary">
+          {editingRating ? 'Edit Your Review' : 'Leave a Review'}
+        </h3>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium mb-2 text-foreground/80">Your Rating</label>
@@ -350,7 +385,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
             />
           </div>
 
-          {/* Image Upload Section */}
           <div>
             <label className="block text-sm font-medium mb-2 text-foreground/80">Add an Image (Optional)</label>
             <div className="flex items-center space-x-4">
@@ -402,14 +436,26 @@ export default function UserRating({ projectId }: UserRatingProps) {
             </p>
           </div>
           
-          <Button 
-            type="submit" 
-            disabled={submitting}
-            className="w-full sm:w-auto transition-all"
-            variant="default"
-          >
-            {submitting ? 'Submitting...' : 'Submit Review'}
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              type="submit" 
+              disabled={submitting}
+              className="transition-all"
+              variant="default"
+            >
+              {submitting ? 'Submitting...' : editingRating ? 'Update Review' : 'Submit Review'}
+            </Button>
+            
+            {editingRating && (
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={cancelEditing}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -427,120 +473,117 @@ export default function UserRating({ projectId }: UserRatingProps) {
           <div className="space-y-6">
             {userRatings.map((item) => (
               <div key={item.id} className="bg-card/50 rounded-lg p-6 border border-border/20 transition-all hover:border-border/40">
-                {canUserDeleteRating(item) ? (
-                  <ContextMenu>
-                    <ContextMenuTrigger>
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
-                          {item.photo_url || (item.profiles?.avatar_url) ? (
-                            <AvatarImage 
-                              src={item.photo_url || (item.profiles?.avatar_url || '')} 
-                              alt="User avatar" 
-                            />
-                          ) : null}
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            <User className="h-5 w-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <p className="font-medium text-foreground">{item.profiles?.display_name || 'Anonymous User'}</p>
-                              <div className="mt-1">
-                                <StarRating
-                                  value={item.rating}
-                                  readOnly={true}
-                                  size="small"
-                                />
-                              </div>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
-                              {formatDate(item.created_at)}
-                            </p>
-                          </div>
-                          <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
-                          
-                          {/* Show attached image if exists */}
-                          {item.photo_url && (
-                            <div className="mt-4">
-                              <a 
-                                href={item.photo_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="inline-block"
-                              >
-                                <img 
-                                  src={item.photo_url} 
-                                  alt="User uploaded" 
-                                  className="max-h-40 rounded-md border border-border/30 hover:border-primary/50 transition-all"
-                                />
-                              </a>
-                            </div>
-                          )}
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
+                    {item.photo_url || (item.profiles?.avatar_url) ? (
+                      <AvatarImage 
+                        src={item.photo_url || (item.profiles?.avatar_url || '')} 
+                        alt="User avatar" 
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-medium text-foreground">{item.profiles?.display_name || 'Anonymous User'}</p>
+                        <div className="mt-1">
+                          <StarRating
+                            value={item.rating}
+                            readOnly={true}
+                            size="small"
+                          />
                         </div>
                       </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem 
-                        onClick={() => setRatingToDelete(item.id)}
-                        className="text-destructive focus:text-destructive flex items-center"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete Review</span>
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                ) : (
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
-                      {item.photo_url || (item.profiles?.avatar_url) ? (
-                        <AvatarImage 
-                          src={item.photo_url || (item.profiles?.avatar_url || '')} 
-                          alt="User avatar" 
-                        />
-                      ) : null}
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        <User className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{item.profiles?.display_name || 'Anonymous User'}</p>
-                          <div className="mt-1">
-                            <StarRating
-                              value={item.rating}
-                              readOnly={true}
-                              size="small"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
+                      <div className="flex items-center space-x-2 mt-1 sm:mt-0">
+                        <p className="text-sm text-muted-foreground">
                           {formatDate(item.created_at)}
                         </p>
-                      </div>
-                      <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
-                      
-                      {/* Show attached image if exists */}
-                      {item.photo_url && (
-                        <div className="mt-4">
-                          <a 
-                            href={item.photo_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="inline-block"
-                          >
-                            <img 
-                              src={item.photo_url} 
-                              alt="User uploaded" 
-                              className="max-h-40 rounded-md border border-border/30 hover:border-primary/50 transition-all"
-                            />
-                          </a>
+                        
+                        <div className="relative">
+                          <div className="sm:hidden">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canUserEditRating(item) && (
+                                  <DropdownMenuItem 
+                                    onClick={() => handleEditRating(item)}
+                                    className="cursor-pointer"
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Edit</span>
+                                  </DropdownMenuItem>
+                                )}
+                                {canUserDeleteRating(item) && (
+                                  <DropdownMenuItem 
+                                    onClick={() => setRatingToDelete(item.id)}
+                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          
+                          <div className="hidden sm:flex sm:space-x-2">
+                            {canUserEditRating(item) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditRating(item)}
+                                className="h-8 px-2"
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                            )}
+                            {canUserDeleteRating(item) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRatingToDelete(item.id)}
+                                className="h-8 px-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Delete
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
+                    <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
+                    
+                    {item.photo_url && (
+                      <div className="mt-4">
+                        <a 
+                          href={item.photo_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="inline-block"
+                        >
+                          <img 
+                            src={item.photo_url} 
+                            alt="User uploaded" 
+                            className="max-h-40 rounded-md border border-border/30 hover:border-primary/50 transition-all"
+                          />
+                        </a>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>
@@ -551,7 +594,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!ratingToDelete} onOpenChange={(isOpen) => !isOpen && setRatingToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
