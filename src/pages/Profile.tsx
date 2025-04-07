@@ -31,68 +31,111 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth session error:', error);
+          setIsLoading(false);
+          setAuthChecked(true);
+          return;
+        }
         
         if (!data.session) {
+          console.log('No session found, redirecting to login');
           navigate('/admin/login');
+          setAuthChecked(true);
           return;
         }
         
         const user = data.session.user;
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          if (profileError.code === 'PGRST116') {
-            await supabase.from('profiles').insert({
-              id: user.id,
-              display_name: user.user_metadata.display_name || user.email?.split('@')[0] || 'User',
-              avatar_url: user.user_metadata.avatar_url,
-              gender: 'male'
-            });
-            
-            const { data: newProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', user.id)
-              .single();
-              
-            if (newProfile) {
-              const typedProfile = newProfile as Profile;
-              setProfile(typedProfile);
-              setDisplayName(typedProfile.display_name || '');
-              setGender((typedProfile.gender as 'male' | 'female') || 'male');
-              setAvatarUrl(typedProfile.avatar_url || null);
-            }
-          }
-        } else if (profileData) {
-          const typedProfile = profileData as Profile;
-          setProfile(typedProfile);
-          setDisplayName(typedProfile.display_name || '');
-          setGender((typedProfile.gender as 'male' | 'female') || 'male');
-          setAvatarUrl(typedProfile.avatar_url || null);
-        }
+        await fetchUserProfile(user.id);
+        setAuthChecked(true);
       } catch (error) {
         console.error('Error checking auth:', error);
         toast.error('Failed to fetch profile data');
-      } finally {
         setIsLoading(false);
+        setAuthChecked(true);
       }
     };
     
     checkAuth();
   }, [navigate]);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        if (profileError.code === 'PGRST116') {
+          // Profile doesn't exist yet, create one
+          await createNewProfile(userId);
+        }
+      } else if (profileData) {
+        // Profile exists, set the state
+        const typedProfile = profileData as Profile;
+        setProfile(typedProfile);
+        setDisplayName(typedProfile.display_name || '');
+        setGender((typedProfile.gender as 'male' | 'female') || 'male');
+        setAvatarUrl(typedProfile.avatar_url || null);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const createNewProfile = async (userId: string) => {
+    try {
+      const userResponse = await supabase.auth.getUser();
+      const user = userResponse.data.user;
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      const defaultDisplayName = user.user_metadata.display_name || 
+                                user.email?.split('@')[0] || 
+                                'User';
+      
+      await supabase.from('profiles').insert({
+        id: userId,
+        display_name: defaultDisplayName,
+        avatar_url: user.user_metadata.avatar_url,
+        gender: 'male'
+      });
+      
+      const { data: newProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (newProfile) {
+        const typedProfile = newProfile as Profile;
+        setProfile(typedProfile);
+        setDisplayName(typedProfile.display_name || '');
+        setGender((typedProfile.gender as 'male' | 'female') || 'male');
+        setAvatarUrl(typedProfile.avatar_url || null);
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -212,6 +255,11 @@ const Profile = () => {
       setIsSaving(false);
     }
   };
+
+  // Wait until we've checked auth before rendering anything
+  if (!authChecked) {
+    return null; // Return empty during initial auth check to prevent flashing
+  }
 
   if (isLoading) {
     return (
