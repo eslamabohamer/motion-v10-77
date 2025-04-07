@@ -7,6 +7,13 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
+interface SiteSection {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+}
+
 interface PortfolioItem {
   id: string;
   title: string;
@@ -16,7 +23,11 @@ interface PortfolioItem {
   description: string;
 }
 
-export const PortfolioPreview = () => {
+interface PortfolioPreviewProps {
+  featuredSection?: SiteSection | null;
+}
+
+export const PortfolioPreview = ({ featuredSection }: PortfolioPreviewProps) => {
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
@@ -61,11 +72,30 @@ export const PortfolioPreview = () => {
     
     const fetchPortfolioItems = async () => {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('projects')
           .select('id, title, category, image_url, video_url, description')
-          .order('created_at', { ascending: false })
-          .limit(4);
+          .order('created_at', { ascending: false });
+        
+        // If we have a featured section, filter by that section
+        if (featuredSection) {
+          // Get projects associated with this section
+          const { data: projectSections, error: sectionsError } = await supabase
+            .from('project_sections')
+            .select('project_id')
+            .eq('section_id', featuredSection.id);
+            
+          if (sectionsError) {
+            console.error('Error fetching project sections:', sectionsError);
+          } else if (projectSections && projectSections.length > 0) {
+            // Filter projects by the ones in this section
+            const projectIds = projectSections.map(ps => ps.project_id);
+            query = query.in('id', projectIds);
+          }
+        }
+        
+        // Limit to 4 items for the preview
+        const { data, error } = await query.limit(4);
           
         if (error) {
           console.error('Error fetching portfolio items:', error);
@@ -81,7 +111,7 @@ export const PortfolioPreview = () => {
     };
 
     fetchPortfolioItems();
-  }, []);
+  }, [featuredSection]);
 
   return (
     <section ref={sectionRef} className="py-16 md:py-20 bg-background">
@@ -94,13 +124,17 @@ export const PortfolioPreview = () => {
           className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12"
         >
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">Featured Work</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              {featuredSection ? `${featuredSection.name} Work` : 'Featured Work'}
+            </h2>
             <p className="text-muted-foreground max-w-xl">
-              Explore a selection of my recent motion graphics projects.
+              {featuredSection 
+                ? `Explore a selection of my recent ${featuredSection.name.toLowerCase()} projects.`
+                : 'Explore a selection of my recent motion graphics projects.'}
             </p>
           </div>
           <Button variant="ghost" size="sm" asChild className="mt-4 md:mt-0">
-            <Link to="/portfolio" className="flex items-center">
+            <Link to={featuredSection ? `/portfolio?section=${featuredSection.slug}` : "/portfolio"} className="flex items-center">
               View All Projects
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -226,4 +260,3 @@ const PortfolioCard = ({ item, enable3D }: PortfolioCardProps) => {
     </div>
   );
 };
-

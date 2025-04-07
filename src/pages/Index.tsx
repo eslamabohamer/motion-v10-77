@@ -7,14 +7,43 @@ import { PortfolioPreview } from "@/components/PortfolioPreview";
 import { Testimonials } from "@/components/Testimonials";
 import { ContactCta } from "@/components/ContactCta";
 import { CompanyLogos } from "@/components/CompanyLogos";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SiteSection {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+}
 
 export default function Index() {
+  const [featuredSection, setFeaturedSection] = useState<SiteSection | null>(null);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      // Get the first active section to feature on the homepage
+      const { data, error } = await supabase
+        .from('site_sections')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .limit(1);
+        
+      if (!error && data && data.length > 0) {
+        setFeaturedSection(data[0]);
+      }
+    };
+    
+    fetchSections();
+  }, []);
+
   return (
     <>
       <Navbar />
       <Hero />
       <ServicesSection />
-      <PortfolioPreview />
+      <PortfolioPreview featuredSection={featuredSection} />
       <CompanyLogos />
       <Testimonials />
       <ContactCta />

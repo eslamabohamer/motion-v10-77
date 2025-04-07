@@ -2,9 +2,9 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Grid3X3, MessageSquare, Settings, Tag, Users } from "lucide-react";
+import { Grid3X3, MessageSquare, Settings, Tag, Users, Layers } from "lucide-react";
 import { Link, useNavigate, Outlet } from 'react-router-dom';
-import { supabase, refreshSiteSettings } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -19,6 +19,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
     if (path.includes('/admin/projects')) return 'projects';
     if (path.includes('/admin/messages')) return 'messages';
     if (path.includes('/admin/categories')) return 'categories';
+    if (path.includes('/admin/sections')) return 'sections';
     if (path.includes('/admin/settings')) return 'settings';
     if (path.includes('/admin/users')) return 'users';
     return 'projects';
@@ -37,9 +38,44 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
 
   const handlePageChange = (tab: string) => {
     setActiveTab(tab);
-    // When navigating within the admin panel, refresh the site settings
-    refreshSiteSettings()
-      .catch(err => console.error('Failed to refresh settings:', err));
+  };
+
+  const refreshSiteSettings = async () => {
+    try {
+      // Fetch settings from various tables
+      const [
+        { data: generalData, error: generalError },
+        { data: performanceData, error: performanceError },
+        { data: animationData, error: animationError },
+        { data: seoData, error: seoError },
+        { data: socialData, error: socialError }
+      ] = await Promise.all([
+        supabase.from('general_settings').select('*').limit(1),
+        supabase.from('performance_settings').select('*').limit(1),
+        supabase.from('animation_settings').select('*').limit(1),
+        supabase.from('seo_settings').select('*').limit(1),
+        supabase.from('social_settings').select('*').limit(1)
+      ]);
+      
+      if (generalError || performanceError || animationError || seoError || socialError) {
+        throw new Error('Error fetching settings');
+      }
+      
+      // Create a combined settings object
+      const settings = {
+        general: generalData?.[0] || {},
+        performance: performanceData?.[0] || {},
+        animation: animationData?.[0] || {},
+        seo: seoData?.[0] || {},
+        social: socialData?.[0] || {}
+      };
+      
+      localStorage.setItem('siteSettings', JSON.stringify(settings));
+      return settings;
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      throw error;
+    }
   };
 
   return (
@@ -83,6 +119,16 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     <Link to="/admin/projects" onClick={() => handlePageChange('projects')}>
                       <Grid3X3 className="mr-2 h-4 w-4" />
                       Projects
+                    </Link>
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'sections' ? "secondary" : "ghost"} 
+                    className="justify-start" 
+                    asChild
+                  >
+                    <Link to="/admin/sections" onClick={() => handlePageChange('sections')}>
+                      <Layers className="mr-2 h-4 w-4" />
+                      Sections
                     </Link>
                   </Button>
                   <Button 

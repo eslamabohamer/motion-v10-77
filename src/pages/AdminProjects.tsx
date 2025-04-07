@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,10 +16,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase, getDefaultAvatar } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PlusCircle, Image, Film, Save, Trash2, Edit, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+interface Section {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface Project {
   id: string;
@@ -28,19 +36,23 @@ interface Project {
   image_url: string;
   video_url?: string;
   featured: boolean;
+  sections?: Section[];
 }
 
 const AdminProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [newProject, setNewProject] = useState<Omit<Project, 'id'>>({
     title: '',
     description: '',
     category: '',
     image_url: '',
     video_url: '',
-    featured: false
+    featured: false,
+    sections: []
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -48,6 +60,7 @@ const AdminProjects = () => {
 
   useEffect(() => {
     fetchProjects();
+    fetchSections();
     
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
@@ -73,7 +86,28 @@ const AdminProjects = () => {
         return;
       }
       
-      setProjects(data || []);
+      // Get project sections
+      const { data: projectSections, error: sectionsError } = await supabase
+        .from('project_sections')
+        .select('project_id, section_id, site_sections(id, name, slug)');
+        
+      if (sectionsError) {
+        console.error('Error fetching project sections:', sectionsError);
+      }
+      
+      // Map sections to projects
+      const projectsWithSections = data?.map(project => {
+        const sections = projectSections
+          ?.filter(ps => ps.project_id === project.id)
+          .map(ps => ps.site_sections);
+        
+        return {
+          ...project,
+          sections
+        };
+      }) || [];
+      
+      setProjects(projectsWithSections);
       
       const uniqueCategories = [...new Set(data?.map((project: Project) => project.category) || [])];
       setCategories(uniqueCategories);
@@ -82,6 +116,26 @@ const AdminProjects = () => {
       toast.error('Failed to load projects');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSections = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_sections')
+        .select('id, name, slug')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+        
+      if (error) {
+        console.error('Error fetching sections:', error);
+        toast.error('Failed to load sections');
+        return;
+      }
+      
+      setSections(data || []);
+    } catch (error) {
+      console.error('Error fetching sections:', error);
     }
   };
 
@@ -98,6 +152,14 @@ const AdminProjects = () => {
     setNewProject(prev => ({ ...prev, featured: e.target.checked }));
   };
 
+  const handleSectionChange = (sectionId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSections(prev => [...prev, sectionId]);
+    } else {
+      setSelectedSections(prev => prev.filter(id => id !== sectionId));
+    }
+  };
+
   const resetForm = () => {
     setNewProject({
       title: '',
@@ -105,20 +167,36 @@ const AdminProjects = () => {
       category: '',
       image_url: '',
       video_url: '',
-      featured: false
+      featured: false,
+      sections: []
     });
+    setSelectedSections([]);
     setEditingProjectId(null);
   };
 
-  const openEditForm = (project: Project) => {
+  const openEditForm = async (project: Project) => {
     setNewProject({
       title: project.title,
       description: project.description,
       category: project.category,
       image_url: project.image_url,
       video_url: project.video_url || '',
-      featured: project.featured
+      featured: project.featured,
+      sections: project.sections
     });
+    
+    // Get current project sections
+    const { data, error } = await supabase
+      .from('project_sections')
+      .select('section_id')
+      .eq('project_id', project.id);
+      
+    if (error) {
+      console.error('Error fetching project sections:', error);
+    } else {
+      setSelectedSections(data?.map(ps => ps.section_id) || []);
+    }
+    
     setEditingProjectId(project.id);
     setFormOpen(true);
   };
@@ -139,6 +217,7 @@ const AdminProjects = () => {
       }
       
       if (editingProjectId) {
+        // Update project
         const { error } = await supabase
           .from('projects')
           .update(newProject)
@@ -150,21 +229,66 @@ const AdminProjects = () => {
           return;
         }
         
+        // Update project sections
+        // First, delete existing associations
+        await supabase
+          .from('project_sections')
+          .delete()
+          .eq('project_id', editingProjectId);
+          
+        // Then insert new ones
+        if (selectedSections.length > 0) {
+          const sectionsToInsert = selectedSections.map(sectionId => ({
+            project_id: editingProjectId,
+            section_id: sectionId
+          }));
+          
+          const { error: sectionsError } = await supabase
+            .from('project_sections')
+            .insert(sectionsToInsert);
+            
+          if (sectionsError) {
+            console.error('Error updating project sections:', sectionsError);
+            toast.error(`Failed to update project sections: ${sectionsError.message}`);
+          }
+        }
+        
         toast.success('Project updated successfully');
       } else {
+        // Add new project
         const projectData = {
           ...newProject,
           video_url: newProject.video_url?.trim() || null
         };
         
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('projects')
-          .insert([projectData]);
+          .insert([projectData])
+          .select();
           
         if (error) {
           console.error('Error adding project:', error);
           toast.error(`Failed to add project: ${error.message}`);
           return;
+        }
+        
+        // Add project sections if any sections are selected
+        if (selectedSections.length > 0 && data && data.length > 0) {
+          const projectId = data[0].id;
+          
+          const sectionsToInsert = selectedSections.map(sectionId => ({
+            project_id: projectId,
+            section_id: sectionId
+          }));
+          
+          const { error: sectionsError } = await supabase
+            .from('project_sections')
+            .insert(sectionsToInsert);
+            
+          if (sectionsError) {
+            console.error('Error adding project sections:', sectionsError);
+            toast.error(`Failed to add project sections: ${sectionsError.message}`);
+          }
         }
         
         toast.success('Project added successfully');
@@ -187,6 +311,13 @@ const AdminProjects = () => {
         return;
       }
       
+      // Delete project sections first (cascade would handle this, but doing it explicitly)
+      await supabase
+        .from('project_sections')
+        .delete()
+        .eq('project_id', id);
+        
+      // Delete project
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -315,6 +446,12 @@ const AdminProjects = () => {
                               {!categories.includes('Explainer') && (
                                 <SelectItem key="Explainer" value="Explainer">Explainer</SelectItem>
                               )}
+                              {!categories.includes('Programming') && (
+                                <SelectItem key="Programming" value="Programming">Programming</SelectItem>
+                              )}
+                              {!categories.includes('Video Editing') && (
+                                <SelectItem key="Video Editing" value="Video Editing">Video Editing</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -376,6 +513,34 @@ const AdminProjects = () => {
                           </p>
                         )}
                       </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium block mb-1">Sections</label>
+                      <div className="border rounded-md p-3 flex flex-wrap gap-2">
+                        {sections.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2">No sections available. <a href="/admin/sections" className="text-primary underline">Create sections</a></p>
+                        ) : (
+                          sections.map(section => (
+                            <div key={section.id} className="flex items-center space-x-2">
+                              <Checkbox 
+                                id={`section-${section.id}`} 
+                                checked={selectedSections.includes(section.id)}
+                                onCheckedChange={(checked) => handleSectionChange(section.id, !!checked)}
+                              />
+                              <label 
+                                htmlFor={`section-${section.id}`}
+                                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                {section.name}
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Select which sections this project should appear in
+                      </p>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -467,9 +632,19 @@ const AdminProjects = () => {
                         </div>
                       </CardHeader>
                       <CardContent className="py-2">
-                        <p className="text-muted-foreground text-sm line-clamp-2">
+                        <p className="text-muted-foreground text-sm line-clamp-2 mb-2">
                           {project.description}
                         </p>
+                        
+                        {project.sections && project.sections.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {project.sections.map(section => (
+                              <span key={section.id} className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-0.5 rounded-full">
+                                {section.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                       <CardFooter className="pt-2 flex justify-between">
                         <div className="flex space-x-2">

@@ -300,6 +300,42 @@ export type Database = {
         }
         Relationships: []
       }
+      project_sections: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          section_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          section_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          section_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_sections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_sections_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "site_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           category: string
@@ -424,6 +460,45 @@ export type Database = {
           id?: string
           slug?: string
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_sections: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []

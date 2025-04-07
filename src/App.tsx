@@ -20,6 +20,7 @@ import AdminLayout from '@/components/AdminLayout';
 import AdminLoginPage from '@/pages/AdminLogin';
 import AdminProjects from '@/pages/AdminProjects';
 import AdminCategories from '@/pages/AdminCategories';
+import AdminSections from '@/pages/AdminSections';
 import AdminSettings from '@/pages/AdminSettings';
 import AdminUsers from '@/pages/AdminUsers';
 import AdminMessage from '@/pages/AdminMessage';
@@ -53,6 +54,7 @@ function App() {
               <Route index element={<AdminProjects />} />
               <Route path="projects" element={<AdminProjects />} />
               <Route path="categories" element={<AdminCategories />} />
+              <Route path="sections" element={<AdminSections />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="messages" element={<AdminMessage />} />
