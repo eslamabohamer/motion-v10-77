@@ -1,166 +1,204 @@
 import React, { useState, useEffect } from 'react';
-import { Star } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { getDisplayNameOrEmail, getDefaultAvatar, supabase, deleteUserRating } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Rating } from 'react-simple-star-rating';
+import { useUser } from '@/components/providers/UserProvider';
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { toast } from "@/components/ui/use-toast"
 
-interface UserRatingProps {
-  projectId: string;
-  userId?: string | null | undefined;
-  isOwner?: boolean;
-}
-
-interface Rating {
+// Define the Rating type
+type RatingType = {
   id: string;
   comment: string;
   rating: number;
-  created_at: string | null;
-  photo_url: string | null;
-  user_id: string | null;
+  created_at: string;
+  photo_url: string;
+  user_id: string;
   profiles: {
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null;
-}
+    display_name: string;
+    avatar_url: string;
+  };
+};
 
-export const UserRating: React.FC<UserRatingProps> = ({ projectId, userId, isOwner }) => {
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const UserRating: React.FC = () => {
+  const [ratings, setRatings] = useState<RatingType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [comment, setComment] = useState('');
+  const [rating, setRating] = useState(0); // initial rating value
+  const { user, profile } = useUser();
 
   useEffect(() => {
-    const fetchRatings = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const { data, error } = await supabase
-          .from('user_ratings')
-          .select(`
-            id,
-            comment,
-            rating,
-            created_at,
-            photo_url,
-            user_id,
-            profiles (display_name, avatar_url)
-          `)
-          .eq('project_id', projectId)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error("Error fetching ratings:", error);
-          setError(error.message);
-        } else {
-          setRatings(data || []);
-        }
-      } catch (err: any) {
-        console.error("Unexpected error fetching ratings:", err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchRatings();
-  }, [projectId]);
+  }, []);
 
-  const handleDeleteRating = async (id: string) => {
+  const handleRating = (rate: number) => {
+    setRating(rate)
+  }
+
+  const fetchRatings = async () => {
     try {
-      await deleteUserRating(id);
-      setRatings(ratings.filter(rating => rating.id !== id));
-      toast.success("Rating deleted successfully!");
-    } catch (err: any) {
-      console.error("Error deleting rating:", err);
-      toast.error("Failed to delete rating.");
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('user_ratings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Transform the data to ensure it matches the Rating type
+      const formattedRatings = data.map(item => ({
+        id: item.id,
+        comment: item.comment,
+        rating: item.rating,
+        created_at: item.created_at,
+        photo_url: item.photo_url || '',
+        user_id: item.user_id,
+        profiles: {
+          display_name: 'Anonymous User', // Default values
+          avatar_url: ''
+        }
+      }));
+
+      setRatings(formattedRatings);
+    } catch (error: any) {
+      console.error('Error fetching ratings:', error.message);
+      toast({
+        title: "Uh oh! Something went wrong.",
+        description: error.message,
+      })
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (isLoading) {
-    return <div className="text-center">Loading ratings...</div>;
-  }
+  const submitRating = async () => {
+    if (!user) {
+      toast({
+        title: "Uh oh! Something went wrong.",
+        description: 'You must be logged in to submit a rating.',
+      })
+      return;
+    }
 
-  if (error) {
-    return <div className="text-red-500 text-center">Error: {error}</div>;
-  }
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('user_ratings')
+        .insert([
+          {
+            comment: comment,
+            rating: rating,
+            user_id: user.id,
+            photo_url: profile?.avatar_url || '',
+          },
+        ])
+        .select()
+
+      if (error) {
+        throw error;
+      }
+
+      setComment('');
+      setRating(0);
+      fetchRatings();
+      toast({
+        title: "Success!",
+        description: "Your rating has been submitted.",
+      })
+    } catch (error: any) {
+      console.error('Error submitting rating:', error.message);
+      toast({
+        title: "Uh oh! Something went wrong.",
+        description: error.message,
+      })
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div>
-      {ratings.length > 0 ? (
-        <ul className="space-y-4">
-          {ratings.map((item) => {
-            let displayName = '';
-            if (item.profiles) {
-              displayName = item.profiles?.display_name || getDisplayNameOrEmail(item.profiles);
-            } else {
-              displayName = "Anonymous";
-            }
-            const avatarUrl = item.profiles?.avatar_url || getDefaultAvatar();
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-4">User Ratings</h1>
 
-            return (
-              <li key={item.id} className="bg-card rounded-lg shadow-md p-4">
-                <div className="flex items-start space-x-4">
-                  <Avatar>
-                    <AvatarImage src={avatarUrl} alt={displayName} />
-                    <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{displayName}</h3>
-                      <div className="flex items-center">
-                        <Star
-                          className="h-5 w-5 fill-yellow-400 text-yellow-400 mr-1"
-                        />
-                        <span>{item.rating}</span>
-                      </div>
-                    </div>
-                    <p className="text-gray-600">{item.comment}</p>
-                    <div className="mt-2 text-sm text-gray-500">
-                      {item.created_at && (
-                        new Date(item.created_at).toLocaleDateString()
-                      )}
-                    </div>
-                    {(isOwner || item.user_id === userId) && (
-                      <div className="mt-2">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">Delete</Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this rating.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteRating(item.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <div className="text-center">No ratings yet.</div>
-      )}
+      {/* Rating Form */}
+      <Card className="w-full max-w-md mx-auto mb-8">
+        <CardHeader>
+          <CardTitle>Submit Your Rating</CardTitle>
+          <CardDescription>Share your thoughts with others.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="rating">Rating:</label>
+            <Rating
+              onClick={handleRating}
+              ratingValue={rating}
+              size={24}
+              label
+              transition
+              allowHalfIcon
+              showTooltip
+              tooltipArray={[
+                'Terrible',
+                'Bad',
+                'Average',
+                'Great',
+                'Excellent',
+              ]}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="comment">Comment</label>
+            <Textarea
+              id="comment"
+              placeholder="Write your comment here"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={submitRating} disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit Rating'}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Display Ratings */}
+      <div className="grid gap-4">
+        {ratings.map((item) => (
+          <Card key={item.id}>
+            <CardHeader>
+              <CardTitle>{item.profiles?.display_name || 'Anonymous User'}</CardTitle>
+              <CardDescription>
+                <Rating
+                  ratingValue={item.rating}
+                  size={18}
+                  readonly // important: true to make the rating unchangeable
+                />
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>{item.comment}</p>
+            </CardContent>
+            <CardFooter className="text-sm text-muted-foreground">
+              {new Date(item.created_at).toLocaleDateString()}
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
+
+export default UserRating;
