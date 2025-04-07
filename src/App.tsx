@@ -25,6 +25,7 @@ import AdminSettings from '@/pages/AdminSettings';
 import AdminUsers from '@/pages/AdminUsers';
 import AdminMessage from '@/pages/AdminMessage';
 import AdminTeam from '@/pages/AdminTeam';
+import AdminCompanyLogos from '@/pages/AdminCompanyLogos';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -58,6 +59,7 @@ function App() {
               <Route path="categories" element={<AdminCategories />} />
               <Route path="sections" element={<AdminSections />} />
               <Route path="team" element={<AdminTeam />} />
+              <Route path="company-logos" element={<AdminCompanyLogos />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="messages" element={<AdminMessage />} />
