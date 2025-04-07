@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, refreshSiteSettings } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AdminDashboard } from '@/components/AdminDashboard';
 
@@ -86,50 +86,14 @@ const AdminLayout = () => {
   // Load site settings to localStorage for other pages to access
   useEffect(() => {
     if (isAuthenticated && isAdmin) {
-      const loadSettings = async () => {
-        try {
-          // Check if we already have settings in localStorage
-          const existingSettings = localStorage.getItem('siteSettings');
-          if (existingSettings) {
-            // We have cached settings, no need to fetch again
-            return;
-          }
-          
-          // Fetch settings from various tables
-          const [
-            { data: generalData, error: generalError },
-            { data: performanceData, error: performanceError },
-            { data: animationData, error: animationError },
-            { data: seoData, error: seoError },
-            { data: socialData, error: socialError }
-          ] = await Promise.all([
-            supabase.from('general_settings').select('*').limit(1),
-            supabase.from('performance_settings').select('*').limit(1),
-            supabase.from('animation_settings').select('*').limit(1),
-            supabase.from('seo_settings').select('*').limit(1),
-            supabase.from('social_settings').select('*').limit(1)
-          ]);
-          
-          if (generalError || performanceError || animationError || seoError || socialError) {
-            throw new Error('Error fetching settings');
-          }
-          
-          // Create a combined settings object
-          const settings = {
-            general: generalData?.[0] || {},
-            performance: performanceData?.[0] || {},
-            animation: animationData?.[0] || {},
-            seo: seoData?.[0] || {},
-            social: socialData?.[0] || {}
-          };
-          
-          localStorage.setItem('siteSettings', JSON.stringify(settings));
-        } catch (error) {
+      // Use the refreshSiteSettings function from the client
+      refreshSiteSettings()
+        .then(() => {
+          console.log('Site settings loaded to localStorage');
+        })
+        .catch(error => {
           console.error('Error loading settings:', error);
-        }
-      };
-      
-      loadSettings();
+        });
     }
   }, [isAuthenticated, isAdmin]);
 

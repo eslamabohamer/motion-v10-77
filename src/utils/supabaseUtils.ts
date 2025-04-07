@@ -96,3 +96,50 @@ export async function updateSiteSectionOrder(section1Id: string, section1Order: 
   
   return Promise.all(updates);
 }
+
+// Helper to get projects with their sections
+export async function getProjectsWithSections() {
+  try {
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      throw error;
+    }
+    
+    const { data: projectSectionsData, error: sectionsError } = await supabase
+      .from('project_sections')
+      .select('project_id, section_id');
+      
+    if (sectionsError) {
+      console.error('Error fetching project sections:', sectionsError);
+    }
+    
+    const { data: siteSectionsData, error: siteSectionsError } = await fetchSiteSections();
+    
+    if (siteSectionsError) {
+      console.error('Error fetching site sections:', siteSectionsError);
+    }
+    
+    const projectsWithSections = projects?.map(project => {
+      const projectSectionIds = projectSectionsData
+        ?.filter(ps => ps.project_id === project.id)
+        .map(ps => ps.section_id) || [];
+        
+      const projectSections = siteSectionsData
+        ?.filter(section => projectSectionIds.includes(section.id)) || [];
+      
+      return {
+        ...project,
+        sections: projectSections
+      };
+    }) || [];
+    
+    return projectsWithSections;
+  } catch (error) {
+    console.error('Error fetching projects with sections:', error);
+    throw error;
+  }
+}

@@ -261,9 +261,18 @@ const AdminProjects = () => {
       }
       
       if (editingProjectId) {
+        const projectData = {
+          title: newProject.title,
+          description: newProject.description,
+          category: newProject.category,
+          image_url: newProject.image_url,
+          video_url: newProject.video_url?.trim() || null,
+          featured: newProject.featured
+        };
+        
         const { error } = await supabase
           .from('projects')
-          .update(newProject)
+          .update(projectData)
           .eq('id', editingProjectId);
           
         if (error) {
@@ -281,7 +290,7 @@ const AdminProjects = () => {
         
         const updatedProjects = projects.map(project => 
           project.id === editingProjectId 
-            ? {...project, ...newProject, sections: sections.filter(s => selectedSections.includes(s.id))} 
+            ? {...project, ...projectData, sections: sections.filter(s => selectedSections.includes(s.id))} 
             : project
         );
         setProjects(updatedProjects);
@@ -291,8 +300,12 @@ const AdminProjects = () => {
         toast.success('Project updated successfully');
       } else {
         const projectData = {
-          ...newProject,
-          video_url: newProject.video_url?.trim() || null
+          title: newProject.title,
+          description: newProject.description,
+          category: newProject.category,
+          image_url: newProject.image_url,
+          video_url: newProject.video_url?.trim() || null,
+          featured: newProject.featured
         };
         
         const { data, error } = await supabase
@@ -322,6 +335,16 @@ const AdminProjects = () => {
           };
           
           const updatedProjects = [newProjectWithSections, ...projects];
+          setProjects(updatedProjects);
+          
+          localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
+        } else if (data && data.length > 0) {
+          const newProjectWithoutSections = {
+            ...data[0],
+            sections: []
+          };
+          
+          const updatedProjects = [newProjectWithoutSections, ...projects];
           setProjects(updatedProjects);
           
           localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
