@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchCompanyLogos } from '@/utils/supabaseUtils';
 
 interface CompanyLogo {
   id: string;
@@ -17,10 +16,16 @@ export const CompanyLogos = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getLogos = async () => {
+    const fetchLogos = async () => {
       try {
-        setIsLoading(true);
-        const { data, error } = await fetchCompanyLogos();
+        // Type assertion since we can't modify the types.ts file
+        const { data, error } = await supabase
+          .from('company_logos')
+          .select('*')
+          .order('display_order', { ascending: true }) as unknown as { 
+            data: CompanyLogo[] | null; 
+            error: Error | null 
+          };
           
         if (error) {
           throw error;
@@ -34,7 +39,7 @@ export const CompanyLogos = () => {
       }
     };
     
-    getLogos();
+    fetchLogos();
   }, []);
 
   if (isLoading) {
@@ -79,9 +84,6 @@ export const CompanyLogos = () => {
                     src={logo.logo_url} 
                     alt={`${logo.name} logo`}
                     className="max-h-full max-w-full object-contain transition-opacity group-hover:opacity-80"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
                   />
                 </div>
                 <p className="text-sm text-center font-medium text-muted-foreground group-hover:text-foreground transition-colors">
