@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,10 +17,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase, getDefaultAvatar } from '@/integrations/supabase/client';
 import { addProjectSections, fetchSiteSections } from '@/utils/supabaseUtils';
 import { toast } from 'sonner';
-import { PlusCircle, Image, Film, Save, Trash2, Edit, Eye } from 'lucide-react';
+import { 
+  PlusCircle, 
+  Image, 
+  Film, 
+  Save, 
+  Trash2, 
+  Edit, 
+  Eye, 
+  Link, 
+  ExternalLink, 
+  SortAsc, 
+  ArrowUp, 
+  ArrowDown, 
+  X 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Section {
@@ -32,6 +48,23 @@ interface Section {
   description?: string | null;
 }
 
+interface ProjectImage {
+  id?: string;
+  project_id?: string;
+  image_url: string;
+  caption: string;
+  display_order: number;
+}
+
+interface ProjectLink {
+  id?: string;
+  project_id?: string;
+  title: string;
+  url: string;
+  icon: string;
+  display_order: number;
+}
+
 interface Project {
   id: string;
   title: string;
@@ -39,8 +72,11 @@ interface Project {
   category: string;
   image_url: string;
   video_url?: string;
+  website_url?: string;
   featured: boolean;
   sections?: Section[];
+  images?: ProjectImage[];
+  links?: ProjectLink[];
 }
 
 const AdminProjects = () => {
@@ -55,12 +91,29 @@ const AdminProjects = () => {
     category: '',
     image_url: '',
     video_url: '',
+    website_url: '',
     featured: false,
-    sections: []
+    sections: [],
+    images: [],
+    links: []
+  });
+  const [projectImages, setProjectImages] = useState<ProjectImage[]>([]);
+  const [newImage, setNewImage] = useState<ProjectImage>({ 
+    image_url: '', 
+    caption: '', 
+    display_order: 0 
+  });
+  const [projectLinks, setProjectLinks] = useState<ProjectLink[]>([]);
+  const [newLink, setNewLink] = useState<ProjectLink>({ 
+    title: '', 
+    url: '', 
+    icon: '', 
+    display_order: 0 
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('details');
 
   useEffect(() => {
     const loadDataFromLocalStorage = () => {
@@ -112,6 +165,7 @@ const AdminProjects = () => {
   const fetchProjects = async () => {
     try {
       setIsLoading(true);
+      // Fetch projects with their sections
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -123,6 +177,7 @@ const AdminProjects = () => {
         return;
       }
       
+      // Fetch project sections
       const { data: projectSectionsData, error: sectionsError } = await supabase
         .from('project_sections')
         .select('project_id, section_id');
@@ -131,13 +186,35 @@ const AdminProjects = () => {
         console.error('Error fetching project sections:', sectionsError);
       }
       
+      // Fetch site sections
       const { data: siteSectionsData, error: siteSectionsError } = await fetchSiteSections();
       
       if (siteSectionsError) {
         console.error('Error fetching site sections:', siteSectionsError);
       }
+
+      // Fetch project images
+      const { data: projectImagesData, error: imagesError } = await supabase
+        .from('project_images')
+        .select('*')
+        .order('display_order', { ascending: true });
+        
+      if (imagesError) {
+        console.error('Error fetching project images:', imagesError);
+      }
+
+      // Fetch project links
+      const { data: projectLinksData, error: linksError } = await supabase
+        .from('project_links')
+        .select('*')
+        .order('display_order', { ascending: true });
+        
+      if (linksError) {
+        console.error('Error fetching project links:', linksError);
+      }
       
-      const projectsWithSections = data?.map(project => {
+      const projectsWithData = data?.map(project => {
+        // Get sections for this project
         const projectSectionIds = projectSectionsData
           ?.filter(ps => ps.project_id === project.id)
           .map(ps => ps.section_id) || [];
@@ -145,18 +222,28 @@ const AdminProjects = () => {
         const projectSections = siteSectionsData
           ?.filter(section => projectSectionIds.includes(section.id)) || [];
         
+        // Get images for this project
+        const images = projectImagesData
+          ?.filter(img => img.project_id === project.id) || [];
+        
+        // Get links for this project
+        const links = projectLinksData
+          ?.filter(link => link.project_id === project.id) || [];
+        
         return {
           ...project,
-          sections: projectSections as Section[]
+          sections: projectSections as Section[],
+          images: images as ProjectImage[],
+          links: links as ProjectLink[]
         };
       }) || [];
       
-      setProjects(projectsWithSections);
+      setProjects(projectsWithData);
       
       const uniqueCategories = [...new Set(data?.map((project: Project) => project.category) || [])];
       setCategories(uniqueCategories);
       
-      localStorage.setItem('adminProjects', JSON.stringify(projectsWithSections));
+      localStorage.setItem('adminProjects', JSON.stringify(projectsWithData));
       localStorage.setItem('adminCategories', JSON.stringify(uniqueCategories));
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -205,6 +292,116 @@ const AdminProjects = () => {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+    const { name, value } = e.target;
+    
+    if (index !== undefined) {
+      // Updating an existing image
+      const updatedImages = [...projectImages];
+      updatedImages[index] = { ...updatedImages[index], [name]: value };
+      setProjectImages(updatedImages);
+    } else {
+      // Updating the new image form
+      setNewImage(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+    const { name, value } = e.target;
+    
+    if (index !== undefined) {
+      // Updating an existing link
+      const updatedLinks = [...projectLinks];
+      updatedLinks[index] = { ...updatedLinks[index], [name]: value };
+      setProjectLinks(updatedLinks);
+    } else {
+      // Updating the new link form
+      setNewLink(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const addNewImage = () => {
+    if (!newImage.image_url) {
+      toast.error('Please enter an image URL');
+      return;
+    }
+    
+    const imageToAdd = {
+      ...newImage,
+      display_order: projectImages.length
+    };
+    
+    setProjectImages(prev => [...prev, imageToAdd]);
+    setNewImage({ image_url: '', caption: '', display_order: 0 });
+  };
+
+  const removeImage = (index: number) => {
+    setProjectImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveImage = (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) || 
+      (direction === 'down' && index === projectImages.length - 1)
+    ) {
+      return;
+    }
+    
+    const newImages = [...projectImages];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap display_order values
+    const currentOrder = newImages[index].display_order;
+    newImages[index].display_order = newImages[targetIndex].display_order;
+    newImages[targetIndex].display_order = currentOrder;
+    
+    // Swap positions in array
+    [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]];
+    
+    setProjectImages(newImages);
+  };
+
+  const addNewLink = () => {
+    if (!newLink.title || !newLink.url) {
+      toast.error('Please enter both a title and URL');
+      return;
+    }
+    
+    const linkToAdd = {
+      ...newLink,
+      display_order: projectLinks.length
+    };
+    
+    setProjectLinks(prev => [...prev, linkToAdd]);
+    setNewLink({ title: '', url: '', icon: '', display_order: 0 });
+  };
+
+  const removeLink = (index: number) => {
+    setProjectLinks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveLink = (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) || 
+      (direction === 'down' && index === projectLinks.length - 1)
+    ) {
+      return;
+    }
+    
+    const newLinks = [...projectLinks];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap display_order values
+    const currentOrder = newLinks[index].display_order;
+    newLinks[index].display_order = newLinks[targetIndex].display_order;
+    newLinks[targetIndex].display_order = currentOrder;
+    
+    // Swap positions in array
+    [newLinks[index], newLinks[targetIndex]] = [newLinks[targetIndex], newLinks[index]];
+    
+    setProjectLinks(newLinks);
+  };
+
   const resetForm = () => {
     setNewProject({
       title: '',
@@ -212,11 +409,17 @@ const AdminProjects = () => {
       category: '',
       image_url: '',
       video_url: '',
+      website_url: '',
       featured: false,
-      sections: []
+      sections: [],
+      images: [],
+      links: []
     });
+    setProjectImages([]);
+    setProjectLinks([]);
     setSelectedSections([]);
     setEditingProjectId(null);
+    setActiveTab('details');
   };
 
   const openEditForm = async (project: Project) => {
@@ -226,10 +429,12 @@ const AdminProjects = () => {
       category: project.category,
       image_url: project.image_url,
       video_url: project.video_url || '',
+      website_url: project.website_url || '',
       featured: project.featured,
       sections: project.sections
     });
     
+    // Fetch project sections
     const { data, error } = await supabase
       .from('project_sections')
       .select('section_id')
@@ -239,6 +444,32 @@ const AdminProjects = () => {
       console.error('Error fetching project sections:', error);
     } else {
       setSelectedSections(data?.map(ps => ps.section_id) || []);
+    }
+    
+    // Fetch project images
+    const { data: imagesData, error: imagesError } = await supabase
+      .from('project_images')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('display_order', { ascending: true });
+      
+    if (imagesError) {
+      console.error('Error fetching project images:', imagesError);
+    } else {
+      setProjectImages(imagesData || []);
+    }
+    
+    // Fetch project links
+    const { data: linksData, error: linksError } = await supabase
+      .from('project_links')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('display_order', { ascending: true });
+      
+    if (linksError) {
+      console.error('Error fetching project links:', linksError);
+    } else {
+      setProjectLinks(linksData || []);
     }
     
     setEditingProjectId(project.id);
@@ -261,12 +492,14 @@ const AdminProjects = () => {
       }
       
       if (editingProjectId) {
+        // Update existing project
         const projectData = {
           title: newProject.title,
           description: newProject.description,
           category: newProject.category,
           image_url: newProject.image_url,
           video_url: newProject.video_url?.trim() || null,
+          website_url: newProject.website_url?.trim() || null,
           featured: newProject.featured
         };
         
@@ -281,6 +514,7 @@ const AdminProjects = () => {
           return;
         }
         
+        // Update project sections
         const { error: sectionsError } = await addProjectSections(editingProjectId, selectedSections);
         
         if (sectionsError) {
@@ -288,9 +522,21 @@ const AdminProjects = () => {
           toast.error(`Failed to update project sections: ${sectionsError.message}`);
         }
         
+        // Update project images
+        await handleProjectImages(editingProjectId);
+        
+        // Update project links
+        await handleProjectLinks(editingProjectId);
+        
         const updatedProjects = projects.map(project => 
           project.id === editingProjectId 
-            ? {...project, ...projectData, sections: sections.filter(s => selectedSections.includes(s.id))} 
+            ? {
+                ...project, 
+                ...projectData, 
+                sections: sections.filter(s => selectedSections.includes(s.id)),
+                images: projectImages,
+                links: projectLinks
+              } 
             : project
         );
         setProjects(updatedProjects);
@@ -299,12 +545,14 @@ const AdminProjects = () => {
         
         toast.success('Project updated successfully');
       } else {
+        // Create new project
         const projectData = {
           title: newProject.title,
           description: newProject.description,
           category: newProject.category,
           image_url: newProject.image_url,
           video_url: newProject.video_url?.trim() || null,
+          website_url: newProject.website_url?.trim() || null,
           featured: newProject.featured
         };
         
@@ -319,32 +567,44 @@ const AdminProjects = () => {
           return;
         }
         
-        if (selectedSections.length > 0 && data && data.length > 0) {
+        if (data && data.length > 0) {
           const projectId = data[0].id;
           
-          const { error: sectionsError } = await addProjectSections(projectId, selectedSections);
-          
-          if (sectionsError) {
-            console.error('Error adding project sections:', sectionsError);
-            toast.error(`Failed to add project sections: ${sectionsError.message}`);
+          // Add project sections
+          if (selectedSections.length > 0) {
+            const { error: sectionsError } = await addProjectSections(projectId, selectedSections);
+            
+            if (sectionsError) {
+              console.error('Error adding project sections:', sectionsError);
+              toast.error(`Failed to add project sections: ${sectionsError.message}`);
+            }
           }
           
-          const newProjectWithSections = {
-            ...data[0],
-            sections: sections.filter(s => selectedSections.includes(s.id))
+          // Add project images
+          await handleProjectImages(projectId);
+          
+          // Add project links
+          await handleProjectLinks(projectId);
+          
+          // Fetch the complete project with all relations
+          const { data: completeProject, error: fetchError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', projectId)
+            .single();
+            
+          if (fetchError) {
+            console.error('Error fetching complete project:', fetchError);
+          }
+          
+          const newProjectWithData = {
+            ...completeProject,
+            sections: sections.filter(s => selectedSections.includes(s.id)),
+            images: projectImages.map(img => ({ ...img, project_id: projectId })),
+            links: projectLinks.map(link => ({ ...link, project_id: projectId }))
           };
           
-          const updatedProjects = [newProjectWithSections, ...projects];
-          setProjects(updatedProjects);
-          
-          localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
-        } else if (data && data.length > 0) {
-          const newProjectWithoutSections = {
-            ...data[0],
-            sections: []
-          };
-          
-          const updatedProjects = [newProjectWithoutSections, ...projects];
+          const updatedProjects = [newProjectWithData, ...projects];
           setProjects(updatedProjects);
           
           localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
@@ -358,6 +618,83 @@ const AdminProjects = () => {
     } catch (error) {
       console.error('Error saving project:', error);
       toast.error('Failed to save project');
+    }
+  };
+
+  const handleProjectImages = async (projectId: string) => {
+    try {
+      // First, delete all existing images for this project
+      const { error: deleteError } = await supabase
+        .from('project_images')
+        .delete()
+        .eq('project_id', projectId);
+        
+      if (deleteError) {
+        console.error('Error deleting project images:', deleteError);
+        toast.error(`Failed to update project images: ${deleteError.message}`);
+        return;
+      }
+      
+      // Then, add all current images
+      if (projectImages.length > 0) {
+        const imagesToInsert = projectImages.map((img, index) => ({
+          project_id: projectId,
+          image_url: img.image_url,
+          caption: img.caption || null,
+          display_order: index
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('project_images')
+          .insert(imagesToInsert);
+          
+        if (insertError) {
+          console.error('Error inserting project images:', insertError);
+          toast.error(`Failed to add project images: ${insertError.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling project images:', error);
+      toast.error('Failed to update project images');
+    }
+  };
+
+  const handleProjectLinks = async (projectId: string) => {
+    try {
+      // First, delete all existing links for this project
+      const { error: deleteError } = await supabase
+        .from('project_links')
+        .delete()
+        .eq('project_id', projectId);
+        
+      if (deleteError) {
+        console.error('Error deleting project links:', deleteError);
+        toast.error(`Failed to update project links: ${deleteError.message}`);
+        return;
+      }
+      
+      // Then, add all current links
+      if (projectLinks.length > 0) {
+        const linksToInsert = projectLinks.map((link, index) => ({
+          project_id: projectId,
+          title: link.title,
+          url: link.url,
+          icon: link.icon || null,
+          display_order: index
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('project_links')
+          .insert(linksToInsert);
+          
+        if (insertError) {
+          console.error('Error inserting project links:', insertError);
+          toast.error(`Failed to add project links: ${insertError.message}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling project links:', error);
+      toast.error('Failed to update project links');
     }
   };
 
@@ -456,171 +793,462 @@ const AdminProjects = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="title" className="text-sm font-medium">Project Title *</label>
-                        <Input
-                          id="title"
-                          name="title"
-                          value={newProject.title}
-                          onChange={handleInputChange}
-                          placeholder="Enter project title"
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label htmlFor="category" className="text-sm font-medium">Category *</label>
-                        <div className="flex gap-2">
-                          <Select 
-                            value={newProject.category} 
-                            onValueChange={(value) => handleSelectChange('category', value)}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categories.map(category => (
-                                <SelectItem key={`category-${category}`} value={category}>
-                                  {category}
-                                </SelectItem>
-                              ))}
-                              {!categories.includes('Motion Graphics') && (
-                                <SelectItem key="Motion Graphics" value="Motion Graphics">Motion Graphics</SelectItem>
-                              )}
-                              {!categories.includes('3D Animation') && (
-                                <SelectItem key="3D Animation" value="3D Animation">3D Animation</SelectItem>
-                              )}
-                              {!categories.includes('Typography') && (
-                                <SelectItem key="Typography" value="Typography">Typography</SelectItem>
-                              )}
-                              {!categories.includes('Corporate') && (
-                                <SelectItem key="Corporate" value="Corporate">Corporate</SelectItem>
-                              )}
-                              {!categories.includes('Explainer') && (
-                                <SelectItem key="Explainer" value="Explainer">Explainer</SelectItem>
-                              )}
-                              {!categories.includes('Programming') && (
-                                <SelectItem key="Programming" value="Programming">Programming</SelectItem>
-                              )}
-                              {!categories.includes('Video Editing') && (
-                                <SelectItem key="Video Editing" value="Video Editing">Video Editing</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="details">Details</TabsTrigger>
+                      <TabsTrigger value="images">Images</TabsTrigger>
+                      <TabsTrigger value="links">Links</TabsTrigger>
+                    </TabsList>
                     
-                    <div className="space-y-2">
-                      <label htmlFor="description" className="text-sm font-medium">Description *</label>
-                      <Textarea
-                        id="description"
-                        name="description"
-                        value={newProject.description}
-                        onChange={handleInputChange}
-                        placeholder="Describe your project"
-                        rows={4}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="image_url" className="text-sm font-medium flex items-center">
-                          <Image className="mr-2 h-4 w-4" /> Image URL *
-                        </label>
-                        <Input
-                          id="image_url"
-                          name="image_url"
-                          value={newProject.image_url}
-                          onChange={handleInputChange}
-                          placeholder="https://example.com/image.jpg"
-                          required
-                        />
-                        {newProject.image_url && (
-                          <div className="mt-2 p-2 border rounded">
-                            <img 
-                              src={newProject.image_url} 
-                              alt="Preview" 
-                              className="h-20 object-cover rounded"
-                              onError={addDefaultSrc}
+                    <TabsContent value="details">
+                      <form className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label htmlFor="title" className="text-sm font-medium">Project Title *</label>
+                            <Input
+                              id="title"
+                              name="title"
+                              value={newProject.title}
+                              onChange={handleInputChange}
+                              placeholder="Enter project title"
+                              required
                             />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="category" className="text-sm font-medium">Category *</label>
+                            <div className="flex gap-2">
+                              <Select 
+                                value={newProject.category} 
+                                onValueChange={(value) => handleSelectChange('category', value)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map(category => (
+                                    <SelectItem key={`category-${category}`} value={category}>
+                                      {category}
+                                    </SelectItem>
+                                  ))}
+                                  {!categories.includes('Motion Graphics') && (
+                                    <SelectItem key="Motion Graphics" value="Motion Graphics">Motion Graphics</SelectItem>
+                                  )}
+                                  {!categories.includes('3D Animation') && (
+                                    <SelectItem key="3D Animation" value="3D Animation">3D Animation</SelectItem>
+                                  )}
+                                  {!categories.includes('Typography') && (
+                                    <SelectItem key="Typography" value="Typography">Typography</SelectItem>
+                                  )}
+                                  {!categories.includes('Corporate') && (
+                                    <SelectItem key="Corporate" value="Corporate">Corporate</SelectItem>
+                                  )}
+                                  {!categories.includes('Explainer') && (
+                                    <SelectItem key="Explainer" value="Explainer">Explainer</SelectItem>
+                                  )}
+                                  {!categories.includes('Programming') && (
+                                    <SelectItem key="Programming" value="Programming">Programming</SelectItem>
+                                  )}
+                                  {!categories.includes('Video Editing') && (
+                                    <SelectItem key="Video Editing" value="Video Editing">Video Editing</SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="description" className="text-sm font-medium">Description *</label>
+                          <Textarea
+                            id="description"
+                            name="description"
+                            value={newProject.description}
+                            onChange={handleInputChange}
+                            placeholder="Describe your project"
+                            rows={4}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label htmlFor="image_url" className="text-sm font-medium flex items-center">
+                              <Image className="mr-2 h-4 w-4" /> Main Image URL *
+                            </label>
+                            <Input
+                              id="image_url"
+                              name="image_url"
+                              value={newProject.image_url}
+                              onChange={handleInputChange}
+                              placeholder="https://example.com/image.jpg"
+                              required
+                            />
+                            {newProject.image_url && (
+                              <div className="mt-2 p-2 border rounded">
+                                <img 
+                                  src={newProject.image_url} 
+                                  alt="Preview" 
+                                  className="h-20 object-cover rounded"
+                                  onError={addDefaultSrc}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label htmlFor="video_url" className="text-sm font-medium flex items-center">
+                              <Film className="mr-2 h-4 w-4" /> Video URL (optional)
+                            </label>
+                            <Input
+                              id="video_url"
+                              name="video_url"
+                              value={newProject.video_url}
+                              onChange={handleInputChange}
+                              placeholder="https://youtube.com/watch?v=xyz or https://vimeo.com/123456789"
+                            />
+                            {newProject.video_url && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Supported formats: YouTube and Vimeo URLs
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="website_url" className="text-sm font-medium flex items-center">
+                            <ExternalLink className="mr-2 h-4 w-4" /> Website URL (optional)
+                          </label>
+                          <Input
+                            id="website_url"
+                            name="website_url"
+                            value={newProject.website_url}
+                            onChange={handleInputChange}
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium block mb-1">Sections</label>
+                          <div className="border rounded-md p-3 flex flex-wrap gap-2">
+                            {sections.length === 0 ? (
+                              <p className="text-sm text-muted-foreground py-2">No sections available. <a href="/admin/sections" className="text-primary underline">Create sections</a></p>
+                            ) : (
+                              sections.map(section => (
+                                <div key={section.id} className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`section-${section.id}`} 
+                                    checked={selectedSections.includes(section.id)}
+                                    onCheckedChange={(checked) => handleSectionChange(section.id, !!checked)}
+                                  />
+                                  <label 
+                                    htmlFor={`section-${section.id}`}
+                                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {section.name}
+                                  </label>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Select which sections this project should appear in
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="featured"
+                            checked={newProject.featured}
+                            onChange={handleFeaturedChange}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <label htmlFor="featured" className="text-sm font-medium">
+                            Feature this project on the homepage
+                          </label>
+                        </div>
+                      </form>
+                    </TabsContent>
+                    
+                    <TabsContent value="images">
+                      <div className="space-y-6">
+                        <div className="bg-muted/20 rounded-lg p-4">
+                          <h3 className="text-lg font-medium mb-2">Add Additional Images</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Add multiple images to create a gallery for this project
+                          </p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label htmlFor="new_image_url" className="text-sm font-medium">Image URL</label>
+                              <Input
+                                id="new_image_url"
+                                name="image_url"
+                                value={newImage.image_url}
+                                onChange={(e) => handleImageChange(e)}
+                                placeholder="https://example.com/image.jpg"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label htmlFor="new_image_caption" className="text-sm font-medium">Caption (optional)</label>
+                              <Input
+                                id="new_image_caption"
+                                name="caption"
+                                value={newImage.caption}
+                                onChange={(e) => handleImageChange(e)}
+                                placeholder="Image description"
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={addNewImage} 
+                            className="mt-4" 
+                            variant="outline"
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Image
+                          </Button>
+                        </div>
+                        
+                        {projectImages.length > 0 ? (
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Project Images</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Images will be displayed in this order in the gallery. Drag to reorder.
+                            </p>
+                            
+                            <div className="space-y-4">
+                              {projectImages.map((image, index) => (
+                                <div key={index} className="flex flex-col md:flex-row gap-4 border rounded-lg p-4 bg-muted/10">
+                                  <div className="w-full md:w-1/4">
+                                    <img 
+                                      src={image.image_url} 
+                                      alt={image.caption || `Image ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded-md"
+                                      onError={addDefaultSrc}
+                                    />
+                                  </div>
+                                  
+                                  <div className="w-full md:w-3/4 space-y-3">
+                                    <div className="space-y-2">
+                                      <label className="text-xs font-medium">Image URL</label>
+                                      <Input
+                                        name="image_url"
+                                        value={image.image_url}
+                                        onChange={(e) => handleImageChange(e, index)}
+                                        placeholder="https://example.com/image.jpg"
+                                        size="sm"
+                                      />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <label className="text-xs font-medium">Caption</label>
+                                      <Input
+                                        name="caption"
+                                        value={image.caption}
+                                        onChange={(e) => handleImageChange(e, index)}
+                                        placeholder="Image description"
+                                        size="sm"
+                                      />
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-end space-x-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs" 
+                                        onClick={() => moveImage(index, 'up')}
+                                        disabled={index === 0}
+                                      >
+                                        <ArrowUp className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs" 
+                                        onClick={() => moveImage(index, 'down')}
+                                        disabled={index === projectImages.length - 1}
+                                      >
+                                        <ArrowDown className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="destructive" 
+                                        size="sm" 
+                                        className="text-xs" 
+                                        onClick={() => removeImage(index)}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center p-8 border border-dashed rounded-lg">
+                            <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground">
+                              No additional images added yet
+                            </p>
                           </div>
                         )}
                       </div>
-                      
-                      <div className="space-y-2">
-                        <label htmlFor="video_url" className="text-sm font-medium flex items-center">
-                          <Film className="mr-2 h-4 w-4" /> Video URL (optional)
-                        </label>
-                        <Input
-                          id="video_url"
-                          name="video_url"
-                          value={newProject.video_url}
-                          onChange={handleInputChange}
-                          placeholder="https://youtube.com/watch?v=xyz or https://vimeo.com/123456789"
-                        />
-                        {newProject.video_url && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Supported formats: YouTube and Vimeo URLs
+                    </TabsContent>
+                    
+                    <TabsContent value="links">
+                      <div className="space-y-6">
+                        <div className="bg-muted/20 rounded-lg p-4">
+                          <h3 className="text-lg font-medium mb-2">Add Project Links</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Add links to resources related to this project
                           </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium block mb-1">Sections</label>
-                      <div className="border rounded-md p-3 flex flex-wrap gap-2">
-                        {sections.length === 0 ? (
-                          <p className="text-sm text-muted-foreground py-2">No sections available. <a href="/admin/sections" className="text-primary underline">Create sections</a></p>
-                        ) : (
-                          sections.map(section => (
-                            <div key={section.id} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={`section-${section.id}`} 
-                                checked={selectedSections.includes(section.id)}
-                                onCheckedChange={(checked) => handleSectionChange(section.id, !!checked)}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <label htmlFor="new_link_title" className="text-sm font-medium">Link Title</label>
+                              <Input
+                                id="new_link_title"
+                                name="title"
+                                value={newLink.title}
+                                onChange={(e) => handleLinkChange(e)}
+                                placeholder="GitHub Repository"
                               />
-                              <label 
-                                htmlFor={`section-${section.id}`}
-                                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {section.name}
-                              </label>
                             </div>
-                          ))
+                            
+                            <div className="space-y-2">
+                              <label htmlFor="new_link_url" className="text-sm font-medium">URL</label>
+                              <Input
+                                id="new_link_url"
+                                name="url"
+                                value={newLink.url}
+                                onChange={(e) => handleLinkChange(e)}
+                                placeholder="https://github.com/username/repo"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label htmlFor="new_link_icon" className="text-sm font-medium">Icon (optional)</label>
+                              <Input
+                                id="new_link_icon"
+                                name="icon"
+                                value={newLink.icon}
+                                onChange={(e) => handleLinkChange(e)}
+                                placeholder="github"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Use Lucide icon names like "github", "dribbble", etc.
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={addNewLink} 
+                            className="mt-4" 
+                            variant="outline"
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Link
+                          </Button>
+                        </div>
+                        
+                        {projectLinks.length > 0 ? (
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Project Links</h3>
+                            
+                            <div className="space-y-4">
+                              {projectLinks.map((link, index) => (
+                                <div key={index} className="flex flex-col md:flex-row gap-4 border rounded-lg p-4 bg-muted/10">
+                                  <div className="w-full md:w-full space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      <div className="space-y-2">
+                                        <label className="text-xs font-medium">Link Title</label>
+                                        <Input
+                                          name="title"
+                                          value={link.title}
+                                          onChange={(e) => handleLinkChange(e, index)}
+                                          placeholder="GitHub Repository"
+                                          size="sm"
+                                        />
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        <label className="text-xs font-medium">URL</label>
+                                        <Input
+                                          name="url"
+                                          value={link.url}
+                                          onChange={(e) => handleLinkChange(e, index)}
+                                          placeholder="https://github.com/username/repo"
+                                          size="sm"
+                                        />
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        <label className="text-xs font-medium">Icon</label>
+                                        <Input
+                                          name="icon"
+                                          value={link.icon}
+                                          onChange={(e) => handleLinkChange(e, index)}
+                                          placeholder="github"
+                                          size="sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-end space-x-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs" 
+                                        onClick={() => moveLink(index, 'up')}
+                                        disabled={index === 0}
+                                      >
+                                        <ArrowUp className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs" 
+                                        onClick={() => moveLink(index, 'down')}
+                                        disabled={index === projectLinks.length - 1}
+                                      >
+                                        <ArrowDown className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        variant="destructive" 
+                                        size="sm" 
+                                        className="text-xs" 
+                                        onClick={() => removeLink(index)}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center p-8 border border-dashed rounded-lg">
+                            <Link className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground">
+                              No project links added yet
+                            </p>
+                          </div>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Select which sections this project should appear in
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="featured"
-                        checked={newProject.featured}
-                        onChange={handleFeaturedChange}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <label htmlFor="featured" className="text-sm font-medium">
-                        Feature this project on the homepage
-                      </label>
-                    </div>
-                    
-                    <div className="flex space-x-2 pt-2">
-                      <Button type="submit" className="w-full md:w-auto">
-                        <Save className="mr-2 h-4 w-4" /> {editingProjectId ? 'Update Project' : 'Save Project'}
-                      </Button>
-                      <Button type="button" variant="outline" onClick={cancelForm} className="w-full md:w-auto">
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
+                <CardFooter className="flex space-x-2 pt-2">
+                  <Button type="button" onClick={handleSubmit} className="w-full md:w-auto">
+                    <Save className="mr-2 h-4 w-4" /> {editingProjectId ? 'Update Project' : 'Save Project'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={cancelForm} className="w-full md:w-auto">
+                    Cancel
+                  </Button>
+                </CardFooter>
               </Card>
             </motion.div>
           )}
@@ -677,6 +1305,14 @@ const AdminProjects = () => {
                             <Film className="h-3 w-3" />
                           </div>
                         )}
+                        {project.images && project.images.length > 0 && (
+                          <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 text-xs rounded-full backdrop-blur-sm">
+                            <span className="flex items-center">
+                              <Image className="h-3 w-3 mr-1" />
+                              {project.images.length}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
@@ -715,7 +1351,7 @@ const AdminProjects = () => {
                             size="sm"
                             asChild
                           >
-                            <a href={`/portfolio/${project.id}`} target="_blank" rel="noopener noreferrer">
+                            <a href={`/portfolio/project/${project.id}`} target="_blank" rel="noopener noreferrer">
                               <Eye className="h-4 w-4 mr-1" /> View
                             </a>
                           </Button>

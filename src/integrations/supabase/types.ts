@@ -300,6 +300,79 @@ export type Database = {
         }
         Relationships: []
       }
+      project_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          project_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          project_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_images_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_links: {
+        Row: {
+          created_at: string
+          display_order: number
+          icon: string | null
+          id: string
+          project_id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          project_id: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          project_id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_sections: {
         Row: {
           created_at: string
@@ -347,6 +420,7 @@ export type Database = {
           title: string
           updated_at: string
           video_url: string | null
+          website_url: string | null
         }
         Insert: {
           category: string
@@ -358,6 +432,7 @@ export type Database = {
           title: string
           updated_at?: string
           video_url?: string | null
+          website_url?: string | null
         }
         Update: {
           category?: string
@@ -369,6 +444,7 @@ export type Database = {
           title?: string
           updated_at?: string
           video_url?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }

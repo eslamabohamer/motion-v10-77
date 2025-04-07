@@ -4,10 +4,20 @@ import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, Play, X } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Play, 
+  X, 
+  ExternalLink, 
+  ChevronLeft, 
+  ChevronRight, 
+  Link as LinkIcon, 
+  Image as ImageIcon 
+} from 'lucide-react';
 import UserRating from '@/components/UserRating';
 import { supabase } from '@/integrations/supabase/client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
 interface Project {
@@ -17,27 +27,49 @@ interface Project {
   category: string;
   image_url: string;
   video_url: string | null;
+  website_url: string | null;
   created_at: string;
+}
+
+interface ProjectImage {
+  id: string;
+  project_id: string;
+  image_url: string;
+  caption: string | null;
+  display_order: number;
+}
+
+interface ProjectLink {
+  id: string;
+  project_id: string;
+  title: string;
+  url: string;
+  icon: string | null;
+  display_order: number;
 }
 
 const PortfolioDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
+  const [projectImages, setProjectImages] = useState<ProjectImage[]>([]);
+  const [projectLinks, setProjectLinks] = useState<ProjectLink[]>([]);
   const [relatedProjects, setRelatedProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showVideo, setShowVideo] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [colorSettings, setColorSettings] = useState({
     backgroundColor: "#1A1F2C",
     accentColor: "#4a6cf7", 
     secondaryAccentColor: "#9b87f5"
   });
 
-  // Fetch single project
+  // Fetch single project with its images and links
   useEffect(() => {
     const fetchProject = async () => {
       try {
         if (id) {
           console.log("Fetching project with ID:", id);
+          // Fetch project details
           const { data, error } = await supabase
             .from('projects')
             .select('*')
@@ -51,6 +83,34 @@ const PortfolioDetail = () => {
           
           console.log("Project data:", data);
           setProject(data);
+
+          // Fetch project images
+          const { data: imagesData, error: imagesError } = await supabase
+            .from('project_images')
+            .select('*')
+            .eq('project_id', id)
+            .order('display_order', { ascending: true });
+          
+          if (imagesError) {
+            console.error('Error fetching project images:', imagesError);
+          } else {
+            console.log("Project images:", imagesData);
+            setProjectImages(imagesData || []);
+          }
+
+          // Fetch project links
+          const { data: linksData, error: linksError } = await supabase
+            .from('project_links')
+            .select('*')
+            .eq('project_id', id)
+            .order('display_order', { ascending: true });
+          
+          if (linksError) {
+            console.error('Error fetching project links:', linksError);
+          } else {
+            console.log("Project links:", linksData);
+            setProjectLinks(linksData || []);
+          }
 
           // Once we have the project, fetch related projects
           if (data) {
@@ -142,6 +202,17 @@ const PortfolioDetail = () => {
     fetchColorSettings();
   }, []);
 
+  // Function to navigate through images
+  const navigateImages = (direction: 'next' | 'prev') => {
+    if (projectImages.length <= 1) return;
+    
+    if (direction === 'next') {
+      setCurrentImageIndex(prev => (prev + 1) % projectImages.length);
+    } else {
+      setCurrentImageIndex(prev => (prev - 1 + projectImages.length) % projectImages.length);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colorSettings.backgroundColor }}>
@@ -172,6 +243,11 @@ const PortfolioDetail = () => {
       </div>
     );
   }
+
+  const allImages = [
+    { id: 'main', url: project.image_url, caption: 'Main image' },
+    ...projectImages.map(img => ({ id: img.id, url: img.image_url, caption: img.caption }))
+  ];
 
   // Determine if text should be RTL
   const isRTL = project.title && /[\u0590-\u05FF\u0600-\u06FF]/.test(project.title);
@@ -220,13 +296,74 @@ const PortfolioDetail = () => {
                 loading="lazy"
               ></iframe>
             </div>
+          ) : allImages.length > 0 ? (
+            <div className="relative rounded-lg overflow-hidden bg-black">
+              <div className="aspect-video relative">
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIndex}
+                    src={allImages[currentImageIndex].url}
+                    alt={allImages[currentImageIndex].caption || project.title}
+                    className="w-full h-full object-cover"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </AnimatePresence>
+                
+                {allImages.length > 1 && (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
+                      onClick={() => navigateImages('prev')}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
+                      onClick={() => navigateImages('next')}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+              
+              {/* Caption for current image */}
+              {allImages[currentImageIndex].caption && (
+                <div className="p-3 bg-black/70 text-sm text-gray-200">
+                  {allImages[currentImageIndex].caption}
+                </div>
+              )}
+              
+              {/* Image thumbnails */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2 mt-2 overflow-x-auto pb-2">
+                  {allImages.map((image, index) => (
+                    <button
+                      key={image.id}
+                      className={`flex-shrink-0 w-16 h-16 rounded overflow-hidden border-2 
+                        ${currentImageIndex === index ? 'border-primary' : 'border-transparent'}`}
+                      onClick={() => setCurrentImageIndex(index)}
+                    >
+                      <img 
+                        src={image.url} 
+                        alt={image.caption || `Thumbnail ${index}`}
+                        className="w-full h-full object-cover" 
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
-              <img 
-                src={project.image_url} 
-                alt={project.title} 
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-video bg-gray-800 flex items-center justify-center rounded-lg">
+              <ImageIcon className="h-12 w-12 text-gray-400" />
             </div>
           )}
         </motion.div>
@@ -242,6 +379,41 @@ const PortfolioDetail = () => {
           <p className={`text-gray-300 leading-relaxed mb-6 ${isRTL ? 'text-right' : ''}`}>
             {project.description}
           </p>
+          
+          {/* Project Links */}
+          {(projectLinks.length > 0 || project.website_url) && (
+            <div className={`mt-8 space-y-2 ${isRTL ? 'text-right' : ''}`}>
+              <h3 className="text-xl font-semibold mb-3">Links</h3>
+              <div className="flex flex-wrap gap-3">
+                {project.website_url && (
+                  <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
+                    <a href={project.website_url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Visit Website
+                    </a>
+                  </Button>
+                )}
+                
+                {projectLinks.map(link => (
+                  <Button 
+                    key={link.id} 
+                    asChild 
+                    variant="outline" 
+                    className="border-gray-500 hover:bg-gray-700"
+                  >
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">
+                      {link.icon ? (
+                        <span className="mr-2">{link.icon}</span>
+                      ) : (
+                        <LinkIcon className="mr-2 h-4 w-4" />
+                      )}
+                      {link.title}
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Back button moved to bottom of content */}
           <div className={`mt-8 ${isRTL ? 'text-right' : ''}`}>
