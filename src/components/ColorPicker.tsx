@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
-  id?: string; // Make id optional to fix type errors
+  id?: string; // Keep id as optional
 }
 
 export function ColorPicker({ value, onChange, id }: ColorPickerProps) {

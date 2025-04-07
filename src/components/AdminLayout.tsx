@@ -89,7 +89,7 @@ const AdminLayout = () => {
             supabase.from('animation_settings').select('*').limit(1),
             supabase.from('seo_settings').select('*').limit(1),
             supabase.from('social_settings').select('*').limit(1),
-            supabase.from('design_settings').select('*').limit(1)
+            supabase.from('design_settings').select('*').limit(1) as any
           ]);
           
           if (generalError || performanceError || animationError || seoError || socialError || designError) {
