@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -90,6 +89,26 @@ const AdminSettings = () => {
     retry: 1
   });
 
+  // Load about data from the about_me table
+  const { data: aboutData, isLoading: isLoadingAbout, refetch: refetchAbout } = useQuery({
+    queryKey: ['aboutMe'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('about_me')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('Error fetching about data:', error);
+        throw error;
+      }
+      
+      return data?.length > 0 ? data[0] : null;
+    },
+    retry: 1
+  });
+
   // Save settings mutation
   const { mutate: saveSettingsMutation } = useMutation({
     mutationFn: async (settingsData: any) => {
@@ -139,6 +158,71 @@ const AdminSettings = () => {
     }
   });
 
+  // Save about me data mutation
+  const { mutate: saveAboutDataMutation } = useMutation({
+    mutationFn: async (aboutData: any) => {
+      const { data: existingData, error: fetchError } = await supabase
+        .from('about_me')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (existingData && existingData.length > 0) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('about_me')
+          .update({
+            owner_name: aboutData.ownerName,
+            owner_title: aboutData.ownerTitle,
+            owner_bio: aboutData.ownerBio,
+            owner_photo_url: aboutData.ownerPhotoUrl,
+            owner_skills: aboutData.ownerSkills,
+            owner_location: aboutData.ownerLocation,
+            client_focused_text: aboutData.clientFocusedText,
+            quality_first_text: aboutData.qualityFirstText
+          })
+          .eq('id', existingData[0].id);
+          
+        if (error) throw error;
+        
+        return existingData[0].id;
+      } else {
+        // Insert new settings
+        const { data, error } = await supabase
+          .from('about_me')
+          .insert({
+            owner_name: aboutData.ownerName,
+            owner_title: aboutData.ownerTitle,
+            owner_bio: aboutData.ownerBio,
+            owner_photo_url: aboutData.ownerPhotoUrl,
+            owner_skills: aboutData.ownerSkills,
+            owner_location: aboutData.ownerLocation,
+            client_focused_text: aboutData.clientFocusedText,
+            quality_first_text: aboutData.qualityFirstText
+          })
+          .select('id');
+          
+        if (error) throw error;
+        
+        return data?.[0]?.id;
+      }
+    },
+    onSuccess: () => {
+      toast.success("About Me information saved successfully");
+      refetchAbout();
+      setIsLoading(false);
+    },
+    onError: (error) => {
+      console.error('Error saving about data:', error);
+      toast.error("Failed to save About Me information");
+      setIsLoading(false);
+    }
+  });
+
   // Initialize settings state from database or defaults
   const [settings, setSettings] = useState({...defaultSettings});
 
@@ -166,6 +250,26 @@ const AdminSettings = () => {
     }
   }, [dbSettings]);
 
+  // Update about settings when aboutData loads
+  useEffect(() => {
+    if (aboutData) {
+      setSettings(prevSettings => {
+        return {
+          ...prevSettings,
+          about: {
+            ...prevSettings.about,
+            ownerName: aboutData.owner_name,
+            ownerTitle: aboutData.owner_title,
+            ownerBio: aboutData.owner_bio,
+            ownerPhotoUrl: aboutData.owner_photo_url || prevSettings.about.ownerPhotoUrl,
+            ownerSkills: aboutData.owner_skills,
+            ownerLocation: aboutData.owner_location || prevSettings.about.ownerLocation,
+          }
+        };
+      });
+    }
+  }, [aboutData]);
+
   const handleSettingChange = (section: keyof typeof settings, key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
@@ -178,7 +282,23 @@ const AdminSettings = () => {
 
   const handleSaveSettings = () => {
     setIsLoading(true);
-    saveSettingsMutation(settings);
+    
+    if (activeTab === 'about') {
+      // Save about data to the about_me table
+      saveAboutDataMutation({
+        ownerName: settings.about.ownerName,
+        ownerTitle: settings.about.ownerTitle,
+        ownerBio: settings.about.ownerBio,
+        ownerPhotoUrl: settings.about.ownerPhotoUrl,
+        ownerSkills: settings.about.ownerSkills,
+        ownerLocation: settings.about.ownerLocation,
+        clientFocusedText: "I work closely with clients to understand their vision and deliver results that exceed expectations.",
+        qualityFirstText: "Every project receives my full attention to detail, ensuring premium quality results."
+      });
+    } else {
+      // Save other settings to the site_settings table
+      saveSettingsMutation(settings);
+    }
   };
 
   const handleResetSettings = (section: keyof typeof settings) => {
@@ -368,7 +488,7 @@ const AdminSettings = () => {
                       <div className="flex flex-col items-center space-y-4">
                         <Avatar className="w-32 h-32">
                           <AvatarImage src={settings.about.ownerPhotoUrl} alt="Profile" />
-                          <AvatarFallback>MA</AvatarFallback>
+                          <AvatarFallback>{settings.about.ownerName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <Input 
                           id="ownerPhotoUrl" 
