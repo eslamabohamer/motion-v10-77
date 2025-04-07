@@ -144,3 +144,60 @@ export async function getProjectsWithSections() {
   }
 }
 
+// Helper to fetch team members with their expertise sections
+export async function getTeamMembersWithSections() {
+  try {
+    const { data: teamMembers, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+      
+    if (error) {
+      throw error;
+    }
+    
+    return teamMembers;
+  } catch (error) {
+    console.error('Error fetching team members with sections:', error);
+    throw error;
+  }
+}
+
+// Add a function to get projects by section for team members' expertise
+export async function getProjectsBySectionForTeam(sectionId: string) {
+  try {
+    // First get all project IDs that belong to this section
+    const { data: projectSections, error: sectionsError } = await supabase
+      .from('project_sections')
+      .select('project_id')
+      .eq('section_id', sectionId);
+      
+    if (sectionsError) {
+      throw sectionsError;
+    }
+    
+    if (!projectSections || projectSections.length === 0) {
+      return [];
+    }
+    
+    // Get all project IDs
+    const projectIds = projectSections.map(ps => ps.project_id);
+    
+    // Now get the actual projects
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .in('id', projectIds)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      throw error;
+    }
+    
+    return projects || [];
+  } catch (error) {
+    console.error('Error fetching projects by section:', error);
+    return [];
+  }
+}
