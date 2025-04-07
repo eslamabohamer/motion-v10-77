@@ -13,129 +13,76 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Loader2, Upload } from 'lucide-react';
 
-interface Profile {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  email: string | null;
-  created_at: string;
-  updated_at: string;
-  gender: 'male' | 'female' | null;
-}
-
 const Profile = () => {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [displayName, setDisplayName] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // Check auth status and fetch profile data
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth session error:', error);
-          setIsLoading(false);
-          setAuthChecked(true);
-          return;
-        }
+        const { data } = await supabase.auth.getSession();
         
         if (!data.session) {
-          console.log('No session found, redirecting to login');
+          // Redirect to login if not authenticated
           navigate('/admin/login');
-          setAuthChecked(true);
           return;
         }
         
         const user = data.session.user;
-        await fetchUserProfile(user.id);
-        setAuthChecked(true);
+        
+        // Fetch user profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          if (profileError.code === 'PGRST116') {
+            // Profile not found, create one
+            await supabase.from('profiles').insert({
+              id: user.id,
+              display_name: user.user_metadata.display_name || user.email?.split('@')[0] || 'User',
+              avatar_url: user.user_metadata.avatar_url,
+            });
+            
+            // Fetch the newly created profile
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+              
+            setProfile(newProfile);
+            setDisplayName(newProfile?.display_name || '');
+            setGender(newProfile?.gender || 'male');
+            setAvatarUrl(newProfile?.avatar_url || null);
+          }
+        } else {
+          setProfile(profileData);
+          setDisplayName(profileData?.display_name || '');
+          setGender(profileData?.gender || 'male');
+          setAvatarUrl(profileData?.avatar_url || null);
+        }
       } catch (error) {
         console.error('Error checking auth:', error);
         toast.error('Failed to fetch profile data');
+      } finally {
         setIsLoading(false);
-        setAuthChecked(true);
       }
     };
     
     checkAuth();
   }, [navigate]);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        if (profileError.code === 'PGRST116') {
-          // Profile doesn't exist yet, create one
-          await createNewProfile(userId);
-        }
-      } else if (profileData) {
-        // Profile exists, set the state
-        const typedProfile = profileData as Profile;
-        setProfile(typedProfile);
-        setDisplayName(typedProfile.display_name || '');
-        setGender((typedProfile.gender as 'male' | 'female') || 'male');
-        setAvatarUrl(typedProfile.avatar_url || null);
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setIsLoading(false);
-    }
-  };
-
-  const createNewProfile = async (userId: string) => {
-    try {
-      const userResponse = await supabase.auth.getUser();
-      const user = userResponse.data.user;
-      
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      const defaultDisplayName = user.user_metadata.display_name || 
-                                user.email?.split('@')[0] || 
-                                'User';
-      
-      await supabase.from('profiles').insert({
-        id: userId,
-        display_name: defaultDisplayName,
-        avatar_url: user.user_metadata.avatar_url,
-        gender: 'male'
-      });
-      
-      const { data: newProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-        
-      if (newProfile) {
-        const typedProfile = newProfile as Profile;
-        setProfile(typedProfile);
-        setDisplayName(typedProfile.display_name || '');
-        setGender((typedProfile.gender as 'male' | 'female') || 'male');
-        setAvatarUrl(typedProfile.avatar_url || null);
-      }
-    } catch (error) {
-      console.error('Error creating profile:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -146,11 +93,13 @@ const Profile = () => {
       const file = e.target.files[0];
       const reader = new FileReader();
       
+      // Check if file is an image
       if (!file.type.match('image.*')) {
         toast.error('Please select an image file');
         return;
       }
       
+      // Check if file size is less than 5MB
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
@@ -170,7 +119,7 @@ const Profile = () => {
 
   const uploadAvatar = async (userId: string): Promise<string | null> => {
     if (!avatarFile) {
-      return avatarUrl;
+      return avatarUrl; // Return existing URL if no new file
     }
     
     try {
@@ -181,7 +130,7 @@ const Profile = () => {
       const { error: uploadError } = await supabase.storage
         .from('user-photos')
         .upload(filePath, avatarFile, {
-          upsert: true
+          upsert: true // Overwrite if exists
         });
       
       if (uploadError) {
@@ -209,6 +158,7 @@ const Profile = () => {
       const userId = profile.id;
       let photoUrl = avatarUrl;
       
+      // Upload avatar if changed
       if (avatarFile) {
         const uploadedUrl = await uploadAvatar(userId);
         if (uploadedUrl) {
@@ -216,6 +166,7 @@ const Profile = () => {
         }
       }
       
+      // Update profile in database
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -230,6 +181,7 @@ const Profile = () => {
         throw updateError;
       }
       
+      // Update user metadata
       await supabase.auth.updateUser({
         data: {
           display_name: displayName,
@@ -240,6 +192,7 @@ const Profile = () => {
       
       toast.success('Profile updated successfully');
       
+      // Update local profile state
       setProfile({
         ...profile,
         display_name: displayName,
@@ -247,7 +200,7 @@ const Profile = () => {
         avatar_url: photoUrl
       });
       
-      setAvatarFile(null);
+      setAvatarFile(null); // Clear file selection
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
@@ -255,11 +208,6 @@ const Profile = () => {
       setIsSaving(false);
     }
   };
-
-  // Wait until we've checked auth before rendering anything
-  if (!authChecked) {
-    return null; // Return empty during initial auth check to prevent flashing
-  }
 
   if (isLoading) {
     return (
