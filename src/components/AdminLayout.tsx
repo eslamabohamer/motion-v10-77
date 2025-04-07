@@ -14,6 +14,8 @@ const AdminLayout = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setIsLoading(true);
+        
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
