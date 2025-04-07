@@ -9,7 +9,74 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Since we can't directly modify the types.ts file, we'll create a custom client
+// that includes the new tables we've added
+type CustomDatabase = Database & {
+  public: {
+    Tables: {
+      site_sections: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          description: string | null;
+          icon: string | null;
+          color: string;
+          is_active: boolean;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          description?: string | null;
+          icon?: string | null;
+          color?: string;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          description?: string | null;
+          icon?: string | null;
+          color?: string;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      project_sections: {
+        Row: {
+          id: string;
+          project_id: string;
+          section_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          section_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          section_id?: string;
+          created_at?: string;
+        };
+      };
+    } & Database['public']['Tables'];
+  };
+};
+
+export const supabase = createClient<CustomDatabase>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 // Helper functions
 export const getDefaultAvatar = () => "/placeholder.svg";
@@ -39,7 +106,7 @@ export const refreshSiteSettings = async () => {
       supabase.from('social_settings').select('*').limit(1)
     ]);
     
-    if (generalError || performanceData || animationError || seoError || socialError) {
+    if (generalError || performanceError || animationError || seoError || socialError) {
       throw new Error('Error fetching settings');
     }
     

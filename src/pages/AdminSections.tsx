@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +9,13 @@ import { Switch } from '@/components/ui/switch';
 import { ColorPicker } from '@/components/ColorPicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  fetchSiteSections, 
+  updateSiteSection,
+  addSiteSection,
+  deleteSiteSection,
+  updateSiteSectionOrder
+} from '@/utils/supabaseUtils';
 import { Film, Code, Video, Plus, Pencil, Trash2, ArrowUp, ArrowDown, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -51,10 +57,7 @@ const AdminSections = () => {
   const fetchSections = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('site_sections')
-        .select('*')
-        .order('display_order', { ascending: true });
+      const { data, error } = await fetchSiteSections();
 
       if (error) {
         throw error;
@@ -118,34 +121,29 @@ const AdminSections = () => {
       }
 
       if (isEditing && editingSection.id) {
-        const { error } = await supabase
-          .from('site_sections')
-          .update({
-            name: editingSection.name,
-            slug: editingSection.slug,
-            description: editingSection.description,
-            icon: editingSection.icon,
-            color: editingSection.color,
-            is_active: editingSection.is_active,
-            display_order: editingSection.display_order,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingSection.id);
+        const { error } = await updateSiteSection(editingSection.id, {
+          name: editingSection.name,
+          slug: editingSection.slug,
+          description: editingSection.description,
+          icon: editingSection.icon,
+          color: editingSection.color,
+          is_active: editingSection.is_active,
+          display_order: editingSection.display_order,
+          updated_at: new Date().toISOString()
+        });
 
         if (error) throw error;
         toast.success('Section updated successfully');
       } else {
-        const { error } = await supabase
-          .from('site_sections')
-          .insert([{
-            name: editingSection.name,
-            slug: editingSection.slug,
-            description: editingSection.description,
-            icon: editingSection.icon,
-            color: editingSection.color,
-            is_active: editingSection.is_active,
-            display_order: editingSection.display_order
-          }]);
+        const { error } = await addSiteSection({
+          name: editingSection.name,
+          slug: editingSection.slug,
+          description: editingSection.description,
+          icon: editingSection.icon,
+          color: editingSection.color,
+          is_active: editingSection.is_active,
+          display_order: editingSection.display_order
+        });
 
         if (error) throw error;
         toast.success('Section added successfully');
@@ -174,10 +172,7 @@ const AdminSections = () => {
         if (!confirmDelete) return;
       }
 
-      const { error } = await supabase
-        .from('site_sections')
-        .delete()
-        .eq('id', id);
+      const { error } = await deleteSiteSection(id);
 
       if (error) throw error;
 
@@ -202,17 +197,12 @@ const AdminSections = () => {
       const targetSection = sections[targetIndex];
 
       // Swap display orders
-      await Promise.all([
-        supabase
-          .from('site_sections')
-          .update({ display_order: targetSection.display_order })
-          .eq('id', currentSection.id),
-          
-        supabase
-          .from('site_sections')
-          .update({ display_order: currentSection.display_order })
-          .eq('id', targetSection.id)
-      ]);
+      await updateSiteSectionOrder(
+        currentSection.id,
+        targetSection.display_order,
+        targetSection.id,
+        currentSection.display_order
+      );
 
       toast.success('Section order updated');
       fetchSections();

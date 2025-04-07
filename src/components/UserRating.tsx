@@ -1,621 +1,383 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Upload, Pencil, Trash2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StarRating } from '@/components/StarRating';
 import { supabase, getDefaultAvatar, getDisplayNameOrEmail, deleteUserRating } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { addUserRating } from '@/utils/supabaseUtils';
+import { toast } from 'sonner';
+import { User } from '@supabase/supabase-js';
+import { Trash2, AlertTriangle, ThumbsUp, MessageSquare, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
 
 interface UserRatingProps {
   projectId?: string;
+  showTitle?: boolean;
+  maxHeight?: string;
+  className?: string;
 }
 
-interface UserRatingData {
+interface Rating {
   id: string;
+  user_id: string | null;
   project_id: string;
-  user_id: string;
   rating: number;
   comment: string;
   photo_url: string | null;
   created_at: string;
-  updated_at: string;
   profiles?: {
     display_name: string | null;
+    email: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
-export const UserRating = ({ projectId }: UserRatingProps) => {
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [userPhoto, setUserPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [existingRatings, setExistingRatings] = useState<UserRatingData[]>([]);
+export const UserRating = ({ projectId, showTitle = true, maxHeight, className = '' }: UserRatingProps) => {
+  const [ratings, setRatings] = useState<Rating[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [activeRating, setActiveRating] = useState<UserRatingData | null>(null);
-  const [editedRating, setEditedRating] = useState(0);
-  const [editedComment, setEditedComment] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        setIsLoggedIn(true);
         setUser(data.session.user);
-      } else {
-        setIsLoggedIn(false);
       }
-      setIsLoading(false);
     };
     
     checkAuth();
+    fetchRatings();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        setIsLoggedIn(true);
-        setUser(session?.user || null);
-      } else if (event === 'SIGNED_OUT') {
-        setIsLoggedIn(false);
-        setUser(null);
-      }
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
     });
     
     return () => {
-      subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [projectId]);
 
   const fetchRatings = async () => {
     if (!projectId) return;
     
     try {
+      setIsLoading(true);
+      
       const { data, error } = await supabase
         .from('user_ratings')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            display_name,
+            email,
+            avatar_url
+          )
+        `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
-      
+        
       if (error) {
-        console.error('Error fetching ratings:', error);
-        return;
-      }
-      
-      console.log('Fetched ratings:', data);
-      
-      if (data && data.length > 0) {
-        const userIds = data.map(rating => rating.user_id).filter(Boolean);
-        
-        if (userIds.length > 0) {
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, display_name, avatar_url')
-            .in('id', userIds);
-            
-          if (!profilesError && profilesData) {
-            const ratingsWithProfiles = data.map(rating => {
-              const userProfile = profilesData.find(p => p.id === rating.user_id);
-              return {
-                ...rating,
-                profiles: userProfile ? {
-                  display_name: userProfile.display_name,
-                  avatar_url: userProfile.avatar_url
-                } : undefined
-              };
-            });
-            
-            setExistingRatings(ratingsWithProfiles as UserRatingData[]);
-            return;
-          }
-        }
-      }
-      
-      setExistingRatings(data as UserRatingData[]);
-    } catch (error) {
-      console.error('Error in fetchRatings:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (projectId) {
-      setIsLoading(true);
-      fetchRatings().finally(() => setIsLoading(false));
-    }
-  }, [projectId]);
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      setUserPhoto(null);
-      setPhotoPreview(null);
-      return;
-    }
-    
-    const file = e.target.files[0];
-    setUserPhoto(file);
-    
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRatingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!isLoggedIn) {
-      toast.error('Please log in to submit a rating.');
-      return;
-    }
-    
-    if (rating === 0) {
-      toast.error('Please select a rating.');
-      return;
-    }
-    
-    if (!comment.trim()) {
-      toast.error('Please add a comment.');
-      return;
-    }
-    
-    if (!projectId) {
-      toast.error('Project ID is missing.');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      let photoUrl = null;
-      
-      if (userPhoto) {
-        const fileName = `${user.id}-${Date.now()}-${userPhoto.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('user-photos')
-          .upload(`${user.id}/${fileName}`, userPhoto);
-        
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          throw new Error('Failed to upload photo');
-        }
-        
-        const { data: urlData } = supabase.storage
-          .from('user-photos')
-          .getPublicUrl(`${user.id}/${fileName}`);
-          
-        photoUrl = urlData.publicUrl;
-      }
-      
-      const newRating = {
-        project_id: projectId,
-        user_id: user.id,
-        rating,
-        comment,
-        photo_url: photoUrl
-      };
-      
-      console.log('Submitting rating:', newRating);
-      
-      const { error } = await supabase
-        .from('user_ratings')
-        .insert(newRating);
-      
-      if (error) {
-        console.error('Insert error:', error);
         throw error;
       }
       
-      toast.success('Your rating has been submitted. Thank you!');
-      setRating(0);
-      setComment('');
-      setUserPhoto(null);
-      setPhotoPreview(null);
-      
-      await fetchRatings();
-      
-    } catch (error: any) {
-      console.error('Error submitting rating:', error);
-      toast.error(`Failed to submit rating: ${error.message || 'Please try again.'}`);
+      setRatings(data || []);
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleEditClick = (rating: UserRatingData) => {
-    setActiveRating(rating);
-    setEditedRating(rating.rating);
-    setEditedComment(rating.comment);
-    setEditDialogOpen(true);
-  };
-
-  const handleDeleteClick = (rating: UserRatingData) => {
-    setActiveRating(rating);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!activeRating) return;
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('user_ratings')
-        .update({
-          rating: editedRating,
-          comment: editedComment,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', activeRating.id);
-
-      if (error) throw error;
-
-      toast.success('Your review has been updated.');
-      setEditDialogOpen(false);
-      await fetchRatings();
-    } catch (error: any) {
-      console.error('Error updating rating:', error);
-      toast.error(`Failed to update review: ${error.message || 'Please try again.'}`);
-    } finally {
-      setIsSubmitting(false);
+  const addRating = async () => {
+    if (!projectId) {
+      toast.error('Missing project ID');
+      return;
     }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!activeRating) return;
-
-    setIsSubmitting(true);
+    
+    if (!comment || rating === 0) {
+      toast.error('Please provide both a rating and a comment');
+      return;
+    }
+    
     try {
-      console.log('Starting delete operation for rating ID:', activeRating.id);
+      setIsSubmitting(true);
       
-      const { success } = await deleteUserRating(activeRating.id);
+      // Use the new utility function that returns a success property
+      const { error, success } = await addUserRating({
+        project_id: projectId,
+        rating,
+        comment,
+        user_id: user?.id || null,
+        photo_url: user?.user_metadata?.avatar_url || null
+      });
       
-      if (!success) {
-        throw new Error('Failed to delete review');
+      if (error) {
+        throw error;
       }
       
-      setDeleteDialogOpen(false);
-      toast.success('Your review has been deleted.');
-      
-      setExistingRatings(prevRatings => 
-        prevRatings.filter(rating => rating.id !== activeRating.id)
-      );
-      
-      await fetchRatings();
-      
-    } catch (error: any) {
-      console.error('Error in handleConfirmDelete:', error);
-      toast.error(`Failed to delete review: ${error.message || 'Please try again.'}`);
+      if (success) {
+        setComment('');
+        setRating(0);
+        setShowForm(false);
+        fetchRatings();
+        toast.success('Your review has been added');
+      }
+    } catch (error) {
+      console.error('Error adding rating:', error);
+      toast.error('Failed to add your review');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+    
+    try {
+      const { error } = await deleteUserRating(id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setRatings(ratings.filter(r => r.id !== id));
+      toast.success('Review deleted successfully');
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      toast.error('Failed to delete review');
+    }
   };
 
-  const isUserRating = (rating: UserRatingData) => {
-    return isLoggedIn && user && rating.user_id === user.id;
+  const getAverageRating = () => {
+    if (ratings.length === 0) return 0;
+    const sum = ratings.reduce((acc, curr) => acc + curr.rating, 0);
+    return Math.round((sum / ratings.length) * 10) / 10;
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center p-8">
-      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-    </div>;
-  }
+  const filteredRatings = activeTab === 'all' 
+    ? ratings 
+    : ratings.filter(r => {
+        if (activeTab === '5') return r.rating === 5;
+        if (activeTab === '4') return r.rating === 4;
+        if (activeTab === '3') return r.rating === 3;
+        if (activeTab === '2') return r.rating === 2;
+        if (activeTab === '1') return r.rating === 1;
+        return true;
+      });
+
+  const getRatingCounts = () => {
+    const counts = { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
+    ratings.forEach(r => {
+      counts[r.rating as keyof typeof counts]++;
+    });
+    return counts;
+  };
+
+  const ratingCounts = getRatingCounts();
 
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-bold mb-4">User Reviews</h2>
-      
-      {isLoggedIn ? (
-        <div className="bg-card p-6 rounded-lg shadow-sm">
-          <h3 className="text-xl font-semibold mb-4">Leave a Review</h3>
-          
-          <form onSubmit={handleRatingSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Your Rating</label>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    className="focus:outline-none"
-                  >
-                    <Star
-                      className={cn(
-                        "h-8 w-8 transition-colors",
-                        (hoverRating || rating) >= star
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                      )}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="comment" className="block text-sm font-medium">Your Review</label>
-              <Textarea
-                id="comment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={4}
-                placeholder="Share your thoughts about this work..."
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="photo" className="block text-sm font-medium">Upload a Photo (Optional)</label>
-              <div className="flex items-center gap-4">
-                {photoPreview ? (
-                  <div className="relative">
-                    <img 
-                      src={photoPreview} 
-                      alt="Preview" 
-                      className="h-16 w-16 rounded-full object-cover"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setUserPhoto(null);
-                        setPhotoPreview(null);
-                      }}
-                      className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 h-5 w-5 flex items-center justify-center"
-                    >
-                      <span>×</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <label htmlFor="photo" className="cursor-pointer flex items-center gap-2 text-sm text-primary hover:text-primary/80">
-                      <Upload className="h-4 w-4" />
-                      Choose Photo
-                    </label>
-                    <Input
-                      id="photo"
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                You can upload a photo of yourself or your work related to this review
-              </p>
-            </div>
-            
-            <Button type="submit" disabled={isSubmitting} className="mt-2">
-              {isSubmitting ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Submitting...
-                </>
-              ) : 'Submit Review'}
+    <div className={`w-full ${className}`}>
+      {showTitle && (
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold mb-1">User Reviews</h2>
+            <p className="text-muted-foreground">
+              {ratings.length > 0 
+                ? `${ratings.length} ${ratings.length === 1 ? 'review' : 'reviews'} with an average rating of ${getAverageRating()}/5`
+                : 'No reviews yet. Be the first to leave a review!'}
+            </p>
+          </div>
+          {!showForm && (
+            <Button 
+              onClick={() => {
+                if (!user) {
+                  toast.error('Please sign in to leave a review');
+                  return;
+                }
+                setShowForm(true);
+                setTimeout(() => {
+                  formRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }} 
+              className="mt-4 md:mt-0"
+            >
+              Write a Review
             </Button>
-          </form>
+          )}
         </div>
-      ) : (
-        <div className="bg-card p-6 rounded-lg shadow-sm text-center">
-          <p className="mb-4">Please log in to leave a review.</p>
-          <div className="flex justify-center space-x-4">
-            <Button asChild className="bg-primary">
-              <a href="/admin/login">Login</a>
-            </Button>
-            <Button asChild variant="outline">
-              <a href="/register">Register</a>
+      )}
+
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            ref={formRef}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Write a Review</CardTitle>
+                <CardDescription>Share your thoughts about this project</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Rating</label>
+                    <StarRating 
+                      value={rating} 
+                      onChange={setRating} 
+                      size={24} 
+                      interactive 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Review</label>
+                    <Textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="What did you think about this project?"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => {
+                  setShowForm(false);
+                  setRating(0);
+                  setComment('');
+                }}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={addRating} 
+                  disabled={isSubmitting || rating === 0 || !comment.trim()}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Review'}
+                </Button>
+              </CardFooter>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {ratings.length > 0 && (
+        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="mb-4">
+            <TabsTrigger value="all">All Reviews ({ratings.length})</TabsTrigger>
+            <TabsTrigger value="5">5 Star ({ratingCounts['5']})</TabsTrigger>
+            <TabsTrigger value="4">4 Star ({ratingCounts['4']})</TabsTrigger>
+            <TabsTrigger value="3">3 Star ({ratingCounts['3']})</TabsTrigger>
+            <TabsTrigger value="2">2 Star ({ratingCounts['2']})</TabsTrigger>
+            <TabsTrigger value="1">1 Star ({ratingCounts['1']})</TabsTrigger>
+          </TabsList>
+          <TabsContent value={activeTab} className="mt-0">
+            <div 
+              className={`space-y-4 ${maxHeight ? `max-h-[${maxHeight}] overflow-y-auto pr-2` : ''}`}
+              style={maxHeight ? { maxHeight, overflowY: 'auto' } : {}}
+            >
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              ) : filteredRatings.length === 0 ? (
+                <div className="text-center py-8 border rounded-lg bg-muted/30">
+                  <AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No reviews found with this rating</p>
+                </div>
+              ) : (
+                filteredRatings.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarImage 
+                                src={item.photo_url || item.profiles?.avatar_url || getDefaultAvatar()} 
+                                alt="User avatar" 
+                              />
+                              <AvatarFallback>
+                                {getDisplayNameOrEmail(item.profiles)?.[0]?.toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <CardTitle className="text-base">
+                                {getDisplayNameOrEmail(item.profiles)}
+                              </CardTitle>
+                              <div className="flex items-center mt-1">
+                                <StarRating value={item.rating} size={16} />
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          {user?.id === item.user_id && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(item.id)}
+                              className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm whitespace-pre-line">{item.comment}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {ratings.length === 0 && !isLoading && !showForm && (
+        <div className="text-center py-12 border rounded-lg bg-muted/30">
+          <div className="flex flex-col items-center max-w-md mx-auto">
+            <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-medium mb-2">No Reviews Yet</h3>
+            <p className="text-muted-foreground mb-6">
+              Be the first to share your thoughts about this project!
+            </p>
+            <Button 
+              onClick={() => {
+                if (!user) {
+                  toast.error('Please sign in to leave a review');
+                  return;
+                }
+                setShowForm(true);
+              }}
+            >
+              <Star className="mr-2 h-4 w-4" /> Write a Review
             </Button>
           </div>
         </div>
       )}
-      
-      <div className="space-y-6">
-        <h3 className="text-xl font-semibold">User Reviews ({existingRatings.length})</h3>
-        
-        {existingRatings.length === 0 ? (
-          <p className="text-muted-foreground italic">No reviews yet. Be the first to leave a review!</p>
-        ) : (
-          existingRatings.map((review) => (
-            <div key={review.id} className="bg-card p-6 rounded-lg shadow-sm">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage 
-                      src={review.profiles?.avatar_url || getDefaultAvatar()} 
-                      alt="User avatar" 
-                    />
-                    <AvatarFallback>
-                      {getDisplayNameOrEmail(review.profiles)?.[0]?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">
-                      {getDisplayNameOrEmail(review.profiles)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{formatDate(review.created_at)}</p>
-                    {review.updated_at !== review.created_at && (
-                      <p className="text-xs text-muted-foreground italic">(Edited)</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={cn(
-                        "h-4 w-4",
-                        review.rating >= star
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              <p className="mt-4">{review.comment}</p>
-              
-              {review.photo_url ? (
-                <div className="mt-4">
-                  <img 
-                    src={review.photo_url} 
-                    alt="User photo" 
-                    className="max-h-48 rounded-lg object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="mt-4 p-4 border border-dashed rounded-lg flex items-center justify-center bg-muted/20">
-                  <p className="text-sm text-muted-foreground">No image attached</p>
-                </div>
-              )}
-
-              {isUserRating(review) && (
-                <div className="mt-4 flex gap-2 justify-end">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-1"
-                    onClick={() => handleEditClick(review)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="flex items-center gap-1"
-                    onClick={() => handleDeleteClick(review)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Delete
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Your Review</DialogTitle>
-            <DialogDescription>
-              Make changes to your review below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Rating</label>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setEditedRating(star)}
-                    className="focus:outline-none"
-                  >
-                    <Star
-                      className={cn(
-                        "h-8 w-8",
-                        editedRating >= star
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                      )}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="editComment" className="text-sm font-medium">Comment</label>
-              <Textarea
-                id="editComment"
-                value={editedComment}
-                onChange={(e) => setEditedComment(e.target.value)}
-                rows={4}
-                placeholder="Update your thoughts about this work..."
-                required
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-            <Button 
-              onClick={handleSaveEdit}
-              disabled={isSubmitting || !editedComment.trim()}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Saving...
-                </>
-              ) : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Review</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete your review? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
-
-export default UserRating;

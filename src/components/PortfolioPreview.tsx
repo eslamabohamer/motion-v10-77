@@ -12,6 +12,12 @@ interface SiteSection {
   name: string;
   slug: string;
   is_active: boolean;
+  display_order?: number;
+  color?: string;
+  icon?: string | null;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface PortfolioItem {
@@ -79,7 +85,7 @@ export const PortfolioPreview = ({ featuredSection }: PortfolioPreviewProps) => 
         
         // If we have a featured section, filter by that section
         if (featuredSection) {
-          // Get projects associated with this section
+          // First get the project IDs associated with this section
           const { data: projectSections, error: sectionsError } = await supabase
             .from('project_sections')
             .select('project_id')

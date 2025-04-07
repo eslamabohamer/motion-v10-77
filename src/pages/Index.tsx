@@ -15,6 +15,12 @@ interface SiteSection {
   name: string;
   slug: string;
   is_active: boolean;
+  display_order?: number;
+  color?: string;
+  icon?: string | null;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function Index() {
@@ -31,7 +37,7 @@ export default function Index() {
         .limit(1);
         
       if (!error && data && data.length > 0) {
-        setFeaturedSection(data[0]);
+        setFeaturedSection(data[0] as SiteSection);
       }
     };
     

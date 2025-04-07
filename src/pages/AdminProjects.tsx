@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase, getDefaultAvatar } from '@/integrations/supabase/client';
+import { addProjectSections, fetchSiteSections } from '@/utils/supabaseUtils';
 import { toast } from 'sonner';
 import { PlusCircle, Image, Film, Save, Trash2, Edit, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -26,6 +26,10 @@ interface Section {
   id: string;
   name: string;
   slug: string;
+  is_active?: boolean;
+  color?: string;
+  icon?: string | null;
+  description?: string | null;
 }
 
 interface Project {
@@ -87,23 +91,33 @@ const AdminProjects = () => {
       }
       
       // Get project sections
-      const { data: projectSections, error: sectionsError } = await supabase
+      const { data: projectSectionsData, error: sectionsError } = await supabase
         .from('project_sections')
-        .select('project_id, section_id, site_sections(id, name, slug)');
+        .select('project_id, section_id');
         
       if (sectionsError) {
         console.error('Error fetching project sections:', sectionsError);
       }
       
+      // Get site sections
+      const { data: siteSectionsData, error: siteSectionsError } = await fetchSiteSections();
+      
+      if (siteSectionsError) {
+        console.error('Error fetching site sections:', siteSectionsError);
+      }
+      
       // Map sections to projects
       const projectsWithSections = data?.map(project => {
-        const sections = projectSections
+        const projectSectionIds = projectSectionsData
           ?.filter(ps => ps.project_id === project.id)
-          .map(ps => ps.site_sections);
+          .map(ps => ps.section_id) || [];
+          
+        const projectSections = siteSectionsData
+          ?.filter(section => projectSectionIds.includes(section.id)) || [];
         
         return {
           ...project,
-          sections
+          sections: projectSections as Section[]
         };
       }) || [];
       
@@ -121,11 +135,7 @@ const AdminProjects = () => {
 
   const fetchSections = async () => {
     try {
-      const { data, error } = await supabase
-        .from('site_sections')
-        .select('id, name, slug')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      const { data, error } = await fetchSiteSections();
         
       if (error) {
         console.error('Error fetching sections:', error);
@@ -133,7 +143,7 @@ const AdminProjects = () => {
         return;
       }
       
-      setSections(data || []);
+      setSections(data as Section[] || []);
     } catch (error) {
       console.error('Error fetching sections:', error);
     }
@@ -230,27 +240,11 @@ const AdminProjects = () => {
         }
         
         // Update project sections
-        // First, delete existing associations
-        await supabase
-          .from('project_sections')
-          .delete()
-          .eq('project_id', editingProjectId);
-          
-        // Then insert new ones
-        if (selectedSections.length > 0) {
-          const sectionsToInsert = selectedSections.map(sectionId => ({
-            project_id: editingProjectId,
-            section_id: sectionId
-          }));
-          
-          const { error: sectionsError } = await supabase
-            .from('project_sections')
-            .insert(sectionsToInsert);
-            
-          if (sectionsError) {
-            console.error('Error updating project sections:', sectionsError);
-            toast.error(`Failed to update project sections: ${sectionsError.message}`);
-          }
+        const { error: sectionsError } = await addProjectSections(editingProjectId, selectedSections);
+        
+        if (sectionsError) {
+          console.error('Error updating project sections:', sectionsError);
+          toast.error(`Failed to update project sections: ${sectionsError.message}`);
         }
         
         toast.success('Project updated successfully');
@@ -276,15 +270,8 @@ const AdminProjects = () => {
         if (selectedSections.length > 0 && data && data.length > 0) {
           const projectId = data[0].id;
           
-          const sectionsToInsert = selectedSections.map(sectionId => ({
-            project_id: projectId,
-            section_id: sectionId
-          }));
+          const { error: sectionsError } = await addProjectSections(projectId, selectedSections);
           
-          const { error: sectionsError } = await supabase
-            .from('project_sections')
-            .insert(sectionsToInsert);
-            
           if (sectionsError) {
             console.error('Error adding project sections:', sectionsError);
             toast.error(`Failed to add project sections: ${sectionsError.message}`);
@@ -311,13 +298,7 @@ const AdminProjects = () => {
         return;
       }
       
-      // Delete project sections first (cascade would handle this, but doing it explicitly)
-      await supabase
-        .from('project_sections')
-        .delete()
-        .eq('project_id', id);
-        
-      // Delete project
+      // Project sections will cascade delete due to foreign key constraints
       const { error } = await supabase
         .from('projects')
         .delete()
