@@ -6,7 +6,24 @@ import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export const Hero = () => {
+interface SiteSection {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  display_order?: number;
+  color?: string;
+  icon?: string | null;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface HeroProps {
+  sections?: SiteSection[];
+}
+
+export const Hero = ({ sections = [] }: HeroProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const isMobile = useIsMobile();
   const [showreelUrl, setShowreelUrl] = useState("https://www.youtube.com/embed/dQw4w9WgXcQ");
@@ -258,6 +275,27 @@ export const Hero = () => {
         >
           With 7 years of experience in motion design, I've mastered the art of creating compelling visual stories through dynamic branding and captivating animations.
         </motion.p>
+        
+        {/* Sections Display */}
+        {sections.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+            className="flex flex-wrap justify-center gap-2 mb-6"
+            style={animations3DEnabled ? { transformStyle: "preserve-3d", z: 35 } : {}}
+          >
+            {sections.map((section) => (
+              <Link
+                key={section.id}
+                to={`/portfolio/${section.slug}`}
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-gradient-to-r ${section.color || 'from-purple-500 to-purple-700'} text-white transition-transform hover:scale-105`}
+              >
+                {section.name}
+              </Link>
+            ))}
+          </motion.div>
+        )}
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

@@ -9,6 +9,7 @@ import { ContactCta } from "@/components/ContactCta";
 import { CompanyLogos } from "@/components/CompanyLogos";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchSiteSections } from "@/utils/supabaseUtils";
 
 interface SiteSection {
   id: string;
@@ -25,19 +26,19 @@ interface SiteSection {
 
 export default function Index() {
   const [featuredSection, setFeaturedSection] = useState<SiteSection | null>(null);
+  const [allSections, setAllSections] = useState<SiteSection[]>([]);
 
   useEffect(() => {
     const fetchSections = async () => {
-      // Get the first active section to feature on the homepage
-      const { data, error } = await supabase
-        .from('site_sections')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true })
-        .limit(1);
+      const { data, error } = await fetchSiteSections();
         
       if (!error && data && data.length > 0) {
-        setFeaturedSection(data[0] as SiteSection);
+        // Filter only active sections and sort by display order
+        const activeSections = data.filter(section => section.is_active);
+        setAllSections(activeSections);
+        
+        // Set the first section as featured
+        setFeaturedSection(activeSections[0]);
       }
     };
     
@@ -47,7 +48,7 @@ export default function Index() {
   return (
     <>
       <Navbar />
-      <Hero />
+      <Hero sections={allSections} />
       <ServicesSection />
       <PortfolioPreview featuredSection={featuredSection} />
       <CompanyLogos />

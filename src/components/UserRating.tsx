@@ -55,7 +55,6 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
     };
     
     checkAuth();
-    fetchRatings();
     
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
@@ -64,38 +63,50 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [projectId]);
+  }, []);
 
-  const fetchRatings = async () => {
-    if (!projectId) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .from('user_ratings')
-        .select(`
-          *,
-          profiles:user_id (
-            display_name,
-            email,
-            avatar_url
-          )
-        `)
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
-        
-      if (error) {
-        throw error;
+  useEffect(() => {
+    const fetchRatings = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('user_ratings')
+          .select('*, profiles:user_id(display_name, email, avatar_url)')
+          .eq('project_id', projectId);
+
+        if (error) throw error;
+
+        const formattedRatings = data.map(item => {
+          const formattedProfile = item.profiles 
+            ? {
+                display_name: item.profiles.display_name || 'Anonymous User',
+                email: item.profiles.email || '',
+                avatar_url: item.profiles.avatar_url || ''
+              }
+            : {
+                display_name: 'Anonymous User',
+                email: '',
+                avatar_url: ''
+              };
+
+          return {
+            ...item,
+            profiles: formattedProfile
+          };
+        });
+
+        setRatings(formattedRatings);
+      } catch (error) {
+        console.error('Error fetching ratings:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setRatings(data || []);
-    } catch (error) {
-      console.error('Error fetching ratings:', error);
-    } finally {
-      setIsLoading(false);
+    };
+
+    if (projectId) {
+      fetchRatings();
     }
-  };
+  }, [projectId]);
 
   const addRating = async () => {
     if (!projectId) {
@@ -111,25 +122,22 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
     try {
       setIsSubmitting(true);
       
-      // Use the new utility function that returns a success property
-      const { error, success } = await addUserRating({
+      const { error } = await addUserRating({
         project_id: projectId,
-        rating,
-        comment,
+        rating: rating,
+        comment: comment,
         user_id: user?.id || null,
         photo_url: user?.user_metadata?.avatar_url || null
       });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (success) {
+
+      if (!error) {
+        toast.success('Your rating has been submitted. Thank you!');
         setComment('');
         setRating(0);
         setShowForm(false);
         fetchRatings();
-        toast.success('Your review has been added');
+      } else {
+        toast.error('Failed to submit rating. Please try again.');
       }
     } catch (error) {
       console.error('Error adding rating:', error);
@@ -239,9 +247,8 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
                     <label className="block text-sm font-medium mb-2">Your Rating</label>
                     <StarRating 
                       value={rating} 
-                      onChange={setRating} 
-                      size={24} 
-                      interactive 
+                      onChange={(value) => setRating(value)} 
+                      size="medium"
                     />
                   </div>
                   <div>
