@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -74,7 +75,7 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       
       try {
         const { data, error } = await supabase
-          .from('user_ratings' as any)
+          .from('user_ratings')
           .select(`
             id, 
             rating, 
@@ -82,6 +83,8 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
             created_at, 
             user_id,
             photo_url,
+            project_id,
+            updated_at,
             profiles(display_name, avatar_url)
           `)
           .eq('project_id', projectId)
@@ -92,7 +95,8 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
           return;
         }
         
-        setExistingRatings(data || []);
+        // Properly cast the data to ensure type safety
+        setExistingRatings(data as unknown as UserRatingData[]);
       } catch (error) {
         console.error('Error in fetchRatings:', error);
       }
@@ -159,7 +163,7 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       }
       
       const { error } = await supabase
-        .from('user_ratings' as any)
+        .from('user_ratings')
         .insert({
           project_id: projectId || 'general',
           user_id: user.id,
@@ -177,8 +181,8 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       setPhotoPreview(null);
       
       try {
-        const { data } = await supabase
-          .from('user_ratings' as any)
+        const { data, error } = await supabase
+          .from('user_ratings')
           .select(`
             id, 
             rating, 
@@ -186,12 +190,20 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
             created_at, 
             user_id,
             photo_url,
+            project_id,
+            updated_at,
             profiles(display_name, avatar_url)
           `)
           .eq('project_id', projectId || 'general')
           .order('created_at', { ascending: false });
         
-        setExistingRatings(data || []);
+        if (error) {
+          console.error('Error refreshing ratings:', error);
+          return;
+        }
+        
+        // Properly cast the data to ensure type safety
+        setExistingRatings(data as unknown as UserRatingData[]);
       } catch (error) {
         console.error('Error refreshing ratings:', error);
       }
