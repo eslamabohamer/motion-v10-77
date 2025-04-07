@@ -37,8 +37,8 @@ const AdminLayout = () => {
         
         if (roleData !== 'admin') {
           toast.error('You do not have admin privileges');
-          await supabase.auth.signOut();
-          navigate('/admin/login');
+          // Instead of signing out, just redirect to home page
+          navigate('/');
           return;
         }
         

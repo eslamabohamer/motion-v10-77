@@ -32,11 +32,28 @@ const AdminLogin = () => {
       
       if (error) {
         toast.error(error.message);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if the user is an admin
+      const { data: roleData, error: roleError } = await supabase.rpc('get_user_role');
+      
+      if (roleError) {
+        console.error('Role check error:', roleError);
+        toast.error('Failed to check user role');
+        setIsLoading(false);
         return;
       }
       
       toast.success('Logged in successfully');
-      navigate('/admin/projects');
+      
+      // If user is admin, go to admin dashboard, otherwise go to home page
+      if (roleData === 'admin') {
+        navigate('/admin/projects');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Failed to login');
