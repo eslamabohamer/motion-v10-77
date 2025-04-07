@@ -2,9 +2,9 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, Grid3X3, PanelLeft, Settings, Tag, MessageSquare, Users } from "lucide-react";
+import { Grid3X3, MessageSquare, Settings, Tag, Users } from "lucide-react";
 import { Link, useNavigate, Outlet } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, refreshSiteSettings } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -33,6 +33,13 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
       console.error('Logout error:', error);
       toast.error('Failed to logout');
     }
+  };
+
+  const handlePageChange = (tab: string) => {
+    setActiveTab(tab);
+    // When navigating within the admin panel, refresh the site settings
+    refreshSiteSettings()
+      .catch(err => console.error('Failed to refresh settings:', err));
   };
 
   return (
@@ -73,7 +80,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     className="justify-start" 
                     asChild
                   >
-                    <Link to="/admin/projects" onClick={() => setActiveTab('projects')}>
+                    <Link to="/admin/projects" onClick={() => handlePageChange('projects')}>
                       <Grid3X3 className="mr-2 h-4 w-4" />
                       Projects
                     </Link>
@@ -83,7 +90,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     className="justify-start" 
                     asChild
                   >
-                    <Link to="/admin/categories" onClick={() => setActiveTab('categories')}>
+                    <Link to="/admin/categories" onClick={() => handlePageChange('categories')}>
                       <Tag className="mr-2 h-4 w-4" />
                       Categories
                     </Link>
@@ -93,7 +100,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     className="justify-start" 
                     asChild
                   >
-                    <Link to="/admin/messages" onClick={() => setActiveTab('messages')}>
+                    <Link to="/admin/messages" onClick={() => handlePageChange('messages')}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       Messages
                     </Link>
@@ -103,7 +110,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     className="justify-start" 
                     asChild
                   >
-                    <Link to="/admin/users" onClick={() => setActiveTab('users')}>
+                    <Link to="/admin/users" onClick={() => handlePageChange('users')}>
                       <Users className="mr-2 h-4 w-4" />
                       Users
                     </Link>
@@ -113,7 +120,7 @@ export const AdminDashboard = ({ children }: DashboardProps) => {
                     className="justify-start" 
                     asChild
                   >
-                    <Link to="/admin/settings" onClick={() => setActiveTab('settings')}>
+                    <Link to="/admin/settings" onClick={() => handlePageChange('settings')}>
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
                     </Link>

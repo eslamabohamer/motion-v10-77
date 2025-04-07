@@ -108,6 +108,70 @@ export const reorderCompanyLogos = async (sourceId: string, destinationOrder: nu
   }
 };
 
+// Helper function to get site settings from the database
+export const getRemoteSettings = async () => {
+  try {
+    // Fetch settings from various tables
+    const [
+      { data: generalData, error: generalError },
+      { data: performanceData, error: performanceError },
+      { data: animationData, error: animationError },
+      { data: seoData, error: seoError },
+      { data: socialData, error: socialError }
+    ] = await Promise.all([
+      supabase.from('general_settings').select('*').limit(1),
+      supabase.from('performance_settings').select('*').limit(1),
+      supabase.from('animation_settings').select('*').limit(1),
+      supabase.from('seo_settings').select('*').limit(1),
+      supabase.from('social_settings').select('*').limit(1)
+    ]);
+    
+    if (generalError || performanceError || animationError || seoError || socialError) {
+      console.error('Error fetching settings:', {
+        generalError, performanceError, animationError, seoError, socialError
+      });
+      throw new Error('Error fetching settings');
+    }
+    
+    // Create a combined settings object
+    const settings = {
+      general: generalData?.[0] || {},
+      performance: performanceData?.[0] || {},
+      animation: animationData?.[0] || {},
+      seo: seoData?.[0] || {},
+      social: socialData?.[0] || {}
+    };
+    
+    // Store in localStorage for easy access across the site
+    localStorage.setItem('siteSettings', JSON.stringify(settings));
+    
+    return settings;
+  } catch (error) {
+    console.error('Error in getRemoteSettings:', error);
+    
+    // Fallback to localStorage if available
+    const localSettings = localStorage.getItem('siteSettings');
+    if (localSettings) {
+      return JSON.parse(localSettings);
+    }
+    
+    throw error;
+  }
+};
+
+// Function to refresh settings in localStorage and trigger updates
+export const refreshSiteSettings = async () => {
+  try {
+    const settings = await getRemoteSettings();
+    // Dispatch a custom event that components can listen for
+    window.dispatchEvent(new CustomEvent('siteSettingsUpdated', { detail: settings }));
+    return settings;
+  } catch (error) {
+    console.error('Failed to refresh settings:', error);
+    throw error;
+  }
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     persistSession: true,

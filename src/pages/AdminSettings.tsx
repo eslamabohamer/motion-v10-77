@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, RefreshCcw, Upload, Plus, X } from 'lucide-react';
+import { Save, RefreshCcw, Upload, Plus, X, Globe, Facebook, Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AccordionTable } from '@/components/ui/accordion-table';
+import { ColorPicker } from '@/components/ColorPicker';
 
 interface CompanyLogo {
   id: string;
@@ -757,6 +759,588 @@ const AdminSettings = () => {
           )}
         </TabsContent>
         
+        <TabsContent value="animation">
+          {isLoadingAnimation ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Animation Settings</CardTitle>
+                  <CardDescription>Configure animation effects and visual styles for your portfolio</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Animation Features</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="enable3dEffects">3D Effects</Label>
+                          <Switch
+                            id="enable3dEffects"
+                            checked={animationSettings?.enable_3d_effects || false}
+                            onCheckedChange={(checked) => 
+                              setAnimationSettings(prev => prev ? {...prev, enable_3d_effects: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enable 3D perspective effects on hover interactions
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="scrollAnimations">Scroll Animations</Label>
+                          <Switch
+                            id="scrollAnimations"
+                            checked={animationSettings?.scroll_animations || false}
+                            onCheckedChange={(checked) => 
+                              setAnimationSettings(prev => prev ? {...prev, scroll_animations: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Elements animate as they enter the viewport
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="hoverAnimations">Hover Animations</Label>
+                          <Switch
+                            id="hoverAnimations"
+                            checked={animationSettings?.hover_animations || false}
+                            onCheckedChange={(checked) => 
+                              setAnimationSettings(prev => prev ? {...prev, hover_animations: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Elements react to mouse hover interactions
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="loadingAnimations">Loading Animations</Label>
+                          <Switch
+                            id="loadingAnimations"
+                            checked={animationSettings?.loading_animations || false}
+                            onCheckedChange={(checked) => 
+                              setAnimationSettings(prev => prev ? {...prev, loading_animations: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Show loading animations during content transitions
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="particleEffects">Particle Effects</Label>
+                          <Switch
+                            id="particleEffects"
+                            checked={animationSettings?.particle_effects || false}
+                            onCheckedChange={(checked) => 
+                              setAnimationSettings(prev => prev ? {...prev, particle_effects: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Display background particle effects on the homepage
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Animation Intensity</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="animationIntensity">Intensity Level</Label>
+                          <span className="text-sm">{animationSettings?.animation_intensity || 75}%</span>
+                        </div>
+                        <Slider
+                          id="animationIntensity"
+                          defaultValue={[animationSettings?.animation_intensity || 75]}
+                          max={100}
+                          step={1}
+                          onValueChange={([value]) => 
+                            setAnimationSettings(prev => prev ? {...prev, animation_intensity: value} : null)
+                          }
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Subtle</span>
+                          <span>Moderate</span>
+                          <span>Intense</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Animation Speed</h3>
+                    <div className="space-y-2">
+                      <ToggleGroup type="single" value={animationSettings?.animation_speed || 'normal'} 
+                        onValueChange={(value) => {
+                          if (value) setAnimationSettings(prev => prev ? {...prev, animation_speed: value} : null);
+                        }}
+                        className="justify-start"
+                      >
+                        <ToggleGroupItem value="slow" aria-label="Slow">
+                          Slow
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="normal" aria-label="Normal">
+                          Normal
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="fast" aria-label="Fast">
+                          Fast
+                        </ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Color Theme</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="backgroundColor">Background Color</Label>
+                        <div className="flex space-x-2 items-center">
+                          <div 
+                            className="w-10 h-10 rounded-md border" 
+                            style={{backgroundColor: animationSettings?.background_color || '#1A1F2C'}}
+                          />
+                          <Input
+                            id="backgroundColor"
+                            value={animationSettings?.background_color || '#1A1F2C'}
+                            onChange={(e) => setAnimationSettings(prev => prev ? {
+                              ...prev, 
+                              background_color: e.target.value
+                            } : null)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="accentColor">Primary Accent</Label>
+                        <div className="flex space-x-2 items-center">
+                          <div 
+                            className="w-10 h-10 rounded-md border" 
+                            style={{backgroundColor: animationSettings?.accent_color || '#4a6cf7'}}
+                          />
+                          <Input
+                            id="accentColor"
+                            value={animationSettings?.accent_color || '#4a6cf7'}
+                            onChange={(e) => setAnimationSettings(prev => prev ? {
+                              ...prev, 
+                              accent_color: e.target.value
+                            } : null)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="secondaryAccentColor">Secondary Accent</Label>
+                        <div className="flex space-x-2 items-center">
+                          <div 
+                            className="w-10 h-10 rounded-md border" 
+                            style={{backgroundColor: animationSettings?.secondary_accent_color || '#9b87f5'}}
+                          />
+                          <Input
+                            id="secondaryAccentColor"
+                            value={animationSettings?.secondary_accent_color || '#9b87f5'}
+                            onChange={(e) => setAnimationSettings(prev => prev ? {
+                              ...prev, 
+                              secondary_accent_color: e.target.value
+                            } : null)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground mt-2">
+                      These colors will be used across the site to maintain a consistent theme
+                    </p>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="performance">
+          {isLoadingPerformance ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance Settings</CardTitle>
+                  <CardDescription>Optimize website performance and loading speed</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Page Loading Optimizations</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="lazy_load_images">Lazy Load Images</Label>
+                          <Switch
+                            id="lazy_load_images"
+                            checked={performanceSettings?.lazy_load_images || false}
+                            onCheckedChange={(checked) => 
+                              setPerformanceSettings(prev => prev ? {...prev, lazy_load_images: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Load images only when they enter the viewport, reducing initial page load time
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="enable_image_optimization">Image Optimization</Label>
+                          <Switch
+                            id="enable_image_optimization"
+                            checked={performanceSettings?.enable_image_optimization || false}
+                            onCheckedChange={(checked) => 
+                              setPerformanceSettings(prev => prev ? {...prev, enable_image_optimization: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Automatically optimize and compress images for faster loading
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="caching_enabled">Browser Caching</Label>
+                          <Switch
+                            id="caching_enabled"
+                            checked={performanceSettings?.caching_enabled || false}
+                            onCheckedChange={(checked) => 
+                              setPerformanceSettings(prev => prev ? {...prev, caching_enabled: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enable browser caching for returning visitors
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Visual Effects</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="enable_animations">Enable Animations</Label>
+                          <Switch
+                            id="enable_animations"
+                            checked={performanceSettings?.enable_animations || false}
+                            onCheckedChange={(checked) => 
+                              setPerformanceSettings(prev => prev ? {...prev, enable_animations: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enable or disable all animations across the site (improves performance on low-end devices)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="enable_parallax">Parallax Effects</Label>
+                          <Switch
+                            id="enable_parallax"
+                            checked={performanceSettings?.enable_parallax || false}
+                            onCheckedChange={(checked) => 
+                              setPerformanceSettings(prev => prev ? {...prev, enable_parallax: checked} : null)
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enable parallax scrolling effects (can impact performance)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="seo">
+          {isLoadingSeo ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>SEO Settings</CardTitle>
+                  <CardDescription>Optimize your site for search engines</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Meta Information</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="metaTitle">Meta Title</Label>
+                        <Input 
+                          id="metaTitle" 
+                          value={seoSettings?.meta_title || ''}
+                          onChange={(e) => setSeoSettings(prev => prev ? {...prev, meta_title: e.target.value} : null)}
+                          placeholder="Motion Graphics Artist Portfolio"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The title displayed in search engine results (50-60 characters recommended)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="metaDescription">Meta Description</Label>
+                        <Textarea 
+                          id="metaDescription" 
+                          value={seoSettings?.meta_description || ''}
+                          onChange={(e) => setSeoSettings(prev => prev ? {...prev, meta_description: e.target.value} : null)}
+                          placeholder="Professional motion graphics and animation portfolio showcasing creative visual storytelling"
+                          rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The description displayed in search engine results (150-160 characters recommended)
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="keywords">Keywords</Label>
+                        <Input 
+                          id="keywords" 
+                          value={seoSettings?.keywords || ''}
+                          onChange={(e) => setSeoSettings(prev => prev ? {...prev, keywords: e.target.value} : null)}
+                          placeholder="motion graphics, animation, visual effects, 3D animation, explainer videos"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Comma-separated keywords related to your portfolio (used for search engines)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Social Sharing</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="ogImage">Open Graph Image URL</Label>
+                        <Input 
+                          id="ogImage" 
+                          value={seoSettings?.og_image_url || ''}
+                          onChange={(e) => setSeoSettings(prev => prev ? {...prev, og_image_url: e.target.value} : null)}
+                          placeholder="https://example.com/og-image.jpg"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The image displayed when your site is shared on social media (1200x630 pixels recommended)
+                        </p>
+                      </div>
+                      
+                      {seoSettings?.og_image_url && (
+                        <div className="mt-2 p-2 border rounded">
+                          <img 
+                            src={seoSettings.og_image_url} 
+                            alt="OG Image Preview" 
+                            className="h-40 object-contain mx-auto" 
+                          />
+                          <p className="text-xs text-center mt-2 text-muted-foreground">OG Image Preview</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="social">
+          {isLoadingSocial ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Social Media Settings</CardTitle>
+                  <CardDescription>Configure your social media links and presence</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Instagram className="h-5 w-5 text-pink-600" />
+                        <Label htmlFor="instagramUrl">Instagram Profile</Label>
+                      </div>
+                      <Input 
+                        id="instagramUrl" 
+                        value={socialSettings?.instagram_url || ''}
+                        onChange={(e) => setSocialSettings(prev => prev ? {...prev, instagram_url: e.target.value} : null)}
+                        placeholder="https://instagram.com/yourusername"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Youtube className="h-5 w-5 text-red-600" />
+                        <Label htmlFor="youtubeUrl">YouTube Channel</Label>
+                      </div>
+                      <Input 
+                        id="youtubeUrl" 
+                        value={socialSettings?.youtube_url || ''}
+                        onChange={(e) => setSocialSettings(prev => prev ? {...prev, youtube_url: e.target.value} : null)}
+                        placeholder="https://youtube.com/c/yourchannel"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Linkedin className="h-5 w-5 text-blue-600" />
+                        <Label htmlFor="linkedinUrl">LinkedIn Profile</Label>
+                      </div>
+                      <Input 
+                        id="linkedinUrl" 
+                        value={socialSettings?.linkedin_url || ''}
+                        onChange={(e) => setSocialSettings(prev => prev ? {...prev, linkedin_url: e.target.value} : null)}
+                        placeholder="https://linkedin.com/in/yourprofile"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Twitter className="h-5 w-5 text-blue-400" />
+                        <Label htmlFor="twitterUrl">Twitter/X Profile</Label>
+                      </div>
+                      <Input 
+                        id="twitterUrl" 
+                        value={socialSettings?.twitter_url || ''}
+                        onChange={(e) => setSocialSettings(prev => prev ? {...prev, twitter_url: e.target.value} : null)}
+                        placeholder="https://twitter.com/yourusername"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Reset to Defaults
+                  </Button>
+                  <Button onClick={handleSaveSettings} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
+        </TabsContent>
+        
         <TabsContent value="logos">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -979,30 +1563,6 @@ const AdminSettings = () => {
               </Card>
             </motion.div>
           )}
-        </TabsContent>
-        
-        <TabsContent value="animation">
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Animation settings configuration panel.</p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="performance">
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Performance settings configuration panel.</p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="seo">
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">SEO settings configuration panel.</p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="social">
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Social media settings configuration panel.</p>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
