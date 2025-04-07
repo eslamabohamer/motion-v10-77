@@ -14,15 +14,20 @@ interface Project {
   id: string;
   title: string;
   description: string;
-  long_description: string;
-  client_name: string;
-  completed_date: string;
-  cover_image: string;
   category: string;
-  gallery_images: string[];
-  project_url: string;
-  video_url: string;
-  technologies: string[];
+  image_url: string;
+  video_url: string | null;
+  created_at: string;
+  updated_at: string;
+  featured: boolean | null;
+  // Extended properties that may come from joins or be added client-side
+  long_description?: string;
+  client_name?: string;
+  completed_date?: string;
+  cover_image?: string;
+  gallery_images?: string[];
+  project_url?: string;
+  technologies?: string[];
 }
 
 const PortfolioDetail = () => {
@@ -51,7 +56,8 @@ const PortfolioDetail = () => {
           throw error;
         }
 
-        setProject(data);
+        // We can safely cast the data because we've updated our Project interface
+        setProject(data as Project);
       } catch (error) {
         console.error('Error fetching project:', error);
       } finally {
@@ -331,7 +337,7 @@ const PortfolioDetail = () => {
           transition={{ duration: 0.6, delay: 0.7 }}
           className="mb-12"
         >
-          <UserRating projectId={project.id} />
+          <UserRating projectId={project?.id} />
         </motion.div>
       </main>
       <Footer />

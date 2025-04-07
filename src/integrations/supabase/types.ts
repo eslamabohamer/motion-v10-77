@@ -233,6 +233,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_ratings: {
+        Row: {
+          comment: string
+          created_at: string | null
+          id: string
+          photo_url: string | null
+          project_id: string
+          rating: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string | null
+          id?: string
+          photo_url?: string | null
+          project_id: string
+          rating: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string | null
+          id?: string
+          photo_url?: string | null
+          project_id?: string
+          rating?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

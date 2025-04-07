@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,21 @@ interface UserRatingProps {
   projectId?: string;
 }
 
+interface UserRatingData {
+  id: string;
+  project_id: string;
+  user_id: string;
+  rating: number;
+  comment: string;
+  photo_url: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 export const UserRating = ({ projectId }: UserRatingProps) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -22,10 +36,9 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [existingRatings, setExistingRatings] = useState<any[]>([]);
+  const [existingRatings, setExistingRatings] = useState<UserRatingData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is logged in
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
@@ -55,31 +68,34 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     };
   }, []);
 
-  // Fetch existing ratings
   useEffect(() => {
     const fetchRatings = async () => {
       if (!projectId) return;
       
-      const { data, error } = await supabase
-        .from('user_ratings')
-        .select(`
-          id, 
-          rating, 
-          comment, 
-          created_at, 
-          user_id,
-          photo_url,
-          profiles(display_name, avatar_url)
-        `)
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching ratings:', error);
-        return;
+      try {
+        const { data, error } = await supabase
+          .from('user_ratings' as any)
+          .select(`
+            id, 
+            rating, 
+            comment, 
+            created_at, 
+            user_id,
+            photo_url,
+            profiles(display_name, avatar_url)
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching ratings:', error);
+          return;
+        }
+        
+        setExistingRatings(data || []);
+      } catch (error) {
+        console.error('Error in fetchRatings:', error);
       }
-      
-      setExistingRatings(data || []);
     };
     
     fetchRatings();
@@ -95,7 +111,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     const file = e.target.files[0];
     setUserPhoto(file);
     
-    // Create a preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPhotoPreview(reader.result as string);
@@ -126,7 +141,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     try {
       let photoUrl = null;
       
-      // Upload photo if provided
       if (userPhoto) {
         const fileName = `${user.id}-${Date.now()}-${userPhoto.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -137,7 +151,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
           throw new Error('Failed to upload photo');
         }
         
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from('user-photos')
           .getPublicUrl(fileName);
@@ -145,9 +158,8 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
         photoUrl = urlData.publicUrl;
       }
       
-      // Save rating to database
       const { error } = await supabase
-        .from('user_ratings')
+        .from('user_ratings' as any)
         .insert({
           project_id: projectId || 'general',
           user_id: user.id,
@@ -164,22 +176,25 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       setUserPhoto(null);
       setPhotoPreview(null);
       
-      // Refresh the ratings list
-      const { data } = await supabase
-        .from('user_ratings')
-        .select(`
-          id, 
-          rating, 
-          comment, 
-          created_at, 
-          user_id,
-          photo_url,
-          profiles(display_name, avatar_url)
-        `)
-        .eq('project_id', projectId || 'general')
-        .order('created_at', { ascending: false });
-      
-      setExistingRatings(data || []);
+      try {
+        const { data } = await supabase
+          .from('user_ratings' as any)
+          .select(`
+            id, 
+            rating, 
+            comment, 
+            created_at, 
+            user_id,
+            photo_url,
+            profiles(display_name, avatar_url)
+          `)
+          .eq('project_id', projectId || 'general')
+          .order('created_at', { ascending: false });
+        
+        setExistingRatings(data || []);
+      } catch (error) {
+        console.error('Error refreshing ratings:', error);
+      }
       
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -189,7 +204,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
     }
   };
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -214,7 +228,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
           <h3 className="text-xl font-semibold mb-4">Leave a Review</h3>
           
           <form onSubmit={handleRatingSubmit} className="space-y-4">
-            {/* Star Rating */}
             <div className="space-y-2">
               <label className="block text-sm font-medium">Your Rating</label>
               <div className="flex gap-1">
@@ -240,7 +253,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
               </div>
             </div>
             
-            {/* Comment */}
             <div className="space-y-2">
               <label htmlFor="comment" className="block text-sm font-medium">Your Review</label>
               <Textarea
@@ -253,7 +265,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
               />
             </div>
             
-            {/* Photo Upload */}
             <div className="space-y-2">
               <label htmlFor="photo" className="block text-sm font-medium">Upload a Photo (Optional)</label>
               <div className="flex items-center gap-4">
@@ -296,7 +307,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
               </p>
             </div>
             
-            {/* Submit Button */}
             <Button type="submit" disabled={isSubmitting} className="mt-2">
               {isSubmitting ? (
                 <>
@@ -321,7 +331,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
         </div>
       )}
       
-      {/* Display existing ratings */}
       <div className="space-y-6">
         <h3 className="text-xl font-semibold">User Reviews</h3>
         
