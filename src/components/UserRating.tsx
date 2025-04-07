@@ -1,10 +1,11 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Rating } from '@/components/Rating';
+import { StarRating } from '@/components/StarRating';
 import { supabase, getDefaultAvatar, getDisplayNameOrEmail, deleteUserRating } from '@/integrations/supabase/client';
 import { addUserRating } from '@/utils/supabaseUtils';
 import { toast } from 'sonner';
@@ -79,9 +80,9 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
         const formattedRatings = data.map(item => {
           const formattedProfile = item.profiles 
             ? {
-                display_name: item.profiles.display_name || 'Anonymous User',
-                email: item.profiles.email || '',
-                avatar_url: item.profiles.avatar_url || ''
+                display_name: typeof item.profiles === 'object' && item.profiles !== null ? item.profiles.display_name || 'Anonymous User' : 'Anonymous User',
+                email: typeof item.profiles === 'object' && item.profiles !== null ? item.profiles.email || '' : '',
+                avatar_url: typeof item.profiles === 'object' && item.profiles !== null ? item.profiles.avatar_url || '' : ''
               }
             : {
                 display_name: 'Anonymous User',
@@ -148,9 +149,9 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
             const formattedRatings = data.map(item => {
               const formattedProfile = item.profiles 
                 ? {
-                    display_name: item.profiles.display_name || 'Anonymous User',
-                    email: item.profiles.email || '',
-                    avatar_url: item.profiles.avatar_url || ''
+                    display_name: typeof item.profiles === 'object' && item.profiles !== null ? item.profiles.display_name || 'Anonymous User' : 'Anonymous User',
+                    email: typeof item.profiles === 'object' && item.profiles !== null ? item.profiles.email || '' : '',
+                    avatar_url: typeof item.profiles === 'object' && item.profiles !== null ? item.profiles.avatar_url || '' : ''
                   }
                 : {
                     display_name: 'Anonymous User',
@@ -211,14 +212,17 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
   const filteredRatings = activeTab === 'all' 
     ? ratings 
     : ratings.filter(r => {
-        const ratingStr = String(r.rating) as "1" | "2" | "3" | "4" | "5";
+        const ratingStr = String(r.rating);
         return ratingStr === activeTab;
       });
 
   const getRatingCounts = () => {
-    const counts = { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
+    const counts: Record<string, number> = { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 };
     ratings.forEach(r => {
-      counts[r.rating as keyof typeof counts]++;
+      const key = String(r.rating);
+      if (key in counts) {
+        counts[key]++;
+      }
     });
     return counts;
   };
@@ -279,6 +283,7 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
                     <StarRating 
                       value={rating} 
                       onChange={(value) => setRating(value)} 
+                      readOnly={false}
                       size="medium"
                     />
                   </div>
@@ -351,7 +356,7 @@ export const UserRating = ({ projectId, showTitle = true, maxHeight, className =
                           <div className="flex items-center">
                             <Avatar className="h-10 w-10 mr-3">
                               <AvatarImage 
-                                src={item.photo_url || item.profiles?.avatar_url || getDefaultAvatar()} 
+                                src={item.photo_url || (item.profiles?.avatar_url || getDefaultAvatar())} 
                                 alt="User avatar" 
                               />
                               <AvatarFallback>
