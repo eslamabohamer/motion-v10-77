@@ -1,13 +1,36 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { addUserRating } from '@/utils/supabaseUtils';
+import { addUserRating, deleteUserRating } from '@/utils/supabaseUtils';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { StarRating } from '@/components/StarRating';
-import { User, Upload, Loader2, Camera } from 'lucide-react';
+import { 
+  User, 
+  Upload, 
+  Loader2, 
+  Camera,
+  Trash2,
+  AlertCircle
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 interface UserRatingProps {
   projectId: string;
@@ -22,6 +45,8 @@ export default function UserRating({ projectId }: UserRatingProps) {
   const [loading, setLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ratingToDelete, setRatingToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handling rating change
@@ -36,6 +61,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          // Fetch user profile
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -46,6 +72,16 @@ export default function UserRating({ projectId }: UserRatingProps) {
             console.error('Error fetching profile:', error);
           } else {
             setUserProfile(data);
+          }
+          
+          // Check if user is admin
+          const { data: roleData, error: roleError } = await supabase
+            .rpc('is_admin');
+            
+          if (roleError) {
+            console.error('Error checking admin status:', roleError);
+          } else {
+            setIsAdmin(roleData === true);
           }
         }
       } catch (error) {
@@ -61,7 +97,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
     const fetchRatings = async () => {
       setLoading(true);
       try {
-        // Fix: Use a simpler query without join to avoid RLS errors
         const { data, error } = await supabase
           .from('user_ratings')
           .select('*')
@@ -72,7 +107,6 @@ export default function UserRating({ projectId }: UserRatingProps) {
           throw error;
         }
         
-        // For each rating, if there's a user_id, fetch the profile separately
         const ratingsWithProfiles = await Promise.all((data || []).map(async (rating) => {
           if (rating.user_id) {
             try {
@@ -249,6 +283,32 @@ export default function UserRating({ projectId }: UserRatingProps) {
     }
   };
 
+  const handleDeleteRating = async (id: string) => {
+    try {
+      setRatingToDelete(null);
+      const { error } = await deleteUserRating(id);
+      
+      if (error) {
+        console.error('Error deleting rating:', error);
+        toast.error('Failed to delete review');
+        return;
+      }
+      
+      toast.success('Review deleted successfully');
+      
+      // Remove the deleted rating from the state
+      setUserRatings(userRatings.filter(item => item.id !== id));
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      toast.error('Failed to delete review');
+    }
+  };
+
+  const canUserDeleteRating = (rating: any) => {
+    // User can delete if they are the author or if they are an admin
+    return (userProfile && rating.user_id === userProfile.id) || isAdmin;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -363,55 +423,120 @@ export default function UserRating({ projectId }: UserRatingProps) {
           <div className="space-y-6">
             {userRatings.map((item) => (
               <div key={item.id} className="bg-card/50 rounded-lg p-6 border border-border/20 transition-all hover:border-border/40">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
-                    {item.photo_url || (item.profiles?.avatar_url) ? (
-                      <AvatarImage 
-                        src={item.photo_url || (item.profiles?.avatar_url || '')} 
-                        alt="User avatar" 
-                      />
-                    ) : null}
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      <User className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="font-medium text-foreground">{item.profiles?.display_name || 'Anonymous User'}</p>
-                        <div className="mt-1">
-                          <StarRating
-                            value={item.rating}
-                            readOnly={true}
-                            size="small"
-                          />
+                {canUserDeleteRating(item) ? (
+                  <ContextMenu>
+                    <ContextMenuTrigger>
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
+                          {item.photo_url || (item.profiles?.avatar_url) ? (
+                            <AvatarImage 
+                              src={item.photo_url || (item.profiles?.avatar_url || '')} 
+                              alt="User avatar" 
+                            />
+                          ) : null}
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="font-medium text-foreground">{item.profiles?.display_name || 'Anonymous User'}</p>
+                              <div className="mt-1">
+                                <StarRating
+                                  value={item.rating}
+                                  readOnly={true}
+                                  size="small"
+                                />
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
+                              {formatDate(item.created_at)}
+                            </p>
+                          </div>
+                          <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
+                          
+                          {/* Show attached image if exists */}
+                          {item.photo_url && (
+                            <div className="mt-4">
+                              <a 
+                                href={item.photo_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-block"
+                              >
+                                <img 
+                                  src={item.photo_url} 
+                                  alt="User uploaded" 
+                                  className="max-h-40 rounded-md border border-border/30 hover:border-primary/50 transition-all"
+                                />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
-                        {formatDate(item.created_at)}
-                      </p>
-                    </div>
-                    <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
-                    
-                    {/* Show attached image if exists */}
-                    {item.photo_url && (
-                      <div className="mt-4">
-                        <a 
-                          href={item.photo_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="inline-block"
-                        >
-                          <img 
-                            src={item.photo_url} 
-                            alt="User uploaded" 
-                            className="max-h-40 rounded-md border border-border/30 hover:border-primary/50 transition-all"
-                          />
-                        </a>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem 
+                        onClick={() => setRatingToDelete(item.id)}
+                        className="text-destructive focus:text-destructive flex items-center"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete Review</span>
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                ) : (
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-12 w-12 rounded-full border-2 border-primary/20">
+                      {item.photo_url || (item.profiles?.avatar_url) ? (
+                        <AvatarImage 
+                          src={item.photo_url || (item.profiles?.avatar_url || '')} 
+                          alt="User avatar" 
+                        />
+                      ) : null}
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        <User className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{item.profiles?.display_name || 'Anonymous User'}</p>
+                          <div className="mt-1">
+                            <StarRating
+                              value={item.rating}
+                              readOnly={true}
+                              size="small"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
+                          {formatDate(item.created_at)}
+                        </p>
                       </div>
-                    )}
+                      <p className="mt-3 text-foreground/80 leading-relaxed">{item.comment}</p>
+                      
+                      {/* Show attached image if exists */}
+                      {item.photo_url && (
+                        <div className="mt-4">
+                          <a 
+                            href={item.photo_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="inline-block"
+                          >
+                            <img 
+                              src={item.photo_url} 
+                              alt="User uploaded" 
+                              className="max-h-40 rounded-md border border-border/30 hover:border-primary/50 transition-all"
+                            />
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -421,6 +546,30 @@ export default function UserRating({ projectId }: UserRatingProps) {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!ratingToDelete} onOpenChange={(isOpen) => !isOpen && setRatingToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Confirm Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this review? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => ratingToDelete && handleDeleteRating(ratingToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

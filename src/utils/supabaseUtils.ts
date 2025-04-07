@@ -29,6 +29,19 @@ export async function addUserRating(data: {
   }
 }
 
+// Function to handle deleting a user rating
+export async function deleteUserRating(id: string) {
+  try {
+    return await supabase.from('user_ratings').delete().eq('id', id);
+  } catch (error) {
+    console.error('Error in deleteUserRating:', error);
+    return { 
+      error, 
+      success: false 
+    };
+  }
+}
+
 // Helper to handle project sections
 export async function getProjectSections(sectionId: string) {
   return await supabase
