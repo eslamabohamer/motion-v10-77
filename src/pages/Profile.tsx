@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +20,7 @@ interface Profile {
   email: string | null;
   created_at: string;
   updated_at: string;
-  gender?: 'male' | 'female';
+  gender: 'male' | 'female' | null;
 }
 
 const Profile = () => {
@@ -67,16 +68,20 @@ const Profile = () => {
               .eq('id', user.id)
               .single();
               
-            setProfile(newProfile as Profile);
-            setDisplayName(newProfile?.display_name || '');
-            setGender((newProfile?.gender as 'male' | 'female') || 'male');
-            setAvatarUrl(newProfile?.avatar_url || null);
+            if (newProfile) {
+              const typedProfile = newProfile as Profile;
+              setProfile(typedProfile);
+              setDisplayName(typedProfile.display_name || '');
+              setGender((typedProfile.gender as 'male' | 'female') || 'male');
+              setAvatarUrl(typedProfile.avatar_url || null);
+            }
           }
-        } else {
-          setProfile(profileData as Profile);
-          setDisplayName(profileData?.display_name || '');
-          setGender((profileData?.gender as 'male' | 'female') || 'male');
-          setAvatarUrl(profileData?.avatar_url || null);
+        } else if (profileData) {
+          const typedProfile = profileData as Profile;
+          setProfile(typedProfile);
+          setDisplayName(typedProfile.display_name || '');
+          setGender((typedProfile.gender as 'male' | 'female') || 'male');
+          setAvatarUrl(typedProfile.avatar_url || null);
         }
       } catch (error) {
         console.error('Error checking auth:', error);
