@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { PortfolioPreview } from '@/components/PortfolioPreview';
-import { ServicesSection } from '@/components/Services';
+import { ServicesSection as Services } from '@/components/Services';
 import { Testimonials } from '@/components/Testimonials';
 import { ContactCta } from '@/components/ContactCta';
 import { Footer } from '@/components/Footer';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { CompanyLogos } from '@/components/CompanyLogos';
 
 const Index = () => {
   const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
@@ -19,7 +19,6 @@ const Index = () => {
   });
 
   useEffect(() => {
-    // Load animation settings directly from the database
     const fetchSettings = async () => {
       try {
         const { data, error } = await supabase
@@ -33,16 +32,13 @@ const Index = () => {
           return;
         }
         
-        // If we have settings in the database, use them
         if (data && data.length > 0 && data[0].settings) {
           const dbSettings = data[0].settings as Record<string, any>;
           
-          // Extract animation settings
           if (dbSettings.animation) {
             if (dbSettings.animation.enable3DEffects !== undefined) {
               setAnimations3DEnabled(dbSettings.animation.enable3DEffects);
               
-              // Show toast notification about 3D effects status
               if (!dbSettings.animation.enable3DEffects) {
                 toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
                   duration: 5000,
@@ -54,7 +50,6 @@ const Index = () => {
               }
             }
             
-            // Extract color settings
             if (dbSettings.animation.backgroundColor) {
               setColorSettings({
                 backgroundColor: dbSettings.animation.backgroundColor,
@@ -62,25 +57,21 @@ const Index = () => {
                 secondaryAccentColor: dbSettings.animation.secondaryAccentColor || "#9b87f5"
               });
               
-              // Apply colors to CSS variables
               document.documentElement.style.setProperty('--background-color', dbSettings.animation.backgroundColor);
               document.documentElement.style.setProperty('--accent-color', dbSettings.animation.accentColor);
               document.documentElement.style.setProperty('--secondary-accent-color', dbSettings.animation.secondaryAccentColor);
             }
           }
         } 
-        // As a fallback, try to load from localStorage
         else {
           const savedSettings = localStorage.getItem('siteSettings');
           if (savedSettings) {
             try {
               const settings = JSON.parse(savedSettings);
               if (settings.animation) {
-                // Set animation settings
                 if (settings.animation.enable3DEffects !== undefined) {
                   setAnimations3DEnabled(settings.animation.enable3DEffects);
                   
-                  // Show toast notification about 3D effects status
                   if (!settings.animation.enable3DEffects) {
                     toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
                       duration: 5000,
@@ -92,7 +83,6 @@ const Index = () => {
                   }
                 }
                 
-                // Set color settings
                 if (settings.animation.backgroundColor) {
                   setColorSettings({
                     backgroundColor: settings.animation.backgroundColor,
@@ -100,7 +90,6 @@ const Index = () => {
                     secondaryAccentColor: settings.animation.secondaryAccentColor || "#9b87f5"
                   });
                   
-                  // Apply colors to CSS variables
                   document.documentElement.style.setProperty('--background-color', settings.animation.backgroundColor);
                   document.documentElement.style.setProperty('--accent-color', settings.animation.accentColor);
                   document.documentElement.style.setProperty('--secondary-accent-color', settings.animation.secondaryAccentColor);
@@ -120,16 +109,15 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden" style={{ backgroundColor: colorSettings.backgroundColor }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
-      <main className="flex-grow flex flex-col">
+      <main className="flex-grow">
         <Hero />
-        <div className="max-w-full w-full mx-auto">
-          <PortfolioPreview />
-          <ServicesSection />
-          <Testimonials />
-          <ContactCta />
-        </div>
+        <PortfolioPreview />
+        <Services />
+        <CompanyLogos />
+        <Testimonials />
+        <ContactCta />
       </main>
       <Footer />
     </div>

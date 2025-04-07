@@ -8,16 +8,33 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, RefreshCcw, Upload } from 'lucide-react';
+import { Save, RefreshCcw, Upload, Plus } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AccordionTable } from '@/components/ui/accordion-table';
+
+interface CompanyLogo {
+  id: string;
+  name: string;
+  logo_url: string;
+  website?: string;
+  display_order: number;
+}
 
 const AdminSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
+  
+  // Company Logos state
+  const [newLogo, setNewLogo] = useState({
+    name: '',
+    logo_url: '',
+    website: ''
+  });
   
   // Default settings
   const defaultSettings = {
@@ -89,22 +106,21 @@ const AdminSettings = () => {
     retry: 1
   });
 
-  // Load about data from the about_me table
-  const { data: aboutData, isLoading: isLoadingAbout, refetch: refetchAbout } = useQuery({
-    queryKey: ['aboutMe'],
+  // Fetch company logos
+  const { data: companyLogos, isLoading: isLoadingLogos, refetch: refetchLogos } = useQuery({
+    queryKey: ['companyLogos'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('about_me')
+        .from('company_logos')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .order('display_order', { ascending: true });
       
       if (error) {
-        console.error('Error fetching about data:', error);
+        console.error('Error fetching company logos:', error);
         throw error;
       }
       
-      return data?.length > 0 ? data[0] : null;
+      return data as CompanyLogo[];
     },
     retry: 1
   });
@@ -223,6 +239,104 @@ const AdminSettings = () => {
     }
   });
 
+  // Save company logo mutation
+  const { mutate: saveLogoMutation } = useMutation({
+    mutationFn: async (logoData: Omit<CompanyLogo, 'id' | 'display_order'>) => {
+      // Get the max display order
+      const { data: maxOrderData, error: maxOrderError } = await supabase
+        .from('company_logos')
+        .select('display_order')
+        .order('display_order', { ascending: false })
+        .limit(1);
+      
+      const nextDisplayOrder = maxOrderData && maxOrderData.length > 0 
+        ? (maxOrderData[0].display_order + 1) 
+        : 1;
+      
+      // Insert the new logo
+      const { data, error } = await supabase
+        .from('company_logos')
+        .insert({
+          name: logoData.name,
+          logo_url: logoData.logo_url,
+          website: logoData.website || null,
+          display_order: nextDisplayOrder
+        })
+        .select('id');
+        
+      if (error) throw error;
+      
+      return data?.[0]?.id;
+    },
+    onSuccess: () => {
+      toast.success("Logo added successfully");
+      setNewLogo({
+        name: '',
+        logo_url: '',
+        website: ''
+      });
+      refetchLogos();
+      setIsLoading(false);
+    },
+    onError: (error) => {
+      console.error('Error saving logo:', error);
+      toast.error("Failed to add logo");
+      setIsLoading(false);
+    }
+  });
+
+  // Update company logo mutation
+  const { mutate: updateLogoMutation } = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<CompanyLogo> }) => {
+      const { error } = await supabase
+        .from('company_logos')
+        .update({
+          name: data.name,
+          logo_url: data.logo_url,
+          website: data.website || null
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      return id;
+    },
+    onSuccess: () => {
+      toast.success("Logo updated successfully");
+      refetchLogos();
+      setIsLoading(false);
+    },
+    onError: (error) => {
+      console.error('Error updating logo:', error);
+      toast.error("Failed to update logo");
+      setIsLoading(false);
+    }
+  });
+
+  // Delete company logo mutation
+  const { mutate: deleteLogoMutation } = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('company_logos')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      return id;
+    },
+    onSuccess: () => {
+      toast.success("Logo deleted successfully");
+      refetchLogos();
+      setIsLoading(false);
+    },
+    onError: (error) => {
+      console.error('Error deleting logo:', error);
+      toast.error("Failed to delete logo");
+      setIsLoading(false);
+    }
+  });
+
   // Initialize settings state from database or defaults
   const [settings, setSettings] = useState({...defaultSettings});
 
@@ -311,6 +425,23 @@ const AdminSettings = () => {
     }
   };
 
+  const handleLogoInputChange = (key: string, value: string) => {
+    setNewLogo(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleAddLogo = () => {
+    if (!newLogo.name || !newLogo.logo_url) {
+      toast.error("Logo name and URL are required");
+      return;
+    }
+    
+    setIsLoading(true);
+    saveLogoMutation(newLogo);
+  };
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -333,6 +464,7 @@ const AdminSettings = () => {
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="social">Social Media</TabsTrigger>
+          <TabsTrigger value="logos">Company Logos</TabsTrigger>
           <TabsTrigger value="about">About Me</TabsTrigger>
         </TabsList>
         
@@ -1007,6 +1139,129 @@ const AdminSettings = () => {
                   )}
                 </Button>
               </CardFooter>
+            </Card>
+          </motion.div>
+        </TabsContent>
+        
+        <TabsContent value="logos">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Company Logos</CardTitle>
+                <CardDescription>
+                  Manage the logos of companies you've worked with to display on your portfolio
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Company Logo
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Company Logo</DialogTitle>
+                      <DialogDescription>
+                        Add details about a company you've worked with to display their logo on your site.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="companyName">Company Name</Label>
+                        <Input
+                          id="companyName"
+                          value={newLogo.name}
+                          onChange={(e) => handleLogoInputChange('name', e.target.value)}
+                          placeholder="e.g. Adobe, Google, etc."
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="logoUrl">Logo URL</Label>
+                        <Input
+                          id="logoUrl"
+                          value={newLogo.logo_url}
+                          onChange={(e) => handleLogoInputChange('logo_url', e.target.value)}
+                          placeholder="https://example.com/logo.png"
+                        />
+                        {newLogo.logo_url && (
+                          <div className="mt-2 p-2 border rounded flex justify-center">
+                            <img 
+                              src={newLogo.logo_url} 
+                              alt="Logo Preview" 
+                              className="h-16 object-contain" 
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteUrl">Website URL (Optional)</Label>
+                        <Input
+                          id="websiteUrl"
+                          value={newLogo.website || ''}
+                          onChange={(e) => handleLogoInputChange('website', e.target.value)}
+                          placeholder="https://company-website.com"
+                        />
+                      </div>
+                    </div>
+                    
+                    <DialogFooter>
+                      <Button type="button" onClick={handleAddLogo} disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Adding...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Add Logo
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <div className="border rounded-md">
+                  {isLoadingLogos ? (
+                    <div className="p-8 flex justify-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : companyLogos && companyLogos.length > 0 ? (
+                    <AccordionTable
+                      items={companyLogos}
+                      columns={[
+                        { key: 'name', label: 'Company Name' },
+                        { key: 'logo_url', label: 'Logo', type: 'image' },
+                        { key: 'website', label: 'Website', type: 'url' }
+                      ]}
+                      onEdit={(id, data) => {
+                        setIsLoading(true);
+                        updateLogoMutation({ id, data });
+                      }}
+                      onDelete={(id) => {
+                        if (window.confirm('Are you sure you want to delete this logo?')) {
+                          setIsLoading(true);
+                          deleteLogoMutation(id);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No company logos added yet.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           </motion.div>
         </TabsContent>

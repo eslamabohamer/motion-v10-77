@@ -59,6 +59,50 @@ export const deleteUserRating = async (ratingId: string) => {
   }
 };
 
+// Helper function to reorder company logos
+export const reorderCompanyLogos = async (sourceId: string, destinationOrder: number) => {
+  try {
+    // First get the current logos ordered by display_order
+    const { data: logos, error: fetchError } = await supabase
+      .from('company_logos')
+      .select('id, display_order')
+      .order('display_order', { ascending: true });
+    
+    if (fetchError) throw fetchError;
+    if (!logos) throw new Error("Failed to fetch logos");
+    
+    // Find the logo we're moving
+    const sourceIndex = logos.findIndex(logo => logo.id === sourceId);
+    if (sourceIndex === -1) throw new Error("Source logo not found");
+    
+    // Rearrange the display order values
+    const updatedLogos = [...logos];
+    const [removed] = updatedLogos.splice(sourceIndex, 1);
+    updatedLogos.splice(destinationOrder, 0, removed);
+    
+    // Update display_order for all affected logos
+    const updates = updatedLogos.map((logo, idx) => ({
+      id: logo.id,
+      display_order: idx + 1
+    }));
+    
+    // Perform the updates
+    for (const update of updates) {
+      const { error } = await supabase
+        .from('company_logos')
+        .update({ display_order: update.display_order })
+        .eq('id', update.id);
+      
+      if (error) throw error;
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error reordering logos:', error);
+    throw error;
+  }
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     persistSession: true,
