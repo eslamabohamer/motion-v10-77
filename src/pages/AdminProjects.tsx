@@ -272,8 +272,8 @@ const AdminProjects = () => {
     setNewProject(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFeaturedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewProject(prev => ({ ...prev, featured: e.target.checked }));
+  const handleFeaturedChange = (checked: boolean) => {
+    setNewProject(prev => ({ ...prev, featured: checked }));
   };
 
   const handleSectionChange = (sectionId: string, checked: boolean) => {
