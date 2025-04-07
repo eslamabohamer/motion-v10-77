@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,14 @@ const AdminLayout = () => {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
+        
+        // Check if we have auth data in localStorage first
+        const savedAuthState = localStorage.getItem('adminAuthState');
+        if (savedAuthState) {
+          const { isAuthenticated, isAdmin } = JSON.parse(savedAuthState);
+          setIsAuthenticated(isAuthenticated);
+          setIsAdmin(isAdmin);
+        }
         
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
@@ -43,6 +52,9 @@ const AdminLayout = () => {
         
         setIsAdmin(true);
         setIsAuthenticated(true);
+        
+        // Save auth state to localStorage
+        localStorage.setItem('adminAuthState', JSON.stringify({ isAuthenticated: true, isAdmin: true }));
       } catch (error) {
         console.error('Auth error:', error);
         toast.error('Authentication error');
@@ -60,6 +72,8 @@ const AdminLayout = () => {
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setIsAdmin(false);
+        // Update localStorage when signing out
+        localStorage.setItem('adminAuthState', JSON.stringify({ isAuthenticated: false, isAdmin: false }));
         navigate('/admin/login');
       }
     });
@@ -74,6 +88,13 @@ const AdminLayout = () => {
     if (isAuthenticated && isAdmin) {
       const loadSettings = async () => {
         try {
+          // Check if we already have settings in localStorage
+          const existingSettings = localStorage.getItem('siteSettings');
+          if (existingSettings) {
+            // We have cached settings, no need to fetch again
+            return;
+          }
+          
           // Fetch settings from various tables
           const [
             { data: generalData, error: generalError },

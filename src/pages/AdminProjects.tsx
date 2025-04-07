@@ -63,6 +63,25 @@ const AdminProjects = () => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadDataFromLocalStorage = () => {
+      const savedProjects = localStorage.getItem('adminProjects');
+      const savedCategories = localStorage.getItem('adminCategories');
+      const savedSections = localStorage.getItem('adminSections');
+      
+      if (savedProjects) {
+        setProjects(JSON.parse(savedProjects));
+      }
+      
+      if (savedCategories) {
+        setCategories(JSON.parse(savedCategories));
+      }
+      
+      if (savedSections) {
+        setSections(JSON.parse(savedSections));
+      }
+    };
+    
+    loadDataFromLocalStorage();
     fetchProjects();
     fetchSections();
     
@@ -75,6 +94,20 @@ const AdminProjects = () => {
     
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      localStorage.setItem('adminProjects', JSON.stringify(projects));
+    }
+    
+    if (categories.length > 0) {
+      localStorage.setItem('adminCategories', JSON.stringify(categories));
+    }
+    
+    if (sections.length > 0) {
+      localStorage.setItem('adminSections', JSON.stringify(sections));
+    }
+  }, [projects, categories, sections]);
 
   const fetchProjects = async () => {
     try {
@@ -90,7 +123,6 @@ const AdminProjects = () => {
         return;
       }
       
-      // Get project sections
       const { data: projectSectionsData, error: sectionsError } = await supabase
         .from('project_sections')
         .select('project_id, section_id');
@@ -99,14 +131,12 @@ const AdminProjects = () => {
         console.error('Error fetching project sections:', sectionsError);
       }
       
-      // Get site sections
       const { data: siteSectionsData, error: siteSectionsError } = await fetchSiteSections();
       
       if (siteSectionsError) {
         console.error('Error fetching site sections:', siteSectionsError);
       }
       
-      // Map sections to projects
       const projectsWithSections = data?.map(project => {
         const projectSectionIds = projectSectionsData
           ?.filter(ps => ps.project_id === project.id)
@@ -125,6 +155,9 @@ const AdminProjects = () => {
       
       const uniqueCategories = [...new Set(data?.map((project: Project) => project.category) || [])];
       setCategories(uniqueCategories);
+      
+      localStorage.setItem('adminProjects', JSON.stringify(projectsWithSections));
+      localStorage.setItem('adminCategories', JSON.stringify(uniqueCategories));
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast.error('Failed to load projects');
@@ -144,6 +177,8 @@ const AdminProjects = () => {
       }
       
       setSections(data as Section[] || []);
+      
+      localStorage.setItem('adminSections', JSON.stringify(data));
     } catch (error) {
       console.error('Error fetching sections:', error);
     }
@@ -195,7 +230,6 @@ const AdminProjects = () => {
       sections: project.sections
     });
     
-    // Get current project sections
     const { data, error } = await supabase
       .from('project_sections')
       .select('section_id')
@@ -227,7 +261,6 @@ const AdminProjects = () => {
       }
       
       if (editingProjectId) {
-        // Update project
         const { error } = await supabase
           .from('projects')
           .update(newProject)
@@ -239,7 +272,6 @@ const AdminProjects = () => {
           return;
         }
         
-        // Update project sections
         const { error: sectionsError } = await addProjectSections(editingProjectId, selectedSections);
         
         if (sectionsError) {
@@ -247,9 +279,17 @@ const AdminProjects = () => {
           toast.error(`Failed to update project sections: ${sectionsError.message}`);
         }
         
+        const updatedProjects = projects.map(project => 
+          project.id === editingProjectId 
+            ? {...project, ...newProject, sections: sections.filter(s => selectedSections.includes(s.id))} 
+            : project
+        );
+        setProjects(updatedProjects);
+        
+        localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
+        
         toast.success('Project updated successfully');
       } else {
-        // Add new project
         const projectData = {
           ...newProject,
           video_url: newProject.video_url?.trim() || null
@@ -266,7 +306,6 @@ const AdminProjects = () => {
           return;
         }
         
-        // Add project sections if any sections are selected
         if (selectedSections.length > 0 && data && data.length > 0) {
           const projectId = data[0].id;
           
@@ -276,12 +315,21 @@ const AdminProjects = () => {
             console.error('Error adding project sections:', sectionsError);
             toast.error(`Failed to add project sections: ${sectionsError.message}`);
           }
+          
+          const newProjectWithSections = {
+            ...data[0],
+            sections: sections.filter(s => selectedSections.includes(s.id))
+          };
+          
+          const updatedProjects = [newProjectWithSections, ...projects];
+          setProjects(updatedProjects);
+          
+          localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
         }
         
         toast.success('Project added successfully');
       }
       
-      fetchProjects();
       resetForm();
       setFormOpen(false);
     } catch (error) {
@@ -298,7 +346,6 @@ const AdminProjects = () => {
         return;
       }
       
-      // Project sections will cascade delete due to foreign key constraints
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -310,8 +357,12 @@ const AdminProjects = () => {
         return;
       }
       
+      const updatedProjects = projects.filter(project => project.id !== id);
+      setProjects(updatedProjects);
+      
+      localStorage.setItem('adminProjects', JSON.stringify(updatedProjects));
+      
       toast.success('Project deleted successfully');
-      setProjects(projects.filter(project => project.id !== id));
       setProjectToDelete(null);
     } catch (error) {
       console.error('Error deleting project:', error);

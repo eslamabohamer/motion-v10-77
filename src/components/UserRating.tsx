@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StarRating } from '@/components/StarRating';
@@ -29,6 +28,12 @@ type RatingType = {
     avatar_url: string | null;
   } | null;
 };
+
+// Define the profiles type for error handling
+type ProfilesData = {
+  display_name: string | null;
+  avatar_url: string | null;
+} | null;
 
 interface UserRatingProps {
   projectId: string;
@@ -82,19 +87,33 @@ const UserRating: React.FC<UserRatingProps> = ({ projectId }) => {
       }
 
       // Transform the data to ensure it matches the Rating type
-      const formattedRatings = data.map(item => ({
-        id: item.id,
-        comment: item.comment,
-        rating: item.rating,
-        created_at: item.created_at,
-        photo_url: item.photo_url || '',
-        user_id: item.user_id,
-        project_id: item.project_id,
-        profiles: item.profiles || {
-          display_name: 'Anonymous User',
-          avatar_url: ''
+      const formattedRatings: RatingType[] = data.map(item => {
+        let profileData: ProfilesData = null;
+        
+        // Check if profiles is an error or valid data
+        if (item.profiles && typeof item.profiles === 'object' && !('error' in item.profiles)) {
+          profileData = {
+            display_name: item.profiles.display_name || 'Anonymous User',
+            avatar_url: item.profiles.avatar_url || ''
+          };
+        } else {
+          profileData = {
+            display_name: 'Anonymous User',
+            avatar_url: ''
+          };
         }
-      }));
+        
+        return {
+          id: item.id,
+          comment: item.comment,
+          rating: item.rating,
+          created_at: item.created_at,
+          photo_url: item.photo_url || '',
+          user_id: item.user_id,
+          project_id: item.project_id,
+          profiles: profileData
+        };
+      });
 
       setRatings(formattedRatings);
     } catch (error: any) {
