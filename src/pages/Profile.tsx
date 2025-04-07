@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Loader2, Upload } from 'lucide-react';
 
-// Enhanced profile interface to include gender
 interface Profile {
   id: string;
   display_name: string | null;
@@ -35,21 +33,18 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Check auth status and fetch profile data
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { data } = await supabase.auth.getSession();
         
         if (!data.session) {
-          // Redirect to login if not authenticated
           navigate('/admin/login');
           return;
         }
         
         const user = data.session.user;
         
-        // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -59,15 +54,13 @@ const Profile = () => {
         if (profileError) {
           console.error('Error fetching profile:', profileError);
           if (profileError.code === 'PGRST116') {
-            // Profile not found, create one
             await supabase.from('profiles').insert({
               id: user.id,
               display_name: user.user_metadata.display_name || user.email?.split('@')[0] || 'User',
               avatar_url: user.user_metadata.avatar_url,
-              gender: 'male' // Default gender
+              gender: 'male'
             });
             
-            // Fetch the newly created profile
             const { data: newProfile } = await supabase
               .from('profiles')
               .select('*')
@@ -76,13 +69,13 @@ const Profile = () => {
               
             setProfile(newProfile as Profile);
             setDisplayName(newProfile?.display_name || '');
-            setGender(newProfile?.gender || 'male');
+            setGender((newProfile?.gender as 'male' | 'female') || 'male');
             setAvatarUrl(newProfile?.avatar_url || null);
           }
         } else {
           setProfile(profileData as Profile);
           setDisplayName(profileData?.display_name || '');
-          setGender(profileData?.gender || 'male');
+          setGender((profileData?.gender as 'male' | 'female') || 'male');
           setAvatarUrl(profileData?.avatar_url || null);
         }
       } catch (error) {
@@ -105,13 +98,11 @@ const Profile = () => {
       const file = e.target.files[0];
       const reader = new FileReader();
       
-      // Check if file is an image
       if (!file.type.match('image.*')) {
         toast.error('Please select an image file');
         return;
       }
       
-      // Check if file size is less than 5MB
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
@@ -131,7 +122,7 @@ const Profile = () => {
 
   const uploadAvatar = async (userId: string): Promise<string | null> => {
     if (!avatarFile) {
-      return avatarUrl; // Return existing URL if no new file
+      return avatarUrl;
     }
     
     try {
@@ -142,7 +133,7 @@ const Profile = () => {
       const { error: uploadError } = await supabase.storage
         .from('user-photos')
         .upload(filePath, avatarFile, {
-          upsert: true // Overwrite if exists
+          upsert: true
         });
       
       if (uploadError) {
@@ -170,7 +161,6 @@ const Profile = () => {
       const userId = profile.id;
       let photoUrl = avatarUrl;
       
-      // Upload avatar if changed
       if (avatarFile) {
         const uploadedUrl = await uploadAvatar(userId);
         if (uploadedUrl) {
@@ -178,7 +168,6 @@ const Profile = () => {
         }
       }
       
-      // Update profile in database
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -193,7 +182,6 @@ const Profile = () => {
         throw updateError;
       }
       
-      // Update user metadata
       await supabase.auth.updateUser({
         data: {
           display_name: displayName,
@@ -204,7 +192,6 @@ const Profile = () => {
       
       toast.success('Profile updated successfully');
       
-      // Update local profile state
       setProfile({
         ...profile,
         display_name: displayName,
@@ -212,7 +199,7 @@ const Profile = () => {
         avatar_url: photoUrl
       });
       
-      setAvatarFile(null); // Clear file selection
+      setAvatarFile(null);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
