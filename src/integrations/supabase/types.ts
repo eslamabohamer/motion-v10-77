@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      about_me: {
+        Row: {
+          client_focused_text: string | null
+          created_at: string | null
+          id: string
+          owner_bio: string
+          owner_location: string | null
+          owner_name: string
+          owner_photo_url: string | null
+          owner_skills: string
+          owner_title: string
+          quality_first_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_focused_text?: string | null
+          created_at?: string | null
+          id?: string
+          owner_bio: string
+          owner_location?: string | null
+          owner_name: string
+          owner_photo_url?: string | null
+          owner_skills: string
+          owner_title: string
+          quality_first_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_focused_text?: string | null
+          created_at?: string | null
+          id?: string
+          owner_bio?: string
+          owner_location?: string | null
+          owner_name?: string
+          owner_photo_url?: string | null
+          owner_skills?: string
+          owner_title?: string
+          quality_first_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       admin_credentials: {
         Row: {
           created_at: string
