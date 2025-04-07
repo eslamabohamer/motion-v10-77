@@ -25,28 +25,27 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
+        console.error('Login error:', error);
         toast.error(error.message);
         setIsLoading(false);
         return;
       }
+      
+      // Successfully logged in
+      toast.success('Logged in successfully');
       
       // Check if the user is an admin
       const { data: roleData, error: roleError } = await supabase.rpc('get_user_role');
       
       if (roleError) {
         console.error('Role check error:', roleError);
-        toast.error('Failed to check user role');
-        setIsLoading(false);
-        return;
       }
-      
-      toast.success('Logged in successfully');
       
       // If user is admin, go to admin dashboard, otherwise go to home page
       if (roleData === 'admin') {
@@ -72,9 +71,9 @@ const AdminLogin = () => {
       >
         <Card className="border shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access the admin area
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -101,21 +100,21 @@ const AdminLogin = () => {
                   required
                 />
               </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin mr-2">⊚</span>
+                    Logging in...
+                  </>
+                ) : 'Login'}
+              </Button>
             </form>
           </CardContent>
           <CardFooter className="flex-col space-y-4">
-            <Button 
-              className="w-full" 
-              onClick={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className="animate-spin mr-2">⊚</span>
-                  Logging in...
-                </>
-              ) : 'Login'}
-            </Button>
             <div className="text-center w-full">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{' '}
@@ -124,12 +123,12 @@ const AdminLogin = () => {
                 </Link>
               </p>
             </div>
+            <div className="p-2 text-center">
+              <a href="/" className="text-sm text-primary hover:underline">
+                Return to public site
+              </a>
+            </div>
           </CardFooter>
-          <div className="p-4 pt-0 text-center">
-            <a href="/" className="text-sm text-primary hover:underline">
-              Return to public site
-            </a>
-          </div>
         </Card>
       </motion.div>
     </div>
