@@ -18,11 +18,11 @@ export const CompanyLogos = () => {
   useEffect(() => {
     const fetchLogos = async () => {
       try {
-        // We need to cast the response since we can't update the types.ts file
+        // Type assertion since we can't modify the types.ts file
         const { data, error } = await supabase
           .from('company_logos')
           .select('*')
-          .order('display_order', { ascending: true }) as { 
+          .order('display_order', { ascending: true }) as unknown as { 
             data: CompanyLogo[] | null; 
             error: Error | null 
           };

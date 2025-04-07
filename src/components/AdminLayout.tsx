@@ -75,17 +75,35 @@ const AdminLayout = () => {
     if (isAuthenticated && isAdmin) {
       const loadSettings = async () => {
         try {
-          const { data, error } = await supabase
-            .from('site_settings')
-            .select('settings')
-            .order('created_at', { ascending: false })
-            .limit(1);
+          // Fetch settings from various tables
+          const [
+            { data: generalData, error: generalError },
+            { data: performanceData, error: performanceError },
+            { data: animationData, error: animationError },
+            { data: seoData, error: seoError },
+            { data: socialData, error: socialError }
+          ] = await Promise.all([
+            supabase.from('general_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
+            supabase.from('performance_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
+            supabase.from('animation_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
+            supabase.from('seo_settings').select('*').limit(1) as unknown as { data: any; error: Error | null },
+            supabase.from('social_settings').select('*').limit(1) as unknown as { data: any; error: Error | null }
+          ]);
           
-          if (error) throw error;
-          
-          if (data && data.length > 0) {
-            localStorage.setItem('siteSettings', JSON.stringify(data[0].settings));
+          if (generalError || performanceError || animationError || seoError || socialError) {
+            throw new Error('Error fetching settings');
           }
+          
+          // Create a combined settings object
+          const settings = {
+            general: generalData?.[0] || {},
+            performance: performanceData?.[0] || {},
+            animation: animationData?.[0] || {},
+            seo: seoData?.[0] || {},
+            social: socialData?.[0] || {}
+          };
+          
+          localStorage.setItem('siteSettings', JSON.stringify(settings));
         } catch (error) {
           console.error('Error loading settings:', error);
         }

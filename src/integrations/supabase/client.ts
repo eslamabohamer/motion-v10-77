@@ -63,11 +63,11 @@ export const deleteUserRating = async (ratingId: string) => {
 export const reorderCompanyLogos = async (sourceId: string, destinationOrder: number) => {
   try {
     // First get the current logos ordered by display_order
-    // Use type casting to work around type definition limitations
+    // Use type assertion to work around type definition limitations
     const { data: logos, error: fetchError } = await supabase
       .from('company_logos')
       .select('id, display_order')
-      .order('display_order', { ascending: true }) as {
+      .order('display_order', { ascending: true }) as unknown as {
         data: { id: string; display_order: number }[] | null;
         error: Error | null;
       };
@@ -92,11 +92,11 @@ export const reorderCompanyLogos = async (sourceId: string, destinationOrder: nu
     
     // Perform the updates
     for (const update of updates) {
-      // Type casting to work around type definition limitations
+      // Type assertion to work around type definition limitations
       const { error } = await supabase
         .from('company_logos')
         .update({ display_order: update.display_order })
-        .eq('id', update.id) as { error: Error | null };
+        .eq('id', update.id) as unknown as { error: Error | null };
       
       if (error) throw error;
     }

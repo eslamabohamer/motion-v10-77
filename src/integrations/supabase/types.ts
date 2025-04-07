@@ -75,6 +75,54 @@ export type Database = {
         }
         Relationships: []
       }
+      animation_settings: {
+        Row: {
+          accent_color: string | null
+          animation_intensity: number | null
+          animation_speed: string | null
+          background_color: string | null
+          created_at: string | null
+          enable_3d_effects: boolean | null
+          hover_animations: boolean | null
+          id: string
+          loading_animations: boolean | null
+          particle_effects: boolean | null
+          scroll_animations: boolean | null
+          secondary_accent_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          animation_intensity?: number | null
+          animation_speed?: string | null
+          background_color?: string | null
+          created_at?: string | null
+          enable_3d_effects?: boolean | null
+          hover_animations?: boolean | null
+          id?: string
+          loading_animations?: boolean | null
+          particle_effects?: boolean | null
+          scroll_animations?: boolean | null
+          secondary_accent_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          animation_intensity?: number | null
+          animation_speed?: string | null
+          background_color?: string | null
+          created_at?: string | null
+          enable_3d_effects?: boolean | null
+          hover_animations?: boolean | null
+          id?: string
+          loading_animations?: boolean | null
+          particle_effects?: boolean | null
+          scroll_animations?: boolean | null
+          secondary_accent_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       company_logos: {
         Row: {
           created_at: string
@@ -102,6 +150,39 @@ export type Database = {
           name?: string
           updated_at?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      general_settings: {
+        Row: {
+          contact_email: string | null
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          showreel_url: string | null
+          site_description: string
+          site_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          showreel_url?: string | null
+          site_description?: string
+          site_name?: string
+          updated_at?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          showreel_url?: string | null
+          site_description?: string
+          site_name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -135,11 +216,45 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_settings: {
+        Row: {
+          caching_enabled: boolean | null
+          created_at: string | null
+          enable_animations: boolean | null
+          enable_image_optimization: boolean | null
+          enable_parallax: boolean | null
+          id: string
+          lazy_load_images: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          caching_enabled?: boolean | null
+          created_at?: string | null
+          enable_animations?: boolean | null
+          enable_image_optimization?: boolean | null
+          enable_parallax?: boolean | null
+          id?: string
+          lazy_load_images?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          caching_enabled?: boolean | null
+          created_at?: string | null
+          enable_animations?: boolean | null
+          enable_image_optimization?: boolean | null
+          enable_parallax?: boolean | null
+          id?: string
+          lazy_load_images?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
           updated_at: string
         }
@@ -147,6 +262,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id: string
           updated_at?: string
         }
@@ -154,6 +270,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           updated_at?: string
         }
@@ -192,6 +309,36 @@ export type Database = {
           title?: string
           updated_at?: string
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      seo_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          keywords: string | null
+          meta_description: string | null
+          meta_title: string | null
+          og_image_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image_url?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -257,21 +404,33 @@ export type Database = {
         }
         Relationships: []
       }
-      site_settings: {
+      social_settings: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          settings: Json
+          instagram_url: string | null
+          linkedin_url: string | null
+          twitter_url: string | null
+          updated_at: string | null
+          youtube_url: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          settings: Json
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          youtube_url?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          settings?: Json
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
