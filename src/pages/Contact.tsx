@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -42,7 +41,7 @@ const Contact = () => {
     try {
       console.log('Submitting message:', data);
       
-      // Insert directly into the messages table
+      // Insert message into the database
       const { data: insertData, error } = await supabase
         .from('messages')
         .insert([
@@ -62,6 +61,39 @@ const Contact = () => {
       }
       
       console.log('Message sent successfully:', insertData);
+      
+      // Send email notifications if message was saved to database
+      if (insertData && insertData.length > 0) {
+        try {
+          const messageData = {
+            id: insertData[0].id,
+            name: data.name,
+            email: data.email,
+            subject: data.subject,
+            message: data.message
+          };
+          
+          const response = await fetch('https://tyczqgeyhjxwfyjgwmio.supabase.co/functions/v1/send-contact-notification', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`,
+            },
+            body: JSON.stringify(messageData),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Email notification error:', errorData);
+          } else {
+            console.log('Email notifications sent successfully');
+          }
+        } catch (emailError) {
+          console.error('Failed to send email notifications:', emailError);
+          // Continue with form success even if email fails
+        }
+      }
+      
       setIsSuccess(true);
       form.reset();
       
