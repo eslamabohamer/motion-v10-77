@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Play } from 'lucide-react';
+import { ArrowLeft, Play, X } from 'lucide-react';
 import { UserRating } from '@/components/UserRating';
 import { supabase } from '@/integrations/supabase/client';
 

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, RefreshCcw, Upload, Plus } from 'lucide-react';
+import { Save, RefreshCcw, Upload, Plus, X } from 'lucide-react';
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -446,26 +446,19 @@ const AdminSettings = () => {
   const { mutate: saveAboutMeData } = useMutation({
     mutationFn: async (data: Partial<AboutMeData>) => {
       const isNewRecord = !aboutMe?.id;
-      const dataToSave = isNewRecord ? {
-        owner_name: data.owner_name || '',
-        owner_title: data.owner_title || '',
-        owner_bio: data.owner_bio || '',
-        owner_skills: data.owner_skills || '',
-        owner_location: data.owner_location,
-        owner_photo_url: data.owner_photo_url,
-        client_focused_text: data.client_focused_text,
-        quality_first_text: data.quality_first_text
-      } : data;
       
-      if (aboutMe?.id) {
-        const { error } = await supabase
-          .from('about_me')
-          .update(dataToSave)
-          .eq('id', aboutMe.id);
-          
-        if (error) throw error;
-        return aboutMe.id;
-      } else {
+      if (isNewRecord) {
+        const dataToSave = {
+          owner_name: data.owner_name || '',
+          owner_title: data.owner_title || '',
+          owner_bio: data.owner_bio || '',
+          owner_skills: data.owner_skills || '',
+          owner_location: data.owner_location,
+          owner_photo_url: data.owner_photo_url,
+          client_focused_text: data.client_focused_text,
+          quality_first_text: data.quality_first_text
+        };
+        
         const { data: insertData, error } = await supabase
           .from('about_me')
           .insert(dataToSave)
@@ -473,6 +466,14 @@ const AdminSettings = () => {
           
         if (error) throw error;
         return insertData?.[0]?.id;
+      } else {
+        const { error } = await supabase
+          .from('about_me')
+          .update(data)
+          .eq('id', aboutMe.id);
+          
+        if (error) throw error;
+        return aboutMe.id;
       }
     },
     onSuccess: () => {
