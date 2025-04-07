@@ -61,6 +61,32 @@ const PortfolioDetail = () => {
     fetchProject();
   }, [id]);
 
+  // Function to properly format video URL for embedding
+  const getEmbedUrl = (url: string | null): string => {
+    if (!url) return '';
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com/watch?v=')) {
+      const videoId = url.split('v=')[1].split('&')[0];
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    
+    // Handle youtu.be URLs
+    if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1].split('?')[0];
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    
+    // Handle Vimeo URLs
+    if (url.includes('vimeo.com/') && !url.includes('player.vimeo.com/')) {
+      const videoId = url.split('vimeo.com/')[1].split('?')[0];
+      return `https://player.vimeo.com/video/${videoId}`;
+    }
+    
+    // If it's already an embed URL or other format, return as is
+    return url;
+  };
+
   // Fetch related projects based on category
   const fetchRelatedProjects = async (category: string, currentId: string) => {
     try {
@@ -141,6 +167,10 @@ const PortfolioDetail = () => {
     );
   }
 
+  // Determine if text should be RTL
+  const isRTL = project.title && /[\u0590-\u05FF\u0600-\u06FF]/.test(project.title);
+  const rtlClass = isRTL ? "rtl" : "";
+
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
@@ -150,12 +180,14 @@ const PortfolioDetail = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-8"
+          className={`mb-8 ${rtlClass}`}
         >
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white rtl:text-right">{project.title}</h1>
-          <div className="flex items-center text-sm text-gray-300 rtl:flex-row-reverse">
-            <span className="inline-flex items-center">
-              <Calendar className="h-4 w-4 mr-1 rtl:ml-1 rtl:mr-0" />
+          <h1 className={`text-3xl md:text-4xl font-bold mb-2 text-white ${isRTL ? 'text-right' : 'text-left'}`}>
+            {project.title}
+          </h1>
+          <div className={`flex items-center text-sm text-gray-300 ${isRTL ? 'flex-row-reverse justify-end' : ''}`}>
+            <span className={`inline-flex items-center ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <Calendar className={`h-4 w-4 ${isRTL ? 'ml-1 mr-0' : 'mr-1'}`} />
               {project.created_at && format(new Date(project.created_at), 'MMMM yyyy')}
             </span>
             <span className="mx-2">•</span>
@@ -171,14 +203,15 @@ const PortfolioDetail = () => {
           className="mb-10"
         >
           {project.video_url ? (
-            <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-black">
+            <div className="relative pt-[56.25%] rounded-lg overflow-hidden bg-black">
               <iframe 
-                src={project.video_url}
+                src={getEmbedUrl(project.video_url)}
                 title={project.title} 
                 frameBorder="0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                 allowFullScreen
-                className="w-full h-full"
+                className="absolute inset-0 w-full h-full"
+                loading="lazy"
               ></iframe>
             </div>
           ) : (
@@ -197,19 +230,28 @@ const PortfolioDetail = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-16"
+          className={`mb-16 ${rtlClass}`}
         >
-          <h2 className="text-2xl font-bold mb-4 text-white rtl:text-right">Project Overview</h2>
-          <p className="text-gray-300 leading-relaxed mb-6 rtl:text-right">
+          <h2 className={`text-2xl font-bold mb-4 text-white ${isRTL ? 'text-right' : ''}`}>Project Overview</h2>
+          <p className={`text-gray-300 leading-relaxed mb-6 ${isRTL ? 'text-right' : ''}`}>
             {project.description}
           </p>
           
           {/* Back button moved to bottom of content */}
-          <div className="mt-8">
+          <div className={`mt-8 ${isRTL ? 'text-right' : ''}`}>
             <Button asChild variant="outline" className="border-gray-500 hover:bg-gray-700">
               <Link to="/portfolio">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Portfolio
+                {isRTL ? (
+                  <>
+                    Back to Portfolio
+                    <ArrowLeft className="ml-2 h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Portfolio
+                  </>
+                )}
               </Link>
             </Button>
           </div>
@@ -231,9 +273,9 @@ const PortfolioDetail = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="mb-16"
+            className={`mb-16 ${rtlClass}`}
           >
-            <h2 className="text-2xl font-bold mb-6 text-white rtl:text-right">Related Projects</h2>
+            <h2 className={`text-2xl font-bold mb-6 text-white ${isRTL ? 'text-right' : ''}`}>Related Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {relatedProjects.map((relatedProject) => (
                 <Link 
@@ -249,10 +291,10 @@ const PortfolioDetail = () => {
                     />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-1 text-white group-hover:text-primary transition-colors rtl:text-right">
+                    <h3 className={`text-lg font-semibold mb-1 text-white group-hover:text-primary transition-colors ${isRTL ? 'text-right' : ''}`}>
                       {relatedProject.title}
                     </h3>
-                    <p className="text-sm text-gray-400 rtl:text-right">{relatedProject.category}</p>
+                    <p className={`text-sm text-gray-400 ${isRTL ? 'text-right' : ''}`}>{relatedProject.category}</p>
                   </div>
                 </Link>
               ))}
@@ -274,7 +316,7 @@ const PortfolioDetail = () => {
             </button>
             <div className="aspect-video">
               <iframe 
-                src={project.video_url}
+                src={getEmbedUrl(project.video_url)}
                 title="Project Video" 
                 frameBorder="0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
