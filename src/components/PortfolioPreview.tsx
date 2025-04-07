@@ -140,7 +140,7 @@ export const PortfolioPreview = ({ featuredSection }: PortfolioPreviewProps) => 
             </p>
           </div>
           <Button variant="ghost" size="sm" asChild className="mt-4 md:mt-0">
-            <Link to={featuredSection ? `/portfolio?section=${featuredSection.slug}` : "/portfolio"} className="flex items-center">
+            <Link to={featuredSection ? `/portfolio/${featuredSection.slug}` : "/portfolio"} className="flex items-center">
               View All Projects
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -253,7 +253,7 @@ const PortfolioCard = ({ item, enable3D }: PortfolioCardProps) => {
             {item.description}
           </p>
           <Link 
-            to={`/portfolio/${item.id}`}
+            to={`/portfolio/project/${item.id}`}
             className={cn(
               "inline-flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-all duration-300",
               isHovered ? "opacity-100" : "opacity-0"

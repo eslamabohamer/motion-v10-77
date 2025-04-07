@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,10 +18,27 @@ interface PortfolioItem {
 }
 
 const Portfolio = () => {
+  const { categorySlug } = useParams<{ categorySlug?: string }>();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<PortfolioItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [categories, setCategories] = useState<string[]>(['All']);
+  
+  useEffect(() => {
+    // Set active category based on URL param
+    if (categorySlug && categorySlug !== 'all') {
+      // Convert slug to display format (e.g., "motion-graphics" -> "Motion Graphics")
+      const formattedCategory = categorySlug
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      setActiveCategory(formattedCategory);
+    } else {
+      setActiveCategory('All');
+    }
+  }, [categorySlug]);
   
   // Memoize filter function to avoid unnecessary re-computation
   const filteredProjects = useCallback(() => {
@@ -58,6 +75,17 @@ const Portfolio = () => {
     fetchProjects();
   }, []);
 
+  const handleCategoryClick = (category: string) => {
+    if (category === 'All') {
+      navigate('/portfolio');
+    } else {
+      // Convert category to URL-friendly slug (e.g., "Motion Graphics" -> "motion-graphics")
+      const slug = category.toLowerCase().replace(/\s+/g, '-');
+      navigate(`/portfolio/${slug}`);
+    }
+    setActiveCategory(category);
+  };
+  
   const projectsToShow = filteredProjects();
   
   // Improved image loading handling
@@ -99,7 +127,7 @@ const Portfolio = () => {
               {categories.map((category) => (
                 <button
                   key={category}
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => handleCategoryClick(category)}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all",
                     activeCategory === category
@@ -133,7 +161,7 @@ const Portfolio = () => {
                     className="h-full"
                   >
                     <Link 
-                      to={`/portfolio/${project.id}`} 
+                      to={`/portfolio/project/${project.id}`} 
                       className="group h-full overflow-hidden rounded-lg border bg-card shadow-sm transition-all hover:shadow-md block"
                     >
                       <div className="aspect-video overflow-hidden bg-muted">

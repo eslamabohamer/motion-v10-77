@@ -46,7 +46,8 @@ function App() {
             <Route path="/team" element={<TeamPage />} />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
-            <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />
+            <Route path="/portfolio/:categorySlug" element={<PortfolioPage />} />
+            <Route path="/portfolio/project/:id" element={<PortfolioDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/register" element={<RegisterPage />} />
             

@@ -37,13 +37,19 @@ const PortfolioDetail = () => {
     const fetchProject = async () => {
       try {
         if (id) {
+          console.log("Fetching project with ID:", id);
           const { data, error } = await supabase
             .from('projects')
             .select('*')
             .eq('id', id)
             .single();
           
-          if (error) throw error;
+          if (error) {
+            console.error('Error fetching project:', error);
+            throw error;
+          }
+          
+          console.log("Project data:", data);
           setProject(data);
 
           // Once we have the project, fetch related projects
@@ -280,7 +286,7 @@ const PortfolioDetail = () => {
               {relatedProjects.map((relatedProject) => (
                 <Link 
                   key={relatedProject.id} 
-                  to={`/portfolio/${relatedProject.id}`}
+                  to={`/portfolio/project/${relatedProject.id}`}
                   className="group rounded-lg overflow-hidden bg-gray-800/30 hover:bg-gray-800/50 transition-all"
                 >
                   <div className="aspect-video overflow-hidden">
@@ -329,6 +335,6 @@ const PortfolioDetail = () => {
       )}
     </div>
   );
-};
+}
 
 export default PortfolioDetail;
