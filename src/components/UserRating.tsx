@@ -28,6 +28,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -57,6 +66,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
   const [ratingToDelete, setRatingToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingRating, setEditingRating] = useState<any>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const handleRating = (newRating: number) => {
     setRating(newRating);
@@ -239,6 +249,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
         
         setUserRatings(updatedRatings);
         setEditingRating(null);
+        setEditDialogOpen(false);
       } else {
         const userId = userProfile?.id || null;
         const photoUrl = imagePreview;
@@ -269,9 +280,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
         }
       }
       
-      setRating(0);
-      setComment('');
-      setImagePreview(null);
+      resetForm();
       
       const { data, error: refreshError } = await supabase
         .from('user_ratings')
@@ -313,6 +322,12 @@ export default function UserRating({ projectId }: UserRatingProps) {
     }
   };
 
+  const resetForm = () => {
+    setRating(0);
+    setComment('');
+    setImagePreview(null);
+  };
+
   const handleDeleteRating = async (id: string) => {
     try {
       setRatingToDelete(null);
@@ -338,11 +353,7 @@ export default function UserRating({ projectId }: UserRatingProps) {
     setRating(item.rating);
     setComment(item.comment);
     setImagePreview(item.photo_url);
-    
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    setEditDialogOpen(true);
   };
 
   const canUserDeleteRating = (rating: any) => {
@@ -364,16 +375,15 @@ export default function UserRating({ projectId }: UserRatingProps) {
 
   const cancelEditing = () => {
     setEditingRating(null);
-    setRating(0);
-    setComment('');
-    setImagePreview(null);
+    resetForm();
+    setEditDialogOpen(false);
   };
 
   return (
     <div className="space-y-8">
       <div className="bg-card rounded-lg shadow-lg p-6 border border-border/30">
         <h3 className="text-xl font-semibold mb-6 text-primary">
-          {editingRating ? 'Edit Your Review' : 'Leave a Review'}
+          {editingRating && !editDialogOpen ? 'Edit Your Review' : 'Leave a Review'}
         </h3>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -457,10 +467,10 @@ export default function UserRating({ projectId }: UserRatingProps) {
               className="transition-all"
               variant="default"
             >
-              {submitting ? 'Submitting...' : editingRating ? 'Update Review' : 'Submit Review'}
+              {submitting ? 'Submitting...' : editingRating && !editDialogOpen ? 'Update Review' : 'Submit Review'}
             </Button>
             
-            {editingRating && (
+            {editingRating && !editDialogOpen && (
               <Button 
                 type="button"
                 variant="outline"
@@ -607,6 +617,93 @@ export default function UserRating({ projectId }: UserRatingProps) {
           </div>
         )}
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Your Review</DialogTitle>
+            <DialogDescription>
+              Make changes to your review below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-foreground/80">Your Rating</label>
+              <StarRating 
+                value={rating} 
+                onChange={handleRating} 
+                readOnly={false} 
+                size="large"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="edit-comment" className="block text-sm font-medium mb-2 text-foreground/80">
+                Your Review
+              </label>
+              <Textarea
+                id="edit-comment"
+                placeholder="Share your thoughts about this project..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="min-h-[120px] bg-background/50 border-border/50 focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-foreground/80">Image (Optional)</label>
+              <div className="flex items-center space-x-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex items-center space-x-2"
+                >
+                  {uploadingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4" />
+                      <span>Choose Image</span>
+                    </>
+                  )}
+                </Button>
+                {imagePreview && (
+                  <div className="relative h-16 w-16 rounded-md overflow-hidden border border-border">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImagePreview(null)}
+                      className="absolute top-0 right-0 bg-black/70 p-1 rounded-bl-md"
+                    >
+                      <User className="h-3 w-3 text-white" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" onClick={cancelEditing}>Cancel</Button>
+            </DialogClose>
+            <Button 
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? 'Updating...' : 'Update Review'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!ratingToDelete} onOpenChange={(isOpen) => !isOpen && setRatingToDelete(null)}>
         <AlertDialogContent>
