@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, Upload, Pencil, Trash2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getDefaultAvatar, getDisplayNameOrEmail } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -314,9 +313,6 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
       );
       
       toast.success('Your review has been deleted.');
-      
-      // Optionally refetch to ensure data consistency
-      // await fetchRatings();
     } catch (error: any) {
       console.error('Error deleting rating:', error);
       toast.error(`Failed to delete review: ${error.message || 'Please try again.'}`);
@@ -467,13 +463,18 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={review.profiles?.avatar_url || undefined} alt="User avatar" />
+                    <AvatarImage 
+                      src={review.profiles?.avatar_url || getDefaultAvatar()} 
+                      alt="User avatar" 
+                    />
                     <AvatarFallback>
-                      {review.profiles?.display_name?.[0]?.toUpperCase() || 'U'}
+                      {getDisplayNameOrEmail(review.profiles)?.[0]?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{review.profiles?.display_name || 'Anonymous'}</p>
+                    <p className="font-medium">
+                      {getDisplayNameOrEmail(review.profiles)}
+                    </p>
                     <p className="text-xs text-muted-foreground">{formatDate(review.created_at)}</p>
                     {review.updated_at !== review.created_at && (
                       <p className="text-xs text-muted-foreground italic">(Edited)</p>
@@ -497,13 +498,17 @@ export const UserRating = ({ projectId }: UserRatingProps) => {
               
               <p className="mt-4">{review.comment}</p>
               
-              {review.photo_url && (
+              {review.photo_url ? (
                 <div className="mt-4">
                   <img 
                     src={review.photo_url} 
                     alt="User photo" 
                     className="max-h-48 rounded-lg object-cover"
                   />
+                </div>
+              ) : (
+                <div className="mt-4 p-4 border border-dashed rounded-lg flex items-center justify-center bg-muted/20">
+                  <p className="text-sm text-muted-foreground">No image attached</p>
                 </div>
               )}
 

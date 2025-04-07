@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, getDefaultAvatar } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PlusCircle, Image, Film, Save, Trash2, Edit, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -225,6 +225,10 @@ const AdminProjects = () => {
     return url;
   };
 
+  const addDefaultSrc = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = getDefaultAvatar();
+  };
+
   return (
     <div className="min-h-screen">
       <main className="pt-24 pb-16">
@@ -343,6 +347,16 @@ const AdminProjects = () => {
                           placeholder="https://example.com/image.jpg"
                           required
                         />
+                        {newProject.image_url && (
+                          <div className="mt-2 p-2 border rounded">
+                            <img 
+                              src={newProject.image_url} 
+                              alt="Preview" 
+                              className="h-20 object-cover rounded"
+                              onError={addDefaultSrc}
+                            />
+                          </div>
+                        )}
                       </div>
                       
                       <div className="space-y-2">
@@ -430,7 +444,8 @@ const AdminProjects = () => {
                         <img 
                           src={project.image_url} 
                           alt={project.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onError={addDefaultSrc}
                         />
                         {project.featured && (
                           <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 text-xs rounded">
