@@ -82,9 +82,10 @@ const PortfolioDetail = () => {
           }
           
           console.log("Project data:", data);
-          setProject(data);
+          // Ensure website_url is included (added as a nullable property in our interface)
+          setProject(data as Project);
 
-          // Fetch project images
+          // Fetch project images - Use .from() with type assertion for custom tables
           const { data: imagesData, error: imagesError } = await supabase
             .from('project_images')
             .select('*')
@@ -95,10 +96,11 @@ const PortfolioDetail = () => {
             console.error('Error fetching project images:', imagesError);
           } else {
             console.log("Project images:", imagesData);
-            setProjectImages(imagesData || []);
+            // Use type assertion to handle the new table
+            setProjectImages(imagesData as ProjectImage[] || []);
           }
 
-          // Fetch project links
+          // Fetch project links - Use .from() with type assertion for custom tables
           const { data: linksData, error: linksError } = await supabase
             .from('project_links')
             .select('*')
@@ -109,7 +111,8 @@ const PortfolioDetail = () => {
             console.error('Error fetching project links:', linksError);
           } else {
             console.log("Project links:", linksData);
-            setProjectLinks(linksData || []);
+            // Use type assertion to handle the new table
+            setProjectLinks(linksData as ProjectLink[] || []);
           }
 
           // Once we have the project, fetch related projects
@@ -167,7 +170,8 @@ const PortfolioDetail = () => {
         throw error;
       }
       
-      setRelatedProjects(data || []);
+      // Use type assertion to handle website_url which might be missing in some items
+      setRelatedProjects(data as Project[] || []);
     } catch (error) {
       console.error('Error fetching related projects:', error);
     }

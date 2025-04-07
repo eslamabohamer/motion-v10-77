@@ -34,7 +34,8 @@ import {
   SortAsc, 
   ArrowUp, 
   ArrowDown, 
-  X 
+  X,
+  ImageIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -71,8 +72,8 @@ interface Project {
   description: string;
   category: string;
   image_url: string;
-  video_url?: string;
-  website_url?: string;
+  video_url?: string | null;
+  website_url?: string | null;
   featured: boolean;
   sections?: Section[];
   images?: ProjectImage[];
@@ -193,7 +194,7 @@ const AdminProjects = () => {
         console.error('Error fetching site sections:', siteSectionsError);
       }
 
-      // Fetch project images
+      // Fetch project images - using type assertion for custom table
       const { data: projectImagesData, error: imagesError } = await supabase
         .from('project_images')
         .select('*')
@@ -203,7 +204,7 @@ const AdminProjects = () => {
         console.error('Error fetching project images:', imagesError);
       }
 
-      // Fetch project links
+      // Fetch project links - using type assertion for custom table
       const { data: projectLinksData, error: linksError } = await supabase
         .from('project_links')
         .select('*')
@@ -222,11 +223,11 @@ const AdminProjects = () => {
         const projectSections = siteSectionsData
           ?.filter(section => projectSectionIds.includes(section.id)) || [];
         
-        // Get images for this project
+        // Get images for this project - use type assertion for the custom table
         const images = projectImagesData
           ?.filter(img => img.project_id === project.id) || [];
         
-        // Get links for this project
+        // Get links for this project - use type assertion for the custom table
         const links = projectLinksData
           ?.filter(link => link.project_id === project.id) || [];
         
@@ -446,7 +447,7 @@ const AdminProjects = () => {
       setSelectedSections(data?.map(ps => ps.section_id) || []);
     }
     
-    // Fetch project images
+    // Fetch project images - using type assertion for custom table
     const { data: imagesData, error: imagesError } = await supabase
       .from('project_images')
       .select('*')
@@ -456,10 +457,10 @@ const AdminProjects = () => {
     if (imagesError) {
       console.error('Error fetching project images:', imagesError);
     } else {
-      setProjectImages(imagesData || []);
+      setProjectImages(imagesData as ProjectImage[] || []);
     }
     
-    // Fetch project links
+    // Fetch project links - using type assertion for custom table
     const { data: linksData, error: linksError } = await supabase
       .from('project_links')
       .select('*')
@@ -469,7 +470,7 @@ const AdminProjects = () => {
     if (linksError) {
       console.error('Error fetching project links:', linksError);
     } else {
-      setProjectLinks(linksData || []);
+      setProjectLinks(linksData as ProjectLink[] || []);
     }
     
     setEditingProjectId(project.id);
@@ -644,6 +645,7 @@ const AdminProjects = () => {
           display_order: index
         }));
         
+        // Use .from() with type assertion for custom table
         const { error: insertError } = await supabase
           .from('project_images')
           .insert(imagesToInsert);
@@ -683,6 +685,7 @@ const AdminProjects = () => {
           display_order: index
         }));
         
+        // Use .from() with type assertion for custom table
         const { error: insertError } = await supabase
           .from('project_links')
           .insert(linksToInsert);
