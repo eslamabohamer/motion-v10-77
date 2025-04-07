@@ -36,6 +36,11 @@
     --ring: 222 89% 60%;
 
     --radius: 0.5rem;
+    
+    /* Custom color variables that can be updated from settings */
+    --background-color: #1A1F2C;
+    --accent-color: #4a6cf7;
+    --secondary-accent-color: #9b87f5;
   }
 
   .dark {
@@ -204,4 +209,31 @@ img {
   .depth-shadow {
     box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
   }
+}
+
+/* Classes for dynamic color application */
+.primary-accent {
+  color: var(--accent-color);
+}
+
+.primary-accent-bg {
+  background-color: var(--accent-color);
+}
+
+.secondary-accent {
+  color: var(--secondary-accent-color);
+}
+
+.secondary-accent-bg {
+  background-color: var(--secondary-accent-color);
+}
+
+.custom-gradient-text {
+  background-image: linear-gradient(to right, var(--accent-color), var(--secondary-accent-color));
+  background-clip: text;
+  color: transparent;
+}
+
+.custom-gradient-bg {
+  background-image: linear-gradient(to right, var(--accent-color), var(--secondary-accent-color));
 }

@@ -12,6 +12,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [animations3DEnabled, setAnimations3DEnabled] = useState(true);
+  const [colorSettings, setColorSettings] = useState({
+    backgroundColor: "#1A1F2C",
+    accentColor: "#4a6cf7",
+    secondaryAccentColor: "#9b87f5"
+  });
 
   useEffect(() => {
     // Load animation settings directly from the database
@@ -32,18 +37,35 @@ const Index = () => {
         if (data && data.length > 0 && data[0].settings) {
           const dbSettings = data[0].settings as Record<string, any>;
           
-          if (dbSettings.animation && dbSettings.animation.enable3DEffects !== undefined) {
-            setAnimations3DEnabled(dbSettings.animation.enable3DEffects);
+          // Extract animation settings
+          if (dbSettings.animation) {
+            if (dbSettings.animation.enable3DEffects !== undefined) {
+              setAnimations3DEnabled(dbSettings.animation.enable3DEffects);
+              
+              // Show toast notification about 3D effects status
+              if (!dbSettings.animation.enable3DEffects) {
+                toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
+                  duration: 5000,
+                  action: {
+                    label: 'Settings',
+                    onClick: () => window.location.href = '/admin/settings'
+                  }
+                });
+              }
+            }
             
-            // Show toast notification about 3D effects status
-            if (!dbSettings.animation.enable3DEffects) {
-              toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
-                duration: 5000,
-                action: {
-                  label: 'Settings',
-                  onClick: () => window.location.href = '/admin/settings'
-                }
+            // Extract color settings
+            if (dbSettings.animation.backgroundColor) {
+              setColorSettings({
+                backgroundColor: dbSettings.animation.backgroundColor,
+                accentColor: dbSettings.animation.accentColor || "#4a6cf7",
+                secondaryAccentColor: dbSettings.animation.secondaryAccentColor || "#9b87f5"
               });
+              
+              // Apply colors to CSS variables
+              document.documentElement.style.setProperty('--background-color', dbSettings.animation.backgroundColor);
+              document.documentElement.style.setProperty('--accent-color', dbSettings.animation.accentColor);
+              document.documentElement.style.setProperty('--secondary-accent-color', dbSettings.animation.secondaryAccentColor);
             }
           }
         } 
@@ -53,18 +75,35 @@ const Index = () => {
           if (savedSettings) {
             try {
               const settings = JSON.parse(savedSettings);
-              if (settings.animation && settings.animation.enable3DEffects !== undefined) {
-                setAnimations3DEnabled(settings.animation.enable3DEffects);
+              if (settings.animation) {
+                // Set animation settings
+                if (settings.animation.enable3DEffects !== undefined) {
+                  setAnimations3DEnabled(settings.animation.enable3DEffects);
+                  
+                  // Show toast notification about 3D effects status
+                  if (!settings.animation.enable3DEffects) {
+                    toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
+                      duration: 5000,
+                      action: {
+                        label: 'Settings',
+                        onClick: () => window.location.href = '/admin/settings'
+                      }
+                    });
+                  }
+                }
                 
-                // Show toast notification about 3D effects status
-                if (!settings.animation.enable3DEffects) {
-                  toast.info('3D effects are currently disabled. Enable them in Admin Settings.', {
-                    duration: 5000,
-                    action: {
-                      label: 'Settings',
-                      onClick: () => window.location.href = '/admin/settings'
-                    }
+                // Set color settings
+                if (settings.animation.backgroundColor) {
+                  setColorSettings({
+                    backgroundColor: settings.animation.backgroundColor,
+                    accentColor: settings.animation.accentColor || "#4a6cf7",
+                    secondaryAccentColor: settings.animation.secondaryAccentColor || "#9b87f5"
                   });
+                  
+                  // Apply colors to CSS variables
+                  document.documentElement.style.setProperty('--background-color', settings.animation.backgroundColor);
+                  document.documentElement.style.setProperty('--accent-color', settings.animation.accentColor);
+                  document.documentElement.style.setProperty('--secondary-accent-color', settings.animation.secondaryAccentColor);
                 }
               }
             } catch (error) {
@@ -81,7 +120,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden">
+    <div className="flex flex-col min-h-screen overflow-hidden" style={{ backgroundColor: colorSettings.backgroundColor }}>
       <Navbar />
       <main className="flex-grow flex flex-col">
         <Hero />

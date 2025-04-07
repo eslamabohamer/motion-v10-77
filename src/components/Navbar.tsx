@@ -11,6 +11,11 @@ export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [siteName, setSiteName] = useState("MUHAMMAD ALI");
   const [logoUrl, setLogoUrl] = useState("");
+  const [colorSettings, setColorSettings] = useState({
+    backgroundColor: "#1A1F2C",
+    accentColor: "#4a6cf7",
+    secondaryAccentColor: "#9b87f5"
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +55,15 @@ export const Navbar = () => {
             setLogoUrl(general.logoUrl || "");
             console.log('Loaded navbar settings from database:', general);
           }
+          
+          // Extract color settings
+          if (dbSettings.animation) {
+            setColorSettings({
+              backgroundColor: dbSettings.animation.backgroundColor || "#1A1F2C",
+              accentColor: dbSettings.animation.accentColor || "#4a6cf7",
+              secondaryAccentColor: dbSettings.animation.secondaryAccentColor || "#9b87f5"
+            });
+          }
         } 
         // As a fallback, try to load from localStorage
         else {
@@ -61,6 +75,13 @@ export const Navbar = () => {
                 setSiteName(settings.general.siteName || "MUHAMMAD ALI");
                 setLogoUrl(settings.general.logoUrl || "");
                 console.log('Loaded navbar settings from localStorage');
+              }
+              if (settings.animation) {
+                setColorSettings({
+                  backgroundColor: settings.animation.backgroundColor || "#1A1F2C",
+                  accentColor: settings.animation.accentColor || "#4a6cf7",
+                  secondaryAccentColor: settings.animation.secondaryAccentColor || "#9b87f5"
+                });
               }
             } catch (error) {
               console.error('Error parsing saved settings:', error);
@@ -88,26 +109,39 @@ export const Navbar = () => {
     closeMenu();
   };
 
-  return <nav className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20",
-    // Increased height from h-16 to h-20
-    scrolled ? "bg-[#1A1F2C]/85 backdrop-blur-md shadow-md" : "bg-[#1A1F2C]")}>
+  const navbarStyle = scrolled 
+    ? { backgroundColor: `${colorSettings.backgroundColor}85`, backdropFilter: 'blur(8px)' }
+    : { backgroundColor: colorSettings.backgroundColor };
+
+  return (
+    <nav className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-20",
+      // Increased height from h-16 to h-20
+      scrolled ? "shadow-md" : "")}
+      style={navbarStyle}
+    >
       <div className="h-full max-w-7xl mx-auto flex items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           {logoUrl ? <img src={logoUrl} alt={siteName} className="h-8" /> // Increased logo height from h-6 to h-8
-        : <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent">{siteName}</span> // Increased text size from text-base to text-xl
-        }
+            : <span className="text-xl font-heading font-bold bg-gradient-to-r from-[#4a6cf7] to-[#9b87f5] bg-clip-text text-transparent"
+              style={{ 
+                backgroundImage: `linear-gradient(to right, ${colorSettings.accentColor}, ${colorSettings.secondaryAccentColor})` 
+              }}
+            >
+              {siteName}
+            </span> // Increased text size from text-base to text-xl
+          }
         </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4"> {/* Increased space-x-2 to space-x-4 */}
-          <NavLink to="/" icon={<HomeIcon className="h-4 w-4" />} label="Home" /> {/* Increased icon size */}
-          <NavLink to="/portfolio" icon={<Briefcase className="h-4 w-4" />} label="Portfolio" />
-          <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" />
-          <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" />
-          <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" />
+          <NavLink to="/" icon={<HomeIcon className="h-4 w-4" />} label="Home" accentColor={colorSettings.accentColor} /> {/* Increased icon size */}
+          <NavLink to="/portfolio" icon={<Briefcase className="h-4 w-4" />} label="Portfolio" accentColor={colorSettings.accentColor} />
+          <NavLink to="/services" icon={<Settings className="h-4 w-4" />} label="Services" accentColor={colorSettings.accentColor} />
+          <NavLink to="/about" icon={<User className="h-4 w-4" />} label="About" accentColor={colorSettings.accentColor} />
+          <NavLink to="/contact" icon={<Mail className="h-4 w-4" />} label="Contact" accentColor={colorSettings.accentColor} />
           <Button variant="ghost" size="default" // Changed from sm to default
-        className="flex items-center text-white hover:text-white/80" onClick={handleAdminArea}>
+            className="flex items-center text-white hover:text-white/80" onClick={handleAdminArea}>
             <ShieldIcon className="h-4 w-4 mr-1.5" /> {/* Increased icon size and margin */}
             <span className="text-sm">Admin</span> {/* Increased text size */}
           </Button>
@@ -123,7 +157,9 @@ export const Navbar = () => {
       </div>
 
       {/* Mobile Navigation */}
-      <div className={cn("fixed inset-0 bg-[#1A1F2C]/95 backdrop-blur-md z-40 flex flex-col items-center justify-center transform transition-transform duration-300 ease-in-out md:hidden", isOpen ? "translate-x-0" : "translate-x-full")}>
+      <div className={cn("fixed inset-0 backdrop-blur-md z-40 flex flex-col items-center justify-center transform transition-transform duration-300 ease-in-out md:hidden", isOpen ? "translate-x-0" : "translate-x-full")}
+        style={{ backgroundColor: `${colorSettings.backgroundColor}95` }}
+      >
         <div className="flex flex-col items-center space-y-6 text-center"> {/* Increased space-y-5 to space-y-6 */}
           <MobileNavLink to="/" label="Home" onClick={closeMenu} />
           <MobileNavLink to="/portfolio" label="Portfolio" onClick={closeMenu} />
@@ -131,35 +167,44 @@ export const Navbar = () => {
           <MobileNavLink to="/about" label="About" onClick={closeMenu} />
           <MobileNavLink to="/contact" label="Contact" onClick={closeMenu} />
           <Button variant="outline" size="default" // Changed from sm to default
-        className="mt-3 border-white/20 text-white" onClick={handleAdminArea}>
+            className="mt-3 border-white/20 text-white" onClick={handleAdminArea}>
             <ShieldIcon className="h-4 w-4 mr-2" /> Admin
           </Button>
           <Button size="default" // Changed from sm to default
-        className="mt-4 bg-[#4a6cf7] hover:bg-[#3a5ce7]" onClick={handleGetInTouch}>
+            className="mt-4" 
+            style={{ backgroundColor: colorSettings.accentColor }} 
+            onClick={handleGetInTouch}>
             Get in Touch
           </Button>
         </div>
       </div>
-    </nav>;
+    </nav>
+  );
 };
 
 interface NavLinkProps {
   to: string;
   icon: React.ReactNode;
   label: string;
+  accentColor?: string;
 }
 
 const NavLink = ({
   to,
   icon,
-  label
+  label,
+  accentColor = "#4a6cf7"
 }: NavLinkProps) => {
-  return <Link to={to} className="group flex items-center space-x-1.5 text-white/80 hover:text-white transition-colors text-sm py-1.5" // Increased text size from xs to sm, added vertical padding
-  >
+  return (
+    <Link 
+      to={to} 
+      className="group flex items-center space-x-1.5 text-white/80 hover:text-white transition-colors text-sm py-1.5" // Increased text size from xs to sm, added vertical padding
+    >
       {icon}
       <span>{label}</span>
-      <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5 bg-[#4a6cf7]"></span>
-    </Link>;
+      <span className="block max-w-0 group-hover:max-w-full transition-all duration-300 h-0.5" style={{ backgroundColor: accentColor }}></span>
+    </Link>
+  );
 };
 
 interface MobileNavLinkProps {
