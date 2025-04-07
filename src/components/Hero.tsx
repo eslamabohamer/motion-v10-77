@@ -23,8 +23,8 @@ export const Hero = () => {
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        if (settings.general && settings.general.showreelUrl) {
-          setShowreelUrl(settings.general.showreelUrl);
+        if (settings.general && settings.general.showreel_url) {
+          setShowreelUrl(settings.general.showreel_url);
         }
         
         // Load background settings if available

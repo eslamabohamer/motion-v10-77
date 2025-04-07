@@ -269,7 +269,7 @@ const AdminSettings = () => {
     queryKey: ['designSettings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('design_settings' as any)
+        .from('design_settings')
         .select('*')
         .limit(1);
       
@@ -290,7 +290,7 @@ const AdminSettings = () => {
     if (seoData) setSeoSettings(seoData);
     if (socialData) setSocialSettings(socialData);
     if (aboutData) setAboutMe(aboutData);
-    if (designData) setDesignSettings(designData);
+    if (designData) setDesignSettings(designData as DesignSettings);
   }, [generalData, performanceData, animationData, seoData, socialData, aboutData, designData]);
 
   const { mutate: saveGeneralSettings } = useMutation({
@@ -630,7 +630,7 @@ const AdminSettings = () => {
     mutationFn: async (data: Partial<DesignSettings>) => {
       if (designSettings?.id) {
         const { error } = await supabase
-          .from('design_settings' as any)
+          .from('design_settings')
           .update(data)
           .eq('id', designSettings.id);
           
@@ -638,7 +638,7 @@ const AdminSettings = () => {
         return designSettings.id;
       } else {
         const { data: insertData, error } = await supabase
-          .from('design_settings' as any)
+          .from('design_settings')
           .insert(data)
           .select('id');
           
